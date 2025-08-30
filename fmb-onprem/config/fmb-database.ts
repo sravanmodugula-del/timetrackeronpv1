@@ -19,6 +19,10 @@ export async function initializeFmbDatabase() {
   try {
     const config = loadFmbOnPremConfig();
     
+    if (!config || !config.database) {
+      throw new Error('FMB configuration not loaded properly');
+    }
+    
     console.log(`🔗 Attempting connection to ${config.database.server}:${config.database.port}/${config.database.database}`);
 
     fmbStorageInstance = new FmbStorage({
@@ -74,6 +78,11 @@ export function getFmbStorage(): import('../../server/storage.js').IStorage {
     console.log('🔧 [FMB-DATABASE] Creating new FMB storage instance...');
     try {
       const config = loadFmbOnPremConfig();
+      
+      if (!config || !config.database) {
+        throw new Error('FMB configuration not available');
+      }
+      
       fmbStorageInstance = new FmbStorage({
         server: config.database.server,
         database: config.database.database,
