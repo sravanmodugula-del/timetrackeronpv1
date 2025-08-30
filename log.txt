@@ -1,3 +1,13 @@
+PS C:\fmb-timetracker> npx pm2 start ecosystem.config.cjs npx pm2 save
+[PM2] Applying action restartProcessId on app [fmb-timetracker](ids: [ 0 ])
+[PM2] [fmb-timetracker](0) ✓
+[PM2] Applying action restartProcessId on app [npx](ids: [ 1 ])
+[PM2] [npx](1) ✓
+[PM2] Process successfully started
+[PM2] Applying action restartProcessId on app [pm2](ids: [ 2 ])
+[PM2] [pm2](2) ✓
+[PM2] Process successfully started
+[PM2][ERROR] Script not found: C:\fmb-timetracker\save
 5. Start the Application
 Navigate to the installation directory and start with PM2:
 
