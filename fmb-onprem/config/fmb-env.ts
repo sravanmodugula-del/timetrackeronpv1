@@ -12,6 +12,8 @@ export function loadFmbOnPremConfig() {
   dotenv.config();
   
   console.log('🏢 FMB On-Premises configuration loaded');
+  
+  return getFmbConfig();
 }
 
 // Always return true for FMB on-premises only version
@@ -22,14 +24,14 @@ export function isFmbOnPremEnvironment(): boolean {
 // Validate FMB environment variables
 export function validateFmbEnvironment(): boolean {
   const requiredVars = [
-    'FMB_DATABASE_SERVER',
-    'FMB_DATABASE_NAME',
-    'FMB_DATABASE_USER',
-    'FMB_DATABASE_PASSWORD',
+    'FMB_DB_SERVER',
+    'FMB_DB_NAME',
+    'FMB_DB_USER',
+    'FMB_DB_PASSWORD',
     'FMB_SESSION_SECRET',
-    'FMB_SAML_ISSUER',
-    'FMB_SAML_CERT',
-    'FMB_SAML_ENTRY_POINT'
+    'FMB_SAML_ENTITY_ID',
+    'FMB_SAML_SSO_URL',
+    'FMB_SAML_ACS_URL'
   ];
 
   const missing = requiredVars.filter(varName => !process.env[varName]);
@@ -47,14 +49,14 @@ export function validateFmbEnvironment(): boolean {
 export function getFmbConfig() {
   return {
     database: {
-      server: process.env.FMB_DATABASE_SERVER!,
-      database: process.env.FMB_DATABASE_NAME!,
-      user: process.env.FMB_DATABASE_USER!,
-      password: process.env.FMB_DATABASE_PASSWORD!,
-      port: parseInt(process.env.FMB_DATABASE_PORT || '1433'),
+      server: process.env.FMB_DB_SERVER!,
+      database: process.env.FMB_DB_NAME!,
+      user: process.env.FMB_DB_USER!,
+      password: process.env.FMB_DB_PASSWORD!,
+      port: parseInt(process.env.FMB_DB_PORT || '1433'),
       options: {
-        encrypt: process.env.FMB_DATABASE_ENCRYPT === 'true',
-        trustServerCertificate: process.env.FMB_DATABASE_TRUST_CERT === 'true'
+        encrypt: process.env.FMB_DB_ENCRYPT === 'true',
+        trustServerCertificate: process.env.FMB_DB_TRUST_CERT === 'true'
       }
     },
     saml: {
