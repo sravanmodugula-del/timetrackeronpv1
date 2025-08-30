@@ -13,82 +13,22 @@ vite v7.1.3 building for production...
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 8.25s
-▲ [WARNING] Duplicate member "getTasks" in class body [duplicate-class-member]
+✓ built in 7.91s
+▲ [WARNING] Duplicate member "createOrganization" in class body [duplicate-class-member]
 
-    fmb-onprem/storage/fmb-storage.ts:333:8:
-      333 │   async getTasks(userId: string): Promise<Task[]> {
-          ╵         ~~~~~~~~
+    fmb-onprem/storage/fmb-storage.ts:623:8:
+      623 │   async createOrganization(org: InsertOrganization): Promise<Organization> {
+          ╵         ~~~~~~~~~~~~~~~~~~
 
-  The original member "getTasks" is here:
+  The original member "createOrganization" is here:
 
-    fmb-onprem/storage/fmb-storage.ts:44:8:
-      44 │   async getTasks(): Promise<any[]> { return []; }
-         ╵         ~~~~~~~~
+    fmb-onprem/storage/fmb-storage.ts:198:8:
+      198 │   async createOrganization(orgData: InsertOrganization): Promise<Organization> {
+          ╵         ~~~~~~~~~~~~~~~~~~
 
-▲ [WARNING] Duplicate member "getTaskById" in class body [duplicate-class-member]
+1 warning
 
-    fmb-onprem/storage/fmb-storage.ts:343:8:
-      343 │   async getTaskById(id: string): Promise<Task | null> {
-          ╵         ~~~~~~~~~~~
+  dist\index.js  147.1kb
 
-  The original member "getTaskById" is here:
-
-    fmb-onprem/storage/fmb-storage.ts:45:8:
-      45 │   async getTaskById(id: string): Promise<any> { return null; }
-         ╵         ~~~~~~~~~~~
-
-▲ [WARNING] Duplicate member "getEmployees" in class body [duplicate-class-member]
-
-    fmb-onprem/storage/fmb-storage.ts:458:8:
-      458 │   async getEmployees(userId: string): Promise<Employee[]> {
-          ╵         ~~~~~~~~~~~~
-
-  The original member "getEmployees" is here:
-
-    fmb-onprem/storage/fmb-storage.ts:50:8:
-      50 │   async getEmployees(): Promise<any[]> { return []; }
-         ╵         ~~~~~~~~~~~~
-
-▲ [WARNING] Duplicate member "getEmployeeById" in class body [duplicate-class-member]
-
-    fmb-onprem/storage/fmb-storage.ts:463:8:
-      463 │   async getEmployeeById(id: string): Promise<Employee | null> {
-          ╵         ~~~~~~~~~~~~~~~
-
-  The original member "getEmployeeById" is here:
-
-    fmb-onprem/storage/fmb-storage.ts:51:8:
-      51 │   async getEmployeeById(id: string): Promise<any> { return null; }
-         ╵         ~~~~~~~~~~~~~~~
-
-▲ [WARNING] Duplicate member "updateEmployee" in class body [duplicate-class-member]
-
-    fmb-onprem/storage/fmb-storage.ts:482:8:
-      482 │   async updateEmployee(id: string, employeeData: Partial<InsertEmployee>): Promise<Employee> {
-          ╵         ~~~~~~~~~~~~~~
-
-  The original member "updateEmployee" is here:
-
-    fmb-onprem/storage/fmb-storage.ts:52:8:
-      52 │   async updateEmployee(id: string, employee: any): Promise<any> { return { id, ...employee }; }
-         ╵         ~~~~~~~~~~~~~~
-
-▲ [WARNING] Duplicate member "deleteEmployee" in class body [duplicate-class-member]
-
-    fmb-onprem/storage/fmb-storage.ts:510:8:
-      510 │   async deleteEmployee(id: string): Promise<void> {
-          ╵         ~~~~~~~~~~~~~~
-
-  The original member "deleteEmployee" is here:
-
-    fmb-onprem/storage/fmb-storage.ts:53:8:
-      53 │   async deleteEmployee(id: string): Promise<void> {}
-         ╵         ~~~~~~~~~~~~~~
-
-6 of 10 warnings shown (disable the message limit with --log-limit=0)
-
-  dist\index.js  145.4kb
-
-Done in 107ms
+Done in 43ms
 PS C:\fmb-timetracker>
