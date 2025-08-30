@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2021", "ES2022", "ES2022.Error", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "types": ["node"],
 
     /* Bundler mode */
     "moduleResolution": "node",
-    "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -27,6 +26,6 @@
     "forceConsistentCasingInFileNames": true,
     "exactOptionalPropertyTypes": false
   },
-  "include": ["client/src", "shared", "server", "fmb-onprem"],
+  "include": ["client/src", "shared", "server", "fmb-onprem", "shared/types.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

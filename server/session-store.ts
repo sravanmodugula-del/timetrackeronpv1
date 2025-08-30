@@ -1,9 +1,11 @@
 import session from 'express-session';
+import type { FmbStorage } from '../fmb-onprem/storage/fmb-storage.js';
 import { loadFmbOnPremConfig, isFmbOnPremEnvironment } from '../fmb-onprem/config/fmb-env.js';
 import sql from 'mssql';
 import { Store } from 'express-session';
 import crypto from 'crypto';
 import connectMSSQLServer from 'connect-mssql-v2';
+import type { Express } from 'express';
 
 interface SessionData {
   sid: string;
@@ -221,7 +223,7 @@ export class CustomMSSQLStore extends Store {
         return callback();
       }
 
-      const session = JSON.parse(result.recordset0.sess);
+      const session = JSON.parse(result.recordset[0].sess);
       callback(null, session);
     } catch (error) {
       console.error('🔴 [FMB-SESSION] Error getting session:', {
@@ -521,191 +523,134 @@ export class CustomMSSQLStore extends Store {
       return false;
     }
   }
-
-
 }
 
+// Setup for FMB on-premises sessions using the custom store
+async function setupFmbOnPremSessions(app: Express): Promise<void> {
+  console.log('🏢 [SESSION] Initializing FMB MS SQL session store...');
+  const customStore = new CustomMSSQLStore();
+  app.use(session({
+    store: customStore,
+    secret: process.env.FMB_SESSION_SECRET || 'fallback-secret',
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    name: 'fmb.timetracker.session',
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
+    }
+  }));
+  console.log('🟢 [SESSION] Custom MS SQL session store configured.');
+}
+
+// Setup for cloud environments (using memory store or a placeholder)
+async function setupCloudSessions(app: Express): Promise<void> {
+  console.log('☁️ [SESSION] Cloud environment detected. Using memory session store.');
+  // In a cloud environment, you might use a distributed cache like Redis or a managed session service.
+  // For simplicity, we'll use the memory store here, but it's not suitable for scaled deployments.
+  const MemoryStore = (await import('memorystore')).default;
+  const memoryStore = MemoryStore(session);
+
+  app.use(session({
+    store: new memoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
+    secret: process.env.SESSION_SECRET || 'cloud-session-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    name: 'fmb.timetracker.session',
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
+    }
+  }));
+  console.log('🟢 [SESSION] Memory session store configured for cloud.');
+}
+
+// Fallback memory store for development
+async function setupFallbackMemoryStore(app: Express): Promise<void> {
+  const MemoryStore = (await import('memorystore')).default;
+  const memoryStore = MemoryStore(session);
+
+  app.use(session({
+    store: new memoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
+    secret: process.env.SESSION_SECRET || 'dev-fallback-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    name: 'fmb.timetracker.session',
+    cookie: {
+      secure: false, // Development only
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 8, // 8 hours
+      sameSite: 'lax'
+    }
+  }));
+
+  console.log('⚠️ [SESSION] Memory store activated (development only)');
+}
+
+
+// Enhanced session security and monitoring
+function enhanceSessionSecurity(store: any, isOnPrem: boolean = false) {
+  // This function can be extended to add more security measures or monitoring capabilities.
+  // For example, logging session activity, detecting suspicious patterns, etc.
+  console.log(`[SESSION] Enhancing security for store type: ${isOnPrem ? 'On-Premises' : 'Cloud'}`);
+}
+
+export async function setupSessionStore(app: Express): Promise<void> {
+  console.log('🔧 [SESSION] Setting up session store...');
+
+  try {
+    // Environment-specific session store setup with validation
+    const isOnPrem = process.env.FMB_DEPLOYMENT === 'onprem';
+
+    if (isOnPrem) {
+      console.log('🏢 [SESSION] Setting up FMB on-premises session store...');
+
+      // Validate FMB configuration before setup
+      const fmbConfig = loadFmbOnPremConfig();
+      if (!fmbConfig || !fmbConfig.database) {
+        throw new Error('FMB on-premises configuration is missing or invalid');
+      }
+
+      await setupFmbOnPremSessions(app);
+      enhanceSessionSecurity(null, true); // Pass null as store is initialized within setup function
+    } else {
+      console.log('☁️ [SESSION] Setting up cloud session store...');
+      await setupCloudSessions(app);
+      enhanceSessionSecurity(null, false); // Pass null as store is initialized within setup function
+    }
+
+    console.log('✅ [SESSION] Session store setup completed successfully');
+  } catch (error) {
+    console.error('❌ [SESSION] Failed to setup session store:', error);
+
+    // Fallback to memory store in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('⚠️ [SESSION] Falling back to memory store for development');
+      await setupFallbackMemoryStore(app);
+      enhanceSessionSecurity(null, false); // Assuming fallback is like cloud
+    } else {
+      // In non-development environments, re-throw the error to indicate a critical failure
+      throw error;
+    }
+  }
+}
+
+// The createSessionStore function from the original code is no longer directly used
+// but its logic is integrated into setupSessionStore and its helper functions.
+// If needed for backward compatibility or specific use cases, it can be retained or adapted.
 export function createSessionStore() {
-  async function getSession() {
-    console.log('🟢 [SESSION] Session configured for production mode');
-
-    try {
-      if (process.env.FMB_DEPLOYMENT === 'onprem') {
-        // Try to initialize MS SQL session store for FMB on-premises
-        console.log('Database password:', '*'.repeat(20));
-
-        // Import the connect-mssql-v2 module
-        const connectMssqlModule = await import('connect-mssql-v2');
-
-        // Try different possible exports
-        let MSSQLStore;
-        if (connectMssqlModule.default) {
-          MSSQLStore = connectMssqlModule.default;
-        } else if (connectMssqlModule.MSSQLStore) {
-          MSSQLStore = connectMssqlModule.MSSQLStore;
-        } else if (typeof connectMssqlModule === 'function') {
-          MSSQLStore = connectMssqlModule;
-        } else {
-          throw new Error('Could not find MSSQLStore constructor in connect-mssql-v2');
-        }
-
-        // Initialize the store
-        const store = new MSSQLStore({
-          server: process.env.FMB_DB_SERVER,
-          database: process.env.FMB_DB_NAME,
-          user: process.env.FMB_DB_USER,
-          password: process.env.FMB_DB_PASSWORD,
-          options: {
-            encrypt: true,
-            trustServerCertificate: true,
-            enableArithAbort: true,
-          },
-          table: 'sessions',
-          autoRemove: 'interval',
-          autoRemoveInterval: 300000, // 5 minutes
-        });
-
-        console.log('🟢 [SESSION] MS SQL session store initialized successfully');
-
-        return session({
-          store,
-          secret: process.env.FMB_SESSION_SECRET || 'fallback-secret',
-          resave: false,
-          saveUninitialized: false,
-          rolling: true,
-          cookie: {
-            secure: false, // Set to true in production with HTTPS
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-            sameSite: 'lax'
-          }
-        });
-      }
-    } catch (error) {
-      console.log('🔴 [SESSION] Failed to initialize MS SQL session store:', {
-        message: error?.message || 'Unknown error',
-        code: error?.code || 'NO_CODE',
-        name: error?.name || 'Unknown',
-        stack: error?.stack || 'No stack trace',
-        originalError: error?.originalError || 'NO_ORIGINAL',
-        number: error?.number || 'NO_NUMBER',
-        severity: error?.severity || 'NO_SEVERITY',
-        state: error?.state || 'NO_STATE',
-        fullError: JSON.stringify({
-          stack: error?.stack,
-          message: error?.message
-        })
-      });
-
-      // Try custom MS SQL session store as backup
-      try {
-        if (process.env.FMB_DEPLOYMENT === 'onprem') {
-          const { CustomMSSQLStore } = await import('../fmb-onprem/storage/session-manager.js'); // Assuming CustomMSSQLStore is exported from this path
-          const customStore = new CustomMSSQLStore({
-            server: process.env.FMB_DB_SERVER,
-            database: process.env.FMB_DB_NAME,
-            user: process.env.FMB_DB_USER,
-            password: process.env.FMB_DB_PASSWORD,
-          });
-
-          console.log('🟢 [SESSION] Custom MS SQL session store initialized successfully');
-
-          return session({
-            store: customStore,
-            secret: process.env.FMB_SESSION_SECRET || 'fallback-secret',
-            resave: false,
-            saveUninitialized: false,
-            rolling: true,
-            cookie: {
-              secure: false,
-              httpOnly: true,
-              maxAge: 24 * 60 * 60 * 1000,
-              sameSite: 'lax'
-            }
-          });
-        }
-      } catch (customError) {
-        console.log('🔴 [SESSION] Custom MS SQL session store also failed:', customError?.message);
-      }
-
-      console.log('🟡 [SESSION] Using default memory session store as final fallback');
-    }
-
-    // Fallback to memory store
-    return session({
-      secret: process.env.FMB_SESSION_SECRET || process.env.SESSION_SECRET || 'fallback-secret',
-      resave: false,
-      saveUninitialized: false,
-      rolling: true,
-      cookie: {
-        secure: false,
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: 'lax'
-      }
-    });
-  }
-
-  // Development: Use memory store
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔧 [SESSION] Using memory store (development)');
-    return undefined; // Express-session will use memory store
-  }
-
-  // Production with FMB on-premises: Use MS SQL session store
-  if (isFmbOnPremEnvironment()) {
-    console.log('🏢 [SESSION] Configuring FMB MS SQL session store...');
-
-    const config = loadFmbOnPremConfig();
-
-    try {
-      // Use our enhanced custom MS SQL session store instead of connect-mssql-v2
-      // This provides better error handling and performance optimization
-      return new CustomMSSQLStore();
-    } catch (error) {
-      console.error('🔴 [SESSION] Failed to create custom MS SQL store:', error?.message);
-
-      // Fallback to connect-mssql-v2 if custom store fails
-      try {
-        const MSSQLStore = connectMSSQLServer(session);
-
-        return new MSSQLStore({
-          server: config.database.server,
-          database: config.database.database,
-          user: config.database.user,
-          password: config.database.password,
-          port: config.database.port,
-          options: {
-            encrypt: config.database.encrypt,
-            trustServerCertificate: config.database.trustServerCertificate,
-            enableArithAbort: true,
-            connectTimeout: 15000,
-            requestTimeout: 10000
-          },
-          table: 'sessions',
-          ttl: 7 * 24 * 60 * 60 * 1000, // 1 week
-          autoRemove: 'interval',
-          autoRemoveInterval: 3 * 60 * 1000, // Clean every 3 minutes
-          useUTC: false,
-          // Explicit column mapping for connect-mssql-v2 compatibility
-          schema: {
-            tableName: 'sessions',
-            columnNames: {
-              session_id: 'sid',        // Primary key column
-              data: 'sess',            // Session data column (JSON)
-              expires: 'expire'        // Expiration timestamp column
-            }
-          }
-        });
-      } catch (fallbackError) {
-        console.error('🔴 [SESSION] Both custom and connect-mssql-v2 stores failed:', fallbackError?.message);
-        console.log('🔧 [SESSION] Using memory store as final fallback');
-        return undefined;
-      }
-    }
-  }
-
-  // Fallback: Use memory store
-  console.log('🔧 [SESSION] Using memory store (fallback)');
-  return undefined;
+  // This function is now effectively replaced by setupSessionStore.
+  // If called, it might indicate an older integration point.
+  // For now, we'll log a warning and return undefined, as setupSessionStore should be used.
+  console.warn('⚠️ [SESSION] createSessionStore() is deprecated. Use setupSessionStore() instead.');
+  return undefined; // Indicate that session middleware should be handled by setupSessionStore
 }

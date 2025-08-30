@@ -307,14 +307,27 @@ class StorageImplementation implements IStorage {
   async deleteProjectEmployee(id: string): Promise<void> {}
 
   private async getDb() {
-    // Import database connection based on environment
-    if (process.env.FMB_DEPLOYMENT === 'onprem') {
-      const { getFmbStorage } = await import('../fmb-onprem/config/fmb-database.js');
-      return getFmbStorage();
-    } else {
-      // Use relative import for Replit deployment
-      const dbModule = await import('./db.js');
-      return dbModule.db || dbModule.default || dbModule;
+    try {
+      // Import database connection based on environment
+      if (process.env.FMB_DEPLOYMENT === 'onprem') {
+        const { getFmbStorage } = await import('../fmb-onprem/config/fmb-database.js');
+        const storage = getFmbStorage();
+        
+        // Ensure connection is established
+        if (typeof storage.connect === 'function') {
+          await storage.connect();
+        }
+        
+        return storage;
+      } else {
+        // Use relative import for Replit deployment
+        const dbModule = await import('./db.js');
+        // Handle different export patterns more safely
+        return dbModule.default || dbModule;
+      }
+    } catch (error) {
+      console.error('❌ [STORAGE] Failed to get database connection:', error);
+      throw new Error(`Database connection failed: ${error?.message || 'Unknown error'}`);
     }
   }
 }

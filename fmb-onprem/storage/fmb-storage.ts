@@ -212,10 +212,7 @@ export class FmbStorage implements IStorage {
     return [];
   }
 
-  async getProjectsByUser(userId: string): Promise<Project[]> {
-    const result = await this.execute('SELECT * FROM projects WHERE user_id = @param0', [userId]);
-    return result;
-  }
+
 
   async getProjectById(id: string): Promise<Project | null> {
     const result = await this.execute('SELECT * FROM projects WHERE id = @param0', [id]);
@@ -345,16 +342,16 @@ export class FmbStorage implements IStorage {
   async createTask(taskData: InsertTask): Promise<Task> {
     const insertData = {
       id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      project_id: taskData.project_id || taskData.projectId,
+      project_id: taskData.project_id,
       title: taskData.title,
-      name: taskData.name,
+      name: taskData.name || taskData.title,
       description: taskData.description,
       status: taskData.status || 'pending',
       priority: taskData.priority || 'medium',
-      assigned_to: taskData.assigned_to || taskData.assignedTo,
-      created_by: taskData.created_by || taskData.createdBy,
-      due_date: taskData.due_date || taskData.dueDate,
-      estimated_hours: taskData.estimated_hours || taskData.estimatedHours
+      assigned_to: taskData.assigned_to,
+      created_by: taskData.created_by,
+      due_date: taskData.due_date,
+      estimated_hours: taskData.estimated_hours,
     };
     await this.execute(`
       INSERT INTO tasks (id, project_id, title, name, description, status, priority, 
@@ -440,11 +437,6 @@ export class FmbStorage implements IStorage {
     return result[0] || null;
   }
 
-  async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
-    const result = await this.execute('SELECT * FROM time_entries WHERE user_id = @param0', [userId]);
-    return result;
-  }
-
   async getTimeEntriesByProjectId(projectId: string): Promise<TimeEntry[]> {
     const result = await this.execute('SELECT * FROM time_entries WHERE project_id = @param0', [projectId]);
     return result;
@@ -453,22 +445,22 @@ export class FmbStorage implements IStorage {
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
     const insertData = {
       id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      user_id: timeEntryData.user_id || timeEntryData.userId,
-      project_id: timeEntryData.project_id || timeEntryData.projectId,
-      task_id: timeEntryData.task_id || timeEntryData.taskId,
+      user_id: timeEntryData.user_id,
+      project_id: timeEntryData.project_id,
+      task_id: timeEntryData.task_id,
       description: timeEntryData.description,
       hours: timeEntryData.hours,
-      duration: timeEntryData.duration,
+      duration: timeEntryData.duration || timeEntryData.hours,
       date: timeEntryData.date,
-      start_time: timeEntryData.start_time || timeEntryData.startTime,
-      end_time: timeEntryData.end_time || timeEntryData.endTime,
+      start_time: timeEntryData.start_time,
+      end_time: timeEntryData.end_time,
       status: timeEntryData.status || 'draft',
       billable: timeEntryData.billable || false,
-      is_billable: timeEntryData.is_billable || timeEntryData.isBillable || false,
-      is_approved: timeEntryData.is_approved || timeEntryData.isApproved || false,
-      is_manual_entry: timeEntryData.is_manual_entry !== false && timeEntryData.isManualEntry !== false,
-      is_timer_entry: timeEntryData.is_timer_entry || timeEntryData.isTimerEntry || false,
-      is_template: timeEntryData.is_template || timeEntryData.isTemplate || false
+      is_billable: timeEntryData.is_billable || false,
+      is_approved: timeEntryData.is_approved || false,
+      is_manual_entry: timeEntryData.is_manual_entry !== false,
+      is_timer_entry: timeEntryData.is_timer_entry || false,
+      is_template: timeEntryData.is_template || false
     };
     await this.execute(`
       INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours, 
@@ -550,11 +542,11 @@ export class FmbStorage implements IStorage {
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
     const insertData = {
       id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      employee_id: employeeData.employee_id || employeeData.employeeId,
-      first_name: employeeData.first_name || employeeData.firstName,
-      last_name: employeeData.last_name || employeeData.lastName,
+      employee_id: employeeData.employee_id,
+      first_name: employeeData.first_name,
+      last_name: employeeData.last_name,
       department: employeeData.department,
-      user_id: employeeData.user_id || employeeData.userId
+      user_id: employeeData.user_id
     };
     await this.execute(`
       INSERT INTO employees (id, employee_id, first_name, last_name, department, user_id, created_at, updated_at)
@@ -636,10 +628,10 @@ export class FmbStorage implements IStorage {
     const insertData = {
       id: `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: deptData.name,
-      description: deptData.description,
-      organization_id: deptData.organization_id || deptData.organizationId,
-      manager_id: deptData.manager_id || deptData.managerId,
-      user_id: deptData.user_id || deptData.userId
+      organization_id: deptData.organization_id,
+      manager_id: deptData.manager_id,
+      user_id: deptData.user_id,
+      description: deptData.description
     };
     await this.execute(`
       INSERT INTO departments (id, name, organization_id, manager_id, description, user_id, created_at, updated_at)
@@ -821,6 +813,59 @@ export class FmbStorage implements IStorage {
     };
   }
 
+
+
+  async getTasksByProjectId(projectId: string): Promise<Task[]> {
+    try {
+      const result = await this.pool.request()
+        .input('projectId', sql.NVarChar, projectId)
+        .query('SELECT * FROM tasks WHERE project_id = @projectId ORDER BY created_at DESC');
+
+      return result.recordset.map(this.mapTaskFromDb);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Failed to get tasks by project ID:', error);
+      throw error;
+    }
+  }
+
+  async getProjectEmployees(): Promise<ProjectEmployee[]> {
+    const result = await this.execute('SELECT * FROM project_employees');
+    return result;
+  }
+
+  async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> {
+    const result = await this.execute('SELECT * FROM project_employees WHERE project_id = @param0', [projectId]);
+    return result;
+  }
+
+  async createProjectEmployee(projEmpData: InsertProjectEmployee): Promise<ProjectEmployee> {
+    const insertData = {
+      id: `pe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      project_id: projEmpData.project_id,
+      employee_id: projEmpData.employee_id,
+      user_id: projEmpData.user_id
+    };
+
+    await this.execute(`
+      INSERT INTO project_employees (id, project_id, employee_id, user_id, created_at)
+      VALUES (@param0, @param1, @param2, @param3, GETDATE())
+    `, [insertData.id, insertData.project_id, insertData.employee_id, insertData.user_id]);
+
+    const result = await this.execute('SELECT * FROM project_employees WHERE id = @param0', [insertData.id]);
+    return result[0];
+  }
+
+  async deleteProjectEmployee(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM project_employees WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting project employee:', error);
+      throw error;
+    }
+  }
+
   // Helper method to validate and convert UUIDs
   private validateUUID(id: string): string {
     // If it's already a valid GUID format, return as is
@@ -830,6 +875,77 @@ export class FmbStorage implements IStorage {
 
     // If it's an email or other identifier, use it directly as string
     return id;
+  }
+
+  // Add mapping helper functions for clarity and consistency
+  private mapTaskFromDb(row: any): Task {
+    return {
+      id: row.id,
+      project_id: row.project_id,
+      title: row.title,
+      name: row.name,
+      description: row.description,
+      status: row.status,
+      priority: row.priority,
+      assigned_to: row.assigned_to,
+      created_by: row.created_by,
+      due_date: row.due_date,
+      estimated_hours: row.estimated_hours,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      project_name: row.project_name // Added for convenience
+    };
+  }
+
+  private mapTimeEntryFromDb(row: any): TimeEntry {
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      project_id: row.project_id,
+      task_id: row.task_id,
+      description: row.description,
+      hours: row.hours,
+      duration: row.duration,
+      date: row.date,
+      start_time: row.start_time,
+      end_time: row.end_time,
+      status: row.status,
+      billable: row.billable,
+      is_billable: row.is_billable,
+      is_approved: row.is_approved,
+      is_manual_entry: row.is_manual_entry,
+      is_timer_entry: row.is_timer_entry,
+      is_template: row.is_template,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      project_name: row.project_name, // Added for convenience
+      task_name: row.task_name     // Added for convenience
+    };
+  }
+
+  private mapProjectFromDb(row: any): Project {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      status: row.status,
+      organization_id: row.organization_id,
+      department_id: row.department_id,
+      manager_id: row.manager_id,
+      user_id: row.user_id,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      budget: row.budget,
+      project_number: row.project_number,
+      is_enterprise_wide: row.is_enterprise_wide,
+      is_template: row.is_template,
+      allow_time_tracking: row.allow_time_tracking,
+      require_task_selection: row.require_task_selection,
+      enable_budget_tracking: row.enable_budget_tracking,
+      enable_billing: row.enable_billing,
+      created_at: row.created_at,
+      updated_at: row.updated_at
+    };
   }
 }
 

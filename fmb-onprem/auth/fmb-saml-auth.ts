@@ -1,5 +1,5 @@
 import passport from 'passport';
-import { Strategy as SamlStrategy } from 'passport-saml';
+import { Strategy as SamlStrategy } from '@node-saml/passport-saml';
 import type { Express } from 'express';
 import { getFmbStorage } from '../config/fmb-database.js';
 import { getFmbConfig } from '../config/fmb-env.js';
