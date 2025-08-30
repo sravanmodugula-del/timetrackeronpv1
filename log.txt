@@ -1,0 +1,30 @@
+5. Start the Application
+Navigate to the installation directory and start with PM2:
+
+cd C:\fmb-timetracker npx pm2 start ecosystem.config.js npx pm2 save
+6. Verify Deployment
+Check application health:
+
+npx pm2 status npx pm2 logs
+Test the health endpoint:
+
+curl http://localhost:3000/api/health
+Quick Deployment Updates
+For future updates, use the deployment script:
+
+.\fmb-onprem\scripts\fmb-deploy.ps1
+Service Management
+PM2 Commands:
+
+Status: npx pm2 status
+Logs: npx pm2 logs
+Restart: npx pm2 restart ecosystem.config.js
+Windows Service:
+
+Start: net start FMBTimeTracker
+Stop: net stop FMBTimeTracker
+Restart: net restart FMBTimeTracker
+Health Check Endpoints
+/api/health - General application health
+/api/health/database - MS SQL connectivity
+/api/health/saml - SAML configuration
