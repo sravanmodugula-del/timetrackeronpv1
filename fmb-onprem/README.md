@@ -167,7 +167,7 @@ Edit `C:\fmb-timetracker\.env` with your environment-specific values:
 cd C:\fmb-timetracker
 
 # Start with PM2
-npx pm2 start ecosystem.config.js
+npx pm2 start ecosystem.config.cjs
 
 # Or start Windows service (if installed)
 net start FMBTimeTracker
@@ -196,7 +196,7 @@ Get-Content C:\fmb-timetracker\logs\combined.log -Tail 50 -Wait
 npx pm2 status
 
 # Restart application
-npx pm2 restart ecosystem.config.js
+npx pm2 restart ecosystem.config.cjs
 
 # Windows Service (if using service mode)
 net start FMBTimeTracker

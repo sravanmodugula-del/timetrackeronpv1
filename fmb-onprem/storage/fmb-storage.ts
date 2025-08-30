@@ -148,8 +148,8 @@ export class FmbStorage implements IStorage {
             last_login_at = GETDATE(), updated_at = GETDATE()
         WHERE email = @param6
       `, [
-        userData.firstName, userData.lastName, userData.profileImageUrl,
-        userData.role, userData.organizationId, userData.department, userData.email
+        userData.first_name, userData.last_name, userData.profile_image_url,
+        userData.role, userData.organization_id, userData.department, userData.email
       ]);
       return await this.getUserByEmail(userData.email) as User;
     } else {
@@ -163,11 +163,11 @@ export class FmbStorage implements IStorage {
 
       request.input('id', sql.NVarChar(255), userId);
       request.input('email', sql.NVarChar(255), userData.email);
-      request.input('firstName', sql.NVarChar(255), userData.firstName);
-      request.input('lastName', sql.NVarChar(255), userData.lastName);
-      request.input('profileImageUrl', sql.NVarChar(sql.MAX), userData.profileImageUrl);
+      request.input('firstName', sql.NVarChar(255), userData.first_name);
+      request.input('lastName', sql.NVarChar(255), userData.last_name);
+      request.input('profileImageUrl', sql.NVarChar(sql.MAX), userData.profile_image_url);
       request.input('role', sql.NVarChar(50), userData.role);
-      request.input('organizationId', sql.NVarChar(255), userData.organizationId);
+      request.input('organizationId', sql.NVarChar(255), userData.organization_id);
       request.input('department', sql.NVarChar(255), userData.department);
 
       await request.query();
@@ -176,7 +176,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Organization Methods
-  async getOrganizations(userId: string): Promise<OrganizationWithDepartments[]> {
+  async getOrganizations(): Promise<Organization[]> {
     const result = await this.execute(`
       SELECT o.*, 
         (SELECT d.* FROM departments d WHERE d.organization_id = o.id FOR JSON PATH) as departments
@@ -202,7 +202,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Methods
-  async getProjects(userId: string): Promise<Project[]> {
+  async getProjects(): Promise<Project[]> {
     const result = await this.execute('SELECT * FROM projects WHERE user_id = @param0', [userId]);
     return result;
   }
@@ -294,7 +294,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Task Methods
-  async getTasks(userId: string): Promise<TaskWithProject[]> {
+  async getTasks(): Promise<Task[]> {
     const result = await this.execute(`
       SELECT t.*, p.name as project_name 
       FROM tasks t 
@@ -372,7 +372,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntries(userId: string): Promise<TimeEntryWithProject[]> {
+  async getTimeEntries(): Promise<TimeEntry[]> {
     const result = await this.execute(`
       SELECT te.*, p.name as project_name, t.title as task_name 
       FROM time_entries te 
@@ -463,7 +463,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Employee Methods
-  async getEmployees(userId: string): Promise<Employee[]> {
+  async getEmployees(): Promise<Employee[]> {
     const result = await this.execute('SELECT * FROM employees WHERE user_id = @param0', [userId]);
     return result;
   }
@@ -527,7 +527,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Department Methods
-  async getDepartments(userId: string): Promise<DepartmentWithManager[]> {
+  async getDepartments(): Promise<Department[]> {
     const result = await this.execute(`
       SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
       FROM departments d 

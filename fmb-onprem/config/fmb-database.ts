@@ -18,11 +18,11 @@ export async function initializeFmbDatabase() {
 
   try {
     const config = loadFmbOnPremConfig();
-    
+
     if (!config || !config.database) {
       throw new Error('FMB configuration not loaded properly');
     }
-    
+
     console.log(`🔗 Attempting connection to ${config.database.server}:${config.database.port}/${config.database.database}`);
 
     fmbStorageInstance = new FmbStorage({
@@ -34,17 +34,17 @@ export async function initializeFmbDatabase() {
         port: parseInt(config.database.port),
         enableArithAbort: true,
         connectTimeout: 30000,
-        requestTimeout: 30000
+        requestTimeout: 30000,
+        encrypt: config.database.options.encrypt,
+        trustServerCertificate: config.database.options.trustServerCertificate
       },
-      encrypt: config.database.encrypt,
-      trustServerCertificate: config.database.trustServerCertificate,
     });
 
     await fmbStorageInstance.connect();
     console.log('✅ FMB MS SQL database connected successfully');
   } catch (error) {
     console.error('❌ Failed to connect to FMB database:', error?.message || 'Unknown connection error');
-    
+
     if (error?.code === 'ESOCKET') {
       console.error('🔴 Database connection error: Unable to reach the database server');
       console.error('💡 Please verify:');
@@ -53,14 +53,14 @@ export async function initializeFmbDatabase() {
       console.error('   - Firewall settings allow connections on the database port');
       console.error('   - Database credentials are correct');
     }
-    
+
     // Don't throw error during development or build
     if (process.env.NODE_ENV === 'development' || 
         process.env.npm_lifecycle_event === 'build') {
       console.log('🟡 [FMB-DATABASE] Database connection failed - continuing without database connection');
       return;
     }
-    
+
     throw new Error(`Database connection failed: ${error?.message || 'Unable to establish connection'}`);
   }
 }
@@ -78,11 +78,11 @@ export function getFmbStorage(): import('../../server/storage.js').IStorage {
     console.log('🔧 [FMB-DATABASE] Creating new FMB storage instance...');
     try {
       const config = loadFmbOnPremConfig();
-      
+
       if (!config || !config.database) {
         throw new Error('FMB configuration not available');
       }
-      
+
       fmbStorageInstance = new FmbStorage({
         server: config.database.server,
         database: config.database.database,
@@ -93,9 +93,9 @@ export function getFmbStorage(): import('../../server/storage.js').IStorage {
           enableArithAbort: true,
           connectTimeout: 30000,
           requestTimeout: 30000,
+          encrypt: config.database.options.encrypt,
+          trustServerCertificate: config.database.options.trustServerCertificate
         },
-        encrypt: config.database.encrypt,
-        trustServerCertificate: config.database.trustServerCertificate,
       });
 
       // Auto-connect to database
@@ -175,9 +175,9 @@ export async function validateDatabaseSchema(): Promise<boolean> {
 
     const requiredTables = ['users', 'projects', 'tasks', 'time_entries', 'organizations', 'departments', 'employees'];
     const existingTables = result.map((row: any) => row.table_name);
-    
+
     const missingTables = requiredTables.filter(table => !existingTables.includes(table));
-    
+
     if (missingTables.length > 0) {
       console.error('🔴 [FMB-DATABASE] Missing required tables:', missingTables);
       console.error('💡 Run the database setup script: fmb-onprem/scripts/fmb-setup-db.sql');

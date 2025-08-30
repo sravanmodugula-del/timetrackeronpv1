@@ -88,6 +88,7 @@ export interface IStorage {
 class StorageImplementation implements IStorage {
   // Users
   async getUsers(): Promise<User[]> {
+    const db = await this.getDb();
     if (typeof db.getUsers === 'function') {
       return await db.getUsers();
     }
@@ -95,6 +96,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getUserById(id: string): Promise<User | null> {
+    const db = await this.getDb();
     if (typeof db.getUserById === 'function') {
       return await db.getUserById(id);
     }
@@ -102,6 +104,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
+    const db = await this.getDb();
     if (typeof db.getUserByEmail === 'function') {
       return await db.getUserByEmail(email);
     }
@@ -109,6 +112,7 @@ class StorageImplementation implements IStorage {
   }
 
   async createUser(user: UpsertUser): Promise<User> {
+    const db = await this.getDb();
     if (typeof db.createUser === 'function') {
       return await db.createUser(user);
     }
@@ -116,6 +120,7 @@ class StorageImplementation implements IStorage {
   }
 
   async updateUser(id: string, user: Partial<UpsertUser>): Promise<User> {
+    const db = await this.getDb();
     if (typeof db.updateUser === 'function') {
       return await db.updateUser(id, user);
     }
@@ -123,6 +128,7 @@ class StorageImplementation implements IStorage {
   }
 
   async deleteUser(id: string): Promise<void> {
+    const db = await this.getDb();
     if (typeof db.deleteUser === 'function') {
       await db.deleteUser(id);
     }
@@ -130,6 +136,7 @@ class StorageImplementation implements IStorage {
 
   // Organizations
   async getOrganizations(): Promise<Organization[]> {
+    const db = await this.getDb();
     if (typeof db.getOrganizations === 'function') {
       return await db.getOrganizations();
     }
@@ -137,6 +144,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getOrganizationById(id: string): Promise<Organization | null> {
+    const db = await this.getDb();
     if (typeof db.getOrganizationById === 'function') {
       return await db.getOrganizationById(id);
     }
@@ -144,6 +152,7 @@ class StorageImplementation implements IStorage {
   }
 
   async createOrganization(org: InsertOrganization): Promise<Organization> {
+    const db = await this.getDb();
     if (typeof db.createOrganization === 'function') {
       return await db.createOrganization(org);
     }
@@ -151,6 +160,7 @@ class StorageImplementation implements IStorage {
   }
 
   async updateOrganization(id: string, org: Partial<InsertOrganization>): Promise<Organization> {
+    const db = await this.getDb();
     if (typeof db.updateOrganization === 'function') {
       return await db.updateOrganization(id, org);
     }
@@ -158,6 +168,7 @@ class StorageImplementation implements IStorage {
   }
 
   async deleteOrganization(id: string): Promise<void> {
+    const db = await this.getDb();
     if (typeof db.deleteOrganization === 'function') {
       await db.deleteOrganization(id);
     }
@@ -165,6 +176,7 @@ class StorageImplementation implements IStorage {
 
   // Projects
   async getProjects(): Promise<Project[]> {
+    const db = await this.getDb();
     if (typeof db.getProjects === 'function') {
       return await db.getProjects();
     }
@@ -172,6 +184,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getProjectById(id: string): Promise<Project | null> {
+    const db = await this.getDb();
     if (typeof db.getProjectById === 'function') {
       return await db.getProjectById(id);
     }
@@ -179,6 +192,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getProjectsByUserId(userId: string): Promise<Project[]> {
+    const db = await this.getDb();
     if (typeof db.getProjectsByUserId === 'function') {
       return await db.getProjectsByUserId(userId);
     }
@@ -186,6 +200,7 @@ class StorageImplementation implements IStorage {
   }
 
   async createProject(project: InsertProject): Promise<Project> {
+    const db = await this.getDb();
     if (typeof db.createProject === 'function') {
       return await db.createProject(project);
     }
@@ -193,6 +208,7 @@ class StorageImplementation implements IStorage {
   }
 
   async updateProject(id: string, project: Partial<InsertProject>): Promise<Project> {
+    const db = await this.getDb();
     if (typeof db.updateProject === 'function') {
       return await db.updateProject(id, project);
     }
@@ -200,6 +216,7 @@ class StorageImplementation implements IStorage {
   }
 
   async deleteProject(id: string): Promise<void> {
+    const db = await this.getDb();
     if (typeof db.deleteProject === 'function') {
       await db.deleteProject(id);
     }
@@ -207,6 +224,7 @@ class StorageImplementation implements IStorage {
 
   // Time Entries
   async getTimeEntries(): Promise<TimeEntry[]> {
+    const db = await this.getDb();
     if (typeof db.getTimeEntries === 'function') {
       return await db.getTimeEntries();
     }
@@ -214,6 +232,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getTimeEntryById(id: string): Promise<TimeEntry | null> {
+    const db = await this.getDb();
     if (typeof db.getTimeEntryById === 'function') {
       return await db.getTimeEntryById(id);
     }
@@ -221,6 +240,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
+    const db = await this.getDb();
     if (typeof db.getTimeEntriesByUserId === 'function') {
       return await db.getTimeEntriesByUserId(userId);
     }
@@ -228,6 +248,7 @@ class StorageImplementation implements IStorage {
   }
 
   async getTimeEntriesByProjectId(projectId: string): Promise<TimeEntry[]> {
+    const db = await this.getDb();
     if (typeof db.getTimeEntriesByProjectId === 'function') {
       return await db.getTimeEntriesByProjectId(projectId);
     }
@@ -235,6 +256,7 @@ class StorageImplementation implements IStorage {
   }
 
   async createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry> {
+    const db = await this.getDb();
     if (typeof db.createTimeEntry === 'function') {
       return await db.createTimeEntry(entry);
     }
@@ -242,6 +264,7 @@ class StorageImplementation implements IStorage {
   }
 
   async updateTimeEntry(id: string, entry: Partial<InsertTimeEntry>): Promise<TimeEntry> {
+    const db = await this.getDb();
     if (typeof db.updateTimeEntry === 'function') {
       return await db.updateTimeEntry(id, entry);
     }
@@ -249,6 +272,7 @@ class StorageImplementation implements IStorage {
   }
 
   async deleteTimeEntry(id: string): Promise<void> {
+    const db = await this.getDb();
     if (typeof db.deleteTimeEntry === 'function') {
       await db.deleteTimeEntry(id);
     }
@@ -281,6 +305,17 @@ class StorageImplementation implements IStorage {
   async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> { return []; }
   async createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee> { return assignment as ProjectEmployee; }
   async deleteProjectEmployee(id: string): Promise<void> {}
+
+  private async getDb() {
+    // Import database connection based on environment
+    if (process.env.FMB_DEPLOYMENT === 'onprem') {
+      const { getFmbStorage } = await import('../fmb-onprem/config/fmb-database.js');
+      return getFmbStorage();
+    } else {
+      const db = await import('../dist/server/db.js');
+      return db.default();
+    }
+  }
 }
 
 export const storage = new StorageImplementation();

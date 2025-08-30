@@ -366,7 +366,7 @@ module.exports = {
 };
 "@
 
-Set-Content -Path "$InstallPath\ecosystem.config.js" -Value $EcosystemContent
+Set-Content -Path "$InstallPath\ecosystem.config.cjs" -Value $EcosystemContent
 Write-Host "✅ PM2 ecosystem configuration created" -ForegroundColor Green
 
 # Install PM2 as Windows service
@@ -395,7 +395,7 @@ Write-Host "📋 Next steps:" -ForegroundColor Cyan
 Write-Host "1. Edit $InstallPath\.env with your configuration" -ForegroundColor White
 Write-Host "2. Run the database setup script on your MS SQL Server (HUB-SQL1TST-LIS)" -ForegroundColor White
 Write-Host "3. Configure IIS reverse proxy on HUB-DEVAPP01-C3" -ForegroundColor White
-Write-Host "4. Start the application: npx pm2 start ecosystem.config.js" -ForegroundColor White
+Write-Host "4. Start the application: npx pm2 start ecosystem.config.cjs" -ForegroundColor White
 Write-Host "5. View logs: npx pm2 logs" -ForegroundColor White
 Write-Host "6. Check status: npx pm2 status" -ForegroundColor White
 Write-Host ""

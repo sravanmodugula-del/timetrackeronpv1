@@ -61,8 +61,8 @@ try {
     # Clean install to ensure all dependencies are properly installed
     Remove-Item -Path "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "package-lock.json" -Force -ErrorAction SilentlyContinue
-    npm install --production=false
-    npm audit fix --force
+    npm install --production=false --legacy-peer-deps
+    npm audit fix --force --legacy-peer-deps
     Write-Host "✅ All dependencies installed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Failed to install dependencies" -ForegroundColor Red
@@ -100,7 +100,7 @@ try {
 
     Write-Host "Installing production dependencies..." -ForegroundColor Yellow
     # Ensure production dependencies are available for the built application
-    npm install --only=production
+    npm install --omit=dev --legacy-peer-deps
     Write-Host "✅ Production dependencies installed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Build failed" -ForegroundColor Red
