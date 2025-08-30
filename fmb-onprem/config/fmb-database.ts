@@ -31,7 +31,7 @@ export async function initializeFmbDatabase() {
       user: config.database.user,
       password: config.database.password,
       options: {
-        port: parseInt(config.database.port),
+        port: parseInt(config.database.port.toString()),
         enableArithAbort: true,
         connectTimeout: 30000,
         requestTimeout: 30000,

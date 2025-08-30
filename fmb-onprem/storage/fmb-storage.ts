@@ -26,12 +26,41 @@ import type {
 } from '../../shared/schema.js';
 
 export class FmbStorage implements IStorage {
-  private pool: sql.ConnectionPool | null = null;
   private config: any;
+  private pool: sql.ConnectionPool | null = null;
 
-  constructor(config?: any) {
-    this.config = config || loadFmbOnPremConfig().database;
+  constructor(config: any) {
+    this.config = config;
   }
+
+  // Add missing IStorage interface methods
+  async getUsers(): Promise<any[]> { return []; }
+  async getUserById(id: string): Promise<any> { return null; }
+  async getUserByEmail(email: string): Promise<any> { return null; }
+  async createUser(user: any): Promise<any> { return user; }
+  async updateUser(id: string, user: any): Promise<any> { return { id, ...user }; }
+  async deleteUser(id: string): Promise<void> {}
+
+  async getTasks(): Promise<any[]> { return []; }
+  async getTaskById(id: string): Promise<any> { return null; }
+  async getTasksByProjectId(projectId: string): Promise<any[]> { return []; }
+  async updateTask(id: string, task: any): Promise<any> { return { id, ...task }; }
+  async deleteTask(id: string): Promise<void> {}
+
+  async getEmployees(): Promise<any[]> { return []; }
+  async getEmployeeById(id: string): Promise<any> { return null; }
+  async updateEmployee(id: string, employee: any): Promise<any> { return { id, ...employee }; }
+  async deleteEmployee(id: string): Promise<void> {}
+
+  async getDepartments(): Promise<any[]> { return []; }
+  async getDepartmentById(id: string): Promise<any> { return null; }
+  async updateDepartment(id: string, dept: any): Promise<any> { return { id, ...dept }; }
+  async deleteDepartment(id: string): Promise<void> {}
+
+  async getProjectEmployees(): Promise<any[]> { return []; }
+  async getProjectEmployeesByProjectId(projectId: string): Promise<any[]> { return []; }
+  async createProjectEmployee(assignment: any): Promise<any> { return assignment; }
+  async deleteProjectEmployee(id: string): Promise<void> {}
 
   // Enhanced logging utility
   private storageLog(operation: string, message: string, data?: any): void {
@@ -131,11 +160,6 @@ export class FmbStorage implements IStorage {
     return result[0] || null;
   }
 
-  async getUserByEmail(email: string): Promise<User | null> {
-    const result = await this.execute('SELECT * FROM users WHERE email = @param0', [email]);
-    return result[0] || null;
-  }
-
   async upsertUser(userData: UpsertUser): Promise<User> {
     const existingUser = await this.getUserByEmail(userData.email);
 
@@ -156,11 +180,6 @@ export class FmbStorage implements IStorage {
       // Insert new user
       const userId = `user-${Date.now()}`;
       const request = this.pool!.request();
-      await request.query(`
-        INSERT INTO users (id, email, first_name, last_name, profile_image_url, role, organization_id, department, is_active, created_at, updated_at)
-        VALUES (@id, @email, @firstName, @lastName, @profileImageUrl, @role, @organizationId, @department, 1, GETDATE(), GETDATE())
-      `);
-
       request.input('id', sql.NVarChar(255), userId);
       request.input('email', sql.NVarChar(255), userData.email);
       request.input('firstName', sql.NVarChar(255), userData.first_name);
@@ -170,13 +189,16 @@ export class FmbStorage implements IStorage {
       request.input('organizationId', sql.NVarChar(255), userData.organization_id);
       request.input('department', sql.NVarChar(255), userData.department);
 
-      await request.query();
+      await request.query(`
+        INSERT INTO users (id, email, first_name, last_name, profile_image_url, role, organization_id, department, is_active, created_at, updated_at)
+        VALUES (@id, @email, @firstName, @lastName, @profileImageUrl, @role, @organizationId, @department, 1, GETDATE(), GETDATE())
+      `);
       return await this.getUser(userId) as User;
     }
   }
 
   // Organization Methods
-  async getOrganizations(): Promise<Organization[]> {
+  async getOrganizations(userId: string): Promise<Organization[]> {
     const result = await this.execute(`
       SELECT o.*, 
         (SELECT d.* FROM departments d WHERE d.organization_id = o.id FOR JSON PATH) as departments
@@ -202,7 +224,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Methods
-  async getProjects(): Promise<Project[]> {
+  async getProjects(userId: string): Promise<Project[]> {
     const result = await this.execute('SELECT * FROM projects WHERE user_id = @param0', [userId]);
     return result;
   }
@@ -231,23 +253,37 @@ export class FmbStorage implements IStorage {
 
   async createProject(projectData: InsertProject): Promise<Project> {
     const projectId = `proj-${Date.now()}`;
-    await this.execute(`
+    const request = this.pool!.request();
+    request.input('id', sql.NVarChar(255), projectId);
+    request.input('name', sql.NVarChar(255), projectData.name);
+    request.input('description', sql.NVarChar(sql.MAX), projectData.description);
+    request.input('status', sql.NVarChar(50), projectData.status || 'active');
+    request.input('organizationId', sql.NVarChar(255), projectData.organizationId);
+    request.input('departmentId', sql.NVarChar(255), projectData.departmentId);
+    request.input('managerId', sql.NVarChar(255), projectData.managerId);
+    request.input('userId', sql.NVarChar(255), projectData.userId);
+    request.input('startDate', sql.Date, projectData.startDate);
+    request.input('endDate', sql.Date, projectData.endDate);
+    request.input('budget', sql.Decimal(18, 2), projectData.budget);
+    request.input('projectNumber', sql.NVarChar(50), projectData.projectNumber);
+    request.input('isEnterpriseWide', sql.Bit, projectData.isEnterpriseWide || false);
+    request.input('isTemplate', sql.Bit, projectData.isTemplate || false);
+    request.input('allowTimeTracking', sql.Bit, projectData.allowTimeTracking !== false);
+    request.input('requireTaskSelection', sql.Bit, projectData.requireTaskSelection || false);
+    request.input('enableBudgetTracking', sql.Bit, projectData.enableBudgetTracking || false);
+    request.input('enableBilling', sql.Bit, projectData.enableBilling || false);
+
+    await request.query(`
       INSERT INTO projects (id, name, description, status, organization_id, department_id, 
                            manager_id, user_id, start_date, end_date, budget, project_number,
                            is_enterprise_wide, is_template, allow_time_tracking, 
                            require_task_selection, enable_budget_tracking, enable_billing,
                            created_at, updated_at)
-      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, @param7, 
-              @param8, @param9, @param10, @param11, @param12, @param13, @param14, 
-              @param15, @param16, @param17, GETDATE(), GETDATE())
-    `, [
-      projectId, projectData.name, projectData.description, projectData.status || 'active',
-      projectData.organizationId, projectData.departmentId, projectData.managerId, projectData.userId,
-      projectData.startDate, projectData.endDate, projectData.budget, projectData.projectNumber,
-      projectData.isEnterpriseWide || false, projectData.isTemplate || false, 
-      projectData.allowTimeTracking !== false, projectData.requireTaskSelection || false,
-      projectData.enableBudgetTracking || false, projectData.enableBilling || false
-    ]);
+      VALUES (@id, @name, @description, @status, @organizationId, @departmentId, @managerId, @userId, 
+              @startDate, @endDate, @budget, @projectNumber, @isEnterpriseWide, @isTemplate, 
+              @allowTimeTracking, @requireTaskSelection, @enableBudgetTracking, @enableBilling,
+              GETDATE(), GETDATE())
+    `);
 
     const result = await this.execute('SELECT * FROM projects WHERE id = @param0', [projectId]);
     return result[0];
@@ -255,7 +291,7 @@ export class FmbStorage implements IStorage {
 
   async updateProject(id: string, projectData: Partial<InsertProject>): Promise<Project> {
     const fields = [];
-    const params = [];
+    const params: any[] = [];
     let paramIndex = 0;
 
     for (const [key, value] of Object.entries(projectData)) {
@@ -294,7 +330,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Task Methods
-  async getTasks(): Promise<Task[]> {
+  async getTasks(userId: string): Promise<Task[]> {
     const result = await this.execute(`
       SELECT t.*, p.name as project_name 
       FROM tasks t 
@@ -307,11 +343,6 @@ export class FmbStorage implements IStorage {
   async getTaskById(id: string): Promise<Task | null> {
     const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [id]);
     return result[0] || null;
-  }
-
-  async getTasksByProjectId(projectId: string): Promise<Task[]> {
-    const result = await this.execute('SELECT * FROM tasks WHERE project_id = @param0', [projectId]);
-    return result;
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
@@ -332,47 +363,8 @@ export class FmbStorage implements IStorage {
     return result[0];
   }
 
-  async updateTask(id: string, taskData: Partial<InsertTask>): Promise<Task> {
-    const fields = [];
-    const params = [];
-    let paramIndex = 0;
-
-    for (const [key, value] of Object.entries(taskData)) {
-      if (value !== undefined) {
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = @param${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
-    }
-
-    if (fields.length > 0) {
-      fields.push('updated_at = GETDATE()');
-      params.push(id);
-
-      await this.execute(`
-        UPDATE tasks 
-        SET ${fields.join(', ')} 
-        WHERE id = @param${paramIndex}
-      `, params);
-    }
-
-    return await this.getTaskById(id) as Task;
-  }
-
-  async deleteTask(id: string): Promise<void> {
-    try {
-      const request = this.pool!.request();
-      request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM tasks WHERE id = @id');
-    } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error deleting task:', error);
-      throw error;
-    }
-  }
-
   // Time Entry Methods
-  async getTimeEntries(): Promise<TimeEntry[]> {
+  async getTimeEntries(userId: string): Promise<TimeEntry[]> {
     const result = await this.execute(`
       SELECT te.*, p.name as project_name, t.title as task_name 
       FROM time_entries te 
@@ -463,7 +455,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Employee Methods
-  async getEmployees(): Promise<Employee[]> {
+  async getEmployees(userId: string): Promise<Employee[]> {
     const result = await this.execute('SELECT * FROM employees WHERE user_id = @param0', [userId]);
     return result;
   }
@@ -527,7 +519,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Department Methods
-  async getDepartments(): Promise<Department[]> {
+  async getDepartments(userId: string): Promise<Department[]> {
     const result = await this.execute(`
       SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
       FROM departments d 

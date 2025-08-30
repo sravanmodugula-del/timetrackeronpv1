@@ -312,8 +312,9 @@ class StorageImplementation implements IStorage {
       const { getFmbStorage } = await import('../fmb-onprem/config/fmb-database.js');
       return getFmbStorage();
     } else {
-      const db = await import('../dist/server/db.js');
-      return db.default();
+      // Use relative import for Replit deployment
+      const db = await import('./db.js');
+      return db.default || db;
     }
   }
 }

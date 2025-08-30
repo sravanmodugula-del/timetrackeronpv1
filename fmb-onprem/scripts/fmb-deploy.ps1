@@ -100,7 +100,7 @@ try {
 
     Write-Host "Installing production dependencies..." -ForegroundColor Yellow
     # Ensure production dependencies are available for the built application
-    npm install --omit=dev --legacy-peer-deps
+    npm install --only=production --legacy-peer-deps
     Write-Host "✅ Production dependencies installed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Build failed" -ForegroundColor Red
