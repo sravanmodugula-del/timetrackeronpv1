@@ -1,3 +1,40 @@
+? Sessions table created with connect-mssql-v2 compatibility
+Msg 102, Level 15, State 1, Procedure sp_GetSessionStats, Line 30 [Batch Start Line 429]
+Incorrect syntax near 'GO'.
+Session cleanup job creation skipped (insufficient permissions)
+
+(1 row affected)
+
+(1 row affected)
+
+(1 row affected)
+
+(1 row affected)
+
+(1 row affected)
+
+(1 row affected)
+
+(2 rows affected)
+
+(3 rows affected)
+=== FMB TimeTracker Complete Database Setup Complete ===
+ 
+?? Sessions table structure:
+
+(4 rows affected)
+ 
+?? Table record counts:
+
+(9 rows affected)
+ 
+? Database setup completed successfully!
+?? Session store setup completed with connect-mssql-v2 compatibility
+?? Default admin user: admin@fmb.com (ID: admin-001)
+?? Database ready for TimeTracker application with session management
+?? Session maintenance procedures and cleanup job configured
+
+Completion time: 2025-08-30T15:10:16.8320049-07:00
 PS C:\fmb-timetracker> npx pm2 start ecosystem.config.cjs npx pm2 save
 [PM2] Applying action restartProcessId on app [fmb-timetracker](ids: [ 0 ])
 [PM2] [fmb-timetracker](0) ✓
