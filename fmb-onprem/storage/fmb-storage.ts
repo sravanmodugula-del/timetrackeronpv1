@@ -620,10 +620,6 @@ export class FmbStorage implements IStorage {
     return result;
   }
 
-  async createOrganization(org: InsertOrganization): Promise<Organization> {
-    return this.createOrganization(org);
-  }
-
   async getOrganizationById(id: string): Promise<Organization | null> {
     const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [id]);
     return result[0] || null;
