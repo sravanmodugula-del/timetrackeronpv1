@@ -1,8 +1,9 @@
 import session from 'express-session';
-import { loadFmbOnPremConfig } from '../fmb-onprem/config/fmb-env.js';
+import { loadFmbOnPremConfig, isFmbOnPremEnvironment } from '../fmb-onprem/config/fmb-env.js';
 import sql from 'mssql';
 import { Store } from 'express-session';
 import crypto from 'crypto';
+import connectMSSQLServer from 'connect-mssql-v2';
 
 interface SessionData {
   sid: string;
@@ -176,14 +177,26 @@ export class CustomMSSQLStore extends Store {
   private setupGracefulShutdown(): void {
     const shutdown = async () => {
       this.isShuttingDown = true;
+      console.log('🟡 [FMB-SESSION] Initiating graceful shutdown...');
 
       if (this.cleanupInterval) {
         clearInterval(this.cleanupInterval);
       }
 
+      // Perform final cleanup
+      try {
+        await this.performCleanup();
+      } catch (error) {
+        console.error('🔴 [FMB-SESSION] Final cleanup failed:', error);
+      }
+
       if (this.pool) {
-        await this.pool.close();
-        console.log('🟢 [FMB-SESSION] Session store connection closed gracefully');
+        try {
+          await this.pool.close();
+          console.log('🟢 [FMB-SESSION] Session store connection closed gracefully');
+        } catch (error) {
+          console.error('🔴 [FMB-SESSION] Error closing connection pool:', error);
+        }
       }
     };
 
@@ -509,36 +522,7 @@ export class CustomMSSQLStore extends Store {
     }
   }
 
-  private setupGracefulShutdown(): void {
-    const shutdown = async () => {
-      this.isShuttingDown = true;
-      console.log('🟡 [FMB-SESSION] Initiating graceful shutdown...');
-
-      if (this.cleanupInterval) {
-        clearInterval(this.cleanupInterval);
-      }
-
-      // Perform final cleanup
-      try {
-        await this.performCleanup();
-      } catch (error) {
-        console.error('🔴 [FMB-SESSION] Final cleanup failed:', error);
-      }
-
-      if (this.pool) {
-        try {
-          await this.pool.close();
-          console.log('🟢 [FMB-SESSION] Session store connection closed gracefully');
-        } catch (error) {
-          console.error('🔴 [FMB-SESSION] Error closing connection pool:', error);
-        }
-      }
-    };
-
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
-    process.on('exit', shutdown);
-  }
+  
 }
 
 export function createSessionStore() {
