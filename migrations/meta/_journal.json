@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1756490450092,
+      "tag": "0000_salty_iron_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1725002593442,
+      "tag": "0001_hot_kabuki",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7", 
+      "when": 1725017000000,
+      "tag": "0002_fix_column_names",
+      "breakpoints": true
+    }
+  ]
+}
