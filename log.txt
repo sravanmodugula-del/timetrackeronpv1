@@ -12,6 +12,344 @@ param(
     [string]$ServiceName = "FMBTimeTracker"
 )
 
+Write-Host "ðŸš€ FMB TimeTracker Deployment (Windows)" -ForegroundColor Green
+Write-Host "======================================" -ForegroundColor Green
+
+# Check if running as Administrator
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "âŒ This script must be run as Administrator" -ForegroundColor Red
+    exit 1
+}
+
+
+
+# Ensure required directories exist
+Write-Host "ðŸ“ Creating required directories..." -ForegroundColor Yellow
+if (-not (Test-Path "$InstallPath\logs")) {
+    New-Item -ItemType Directory -Path "$InstallPath\logs" -Force | Out-Null
+}
+Write-Host "âœ… Directories created" -ForegroundColor Green
+
+# Check for .env file
+Write-Host "ðŸ” Validating environment configuration..." -ForegroundColor Yellow
+if (-not (Test-Path ".env")) {
+    Write-Host "âš ï¸ .env file not found. Checking for .env.fmb-onprem..." -ForegroundColor Yellow
+    if (Test-Path "fmb-onprem/.env.fmb-onprem") {
+        Copy-Item "fmb-onprem/.env.fmb-onprem" ".env"
+        Write-Host "âœ… Copied .env.fmb-onprem to .env" -ForegroundColor Green
+    } else {
+        Write-Host "âŒ No environment file found. Please create .env with required configuration." -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "âœ… Environment file found" -ForegroundColor Green
+}
+
+# Stop PM2 processes
+Write-Host "â¹ï¸ Stopping application..." -ForegroundColor Yellow
+try {
+    Set-Location $InstallPath
+    npx pm2 stop ecosystem.config.cjs
+    Write-Host "âœ… Application stopped" -ForegroundColor Green
+} catch {
+    Write-Host "âš ï¸ Could not stop PM2 processes gracefully" -ForegroundColor Yellow
+}
+
+# Update application
+Write-Host "ðŸ“¦ Installing all dependencies..." -ForegroundColor Yellow
+try {
+    # Clean install to ensure all dependencies are properly installed
+    Remove-Item -Path "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "package-lock.json" -Force -ErrorAction SilentlyContinue
+    npm install --production=false --legacy-peer-deps
+    npm audit fix --force --legacy-peer-deps
+    Write-Host "âœ… All dependencies installed" -ForegroundColor Green
+} catch {
+    Write-Host "âŒ Failed to install dependencies" -ForegroundColor Red
+    exit 1
+}
+
+# Build application
+Write-Host "ðŸ”¨ Building application..." -ForegroundColor Yellow
+try {
+    npm run build
+
+    # Copy FMB on-premises configuration files to dist
+    Write-Host "ðŸ“‹ Copying FMB configuration files..." -ForegroundColor Yellow
+    if (-not (Test-Path "dist/fmb-onprem")) {
+        New-Item -ItemType Directory -Path "dist/fmb-onprem" -Force | Out-Null
+        New-Item -ItemType Directory -Path "dist/fmb-onprem/config" -Force | Out-Null
+    }
+
+    # Build the TypeScript files for on-prem configs
+    npx tsc fmb-onprem/config/fmb-env.ts --outDir dist --target es2020 --module es2020 --moduleResolution node --allowSyntheticDefaultImports --esModuleInterop
+    npx tsc fmb-onprem/config/fmb-database.ts --outDir dist --target es2020 --module es2020 --moduleResolution node --allowSyntheticDefaultImports --esModuleInterop
+
+    # Verify build artifacts exist
+    if (-not (Test-Path "dist")) {
+        Write-Host "âŒ Build directory not found" -ForegroundColor Red
+        exit 1
+    }
+
+    if (-not (Test-Path "dist/index.js")) {
+        Write-Host "âŒ Server build not found" -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Host "âœ… Application built successfully" -ForegroundColor Green
+
+    Write-Host "Installing production dependencies..." -ForegroundColor Yellow
+    # Ensure production dependencies are available for the built application
+    npm install --only=production --legacy-peer-deps
+    Write-Host "âœ… Production dependencies installed" -ForegroundColor Green
+} catch {
+    Write-Host "âŒ Build failed" -ForegroundColor Red
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    exit 1
+}
+
+# Skip cleaning dev dependencies to avoid missing Vite plugin errors
+Write-Host "ðŸ“¦ Keeping all dependencies for Vite compatibility..." -ForegroundColor Yellow
+Write-Host "âœ… Dependencies preserved for production build" -ForegroundColor Green
+
+# Health check
+Write-Host "ðŸ” Running configuration health check..." -ForegroundColor Yellow
+try {
+    # Only validate FMB environment if actually deploying on-premises
+    # For Replit deployment, skip FMB-specific validation
+    $isFmbOnPrem = $env:FMB_DEPLOYMENT -eq "onprem" -and $env:NODE_ENV -eq "production"
+    if ($isFmbOnPrem) {
+        $env:NODE_ENV = "production"
+
+        # Check if built config exists, otherwise use ts-node for health check
+        if (Test-Path "dist/fmb-onprem/config/fmb-env.js") {
+            $nodeScript = @"
+import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
+  config.loadFmbOnPremConfig();
+  console.log('âœ… Configuration valid');
+}).catch(err => {
+  console.error('âŒ Config error:', err.message);
+  process.exit(1);
+});
+"@
+            node -e $nodeScript --input-type=module
+        } else {
+            # Basic FMB environment variable check
+            $requiredVars = @('FMB_SESSION_SECRET', 'FMB_DB_SERVER', 'FMB_DB_NAME')
+            $missing = @()
+            foreach ($var in $requiredVars) {
+                if (-not (Get-ChildItem Env: | Where-Object { $_.Name -eq $var })) {
+                    $missing += $var
+                }
+            }
+
+            if ($missing.Count -gt 0) {
+                Write-Host "âŒ Missing required FMB environment variables: $($missing -join ', ')" -ForegroundColor Red
+                exit 1
+            }
+
+            Write-Host "âœ… FMB environment validation passed" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "â˜ï¸ Replit deployment detected - skipping FMB on-prem validation" -ForegroundColor Yellow
+
+        # Load environment variables from .env file for validation
+        if (Test-Path ".env") {
+            Write-Host "ðŸ“‹ Loading environment variables from .env file..." -ForegroundColor Yellow
+            Get-Content ".env" | ForEach-Object {
+                if ($_ -match "^([^#=]+)=(.*)$") {
+                    $name = $matches[1].Trim()
+                    $value = $matches[2].Trim()
+                    [Environment]::SetEnvironmentVariable($name, $value, "Process")
+                }
+            }
+        }
+
+        # Basic validation for environment
+        $basicVars = @('NODE_ENV')
+        $missing = @()
+        foreach ($var in $basicVars) {
+            if (-not (Get-ChildItem Env: | Where-Object { $_.Name -eq $var })) {
+                $missing += $var
+            }
+        }
+
+        if ($missing.Count -gt 0) {
+            Write-Host "âŒ Missing basic environment variables: $($missing -join ', ')" -ForegroundColor Red
+            Write-Host "ðŸ’¡ Tip: Ensure .env file contains NODE_ENV=production" -ForegroundColor Yellow
+            exit 1
+        }
+
+        Write-Host "âœ… Basic environment validation passed" -ForegroundColor Green
+    }
+
+    Write-Host "âœ… Configuration validation completed" -ForegroundColor Green
+} catch {
+    Write-Host "âŒ Configuration validation failed" -ForegroundColor Red
+    Write-Host "Please check your .env file and configuration" -ForegroundColor Yellow
+    exit 1
+}
+
+# Start application
+Write-Host "â–¶ï¸ Starting application..." -ForegroundColor Yellow
+try {
+    # Check if PM2 is available
+    $pm2Version = npx pm2 --version 2>$null
+    if (-not $pm2Version) {
+        Write-Host "âŒ PM2 is not available" -ForegroundColor Red
+        Write-Host "Installing PM2 globally..." -ForegroundColor Yellow
+        npm install -g pm2
+    }
+
+    # Stop any existing processes first
+    Write-Host "ðŸ›‘ Stopping any existing processes..." -ForegroundColor Yellow
+    npx pm2 delete fmb-timetracker 2>$null
+
+    # Start the application with explicit production environment
+    Write-Host "ðŸš€ Starting application with PM2..." -ForegroundColor Yellow
+    npx pm2 start ecosystem.config.cjs --env production --no-daemon
+
+    # Wait for the process to initialize
+    Start-Sleep -Seconds 5
+
+    # Check process status multiple times with retries
+    $maxRetries = 6
+    $retryCount = 0
+    $processOnline = $false
+
+    while ($retryCount -lt $maxRetries -and -not $processOnline) {
+        $retryCount++
+        Write-Host "ðŸ” Checking process status (attempt $retryCount/$maxRetries)..." -ForegroundColor Yellow
+
+        try {
+            $processStatus = npx pm2 jlist | ConvertFrom-Json
+            $appProcess = $processStatus | Where-Object { $_.name -eq "fmb-timetracker" }
+
+            if ($appProcess) {
+                $status = $appProcess.pm2_env.status
+                Write-Host "ðŸ“Š Process status: $status" -ForegroundColor Cyan
+
+                if ($status -eq "online") {
+                    $processOnline = $true
+                    Write-Host "âœ… Application started successfully" -ForegroundColor Green
+                } elseif ($status -eq "errored" -or $status -eq "stopped") {
+                    Write-Host "âŒ Application process failed with status: $status" -ForegroundColor Red
+                    Write-Host "ðŸ“ Recent error logs:" -ForegroundColor Yellow
+                    npx pm2 logs fmb-timetracker --lines 20 --err
+                    exit 1
+                } else {
+                    Write-Host "â³ Application still starting (status: $status)..." -ForegroundColor Yellow
+                    Start-Sleep -Seconds 5
+                }
+            } else {
+                Write-Host "âŒ No process found with name 'fmb-timetracker'" -ForegroundColor Red
+                npx pm2 status
+                exit 1
+            }
+        } catch {
+            Write-Host "âš ï¸ Error checking process status: $($_.Exception.Message)" -ForegroundColor Yellow
+            Start-Sleep -Seconds 5
+        }
+    }
+
+    if (-not $processOnline) {
+        Write-Host "âŒ Application failed to start within expected time" -ForegroundColor Red
+        Write-Host "ðŸ“ PM2 Status:" -ForegroundColor Yellow
+        npx pm2 status
+        Write-Host "ðŸ“ Recent logs:" -ForegroundColor Yellow
+        npx pm2 logs fmb-timetracker --lines 20
+        exit 1
+    }
+
+} catch {
+    Write-Host "âŒ Failed to start application" -ForegroundColor Red
+    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "ðŸ“ PM2 Status:" -ForegroundColor Yellow
+    npx pm2 status
+    Write-Host "ðŸ“ Recent logs:" -ForegroundColor Yellow
+    npx pm2 logs fmb-timetracker --lines 20
+    exit 1
+}
+
+# Wait for service to be ready
+Write-Host "â³ Waiting for service to be ready..." -ForegroundColor Yellow
+Start-Sleep -Seconds 15
+
+# Verify deployment
+Write-Host "ðŸ” Verifying deployment..." -ForegroundColor Yellow
+try {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -TimeoutSec 30
+    if ($response.StatusCode -eq 200) {
+        Write-Host "âœ… Deployment successful!" -ForegroundColor Green
+        Write-Host "ðŸŒ Application is running on port 3000" -ForegroundColor Green
+    } else {
+        Write-Host "âŒ Health check failed - HTTP Status: $($response.StatusCode)" -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host "âŒ Deployment verification failed" -ForegroundColor Red
+    Write-Host "ðŸ“ Check application logs: pm2 logs" -ForegroundColor Yellow
+    exit 1
+}
+
+Write-Host ""
+Write-Host "ðŸ“‹ Post-deployment commands:" -ForegroundColor Cyan
+Write-Host "View status: npx pm2 status" -ForegroundColor White
+Write-Host "View logs: npx pm2 logs" -ForegroundColor White
+Write-Host "Restart if needed: npx pm2 restart ecosystem.config.cjs" -ForegroundColor White
+At line:121 char:52
++ import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
++                                                    ~
+Missing ')' in method call.
+At line:122 char:30
++   config.loadFmbOnPremConfig();
++                              ~
+An expression was expected after '('.
+At line:68 char:5
++ try {
++     ~
+Missing closing '}' in statement block or type definition.
+At line:124 char:2
++ }).catch(err => {
++  ~
+The Try statement is missing its Catch or Finally block.
+At line:124 char:2
++ }).catch(err => {
++  ~
+Unexpected token ')' in expression or statement.
+At line:125 char:37
++   console.error('âŒ Config error:', err.message);
++                                     ~
+Missing expression after ','.
+At line:125 char:38
++   console.error('âŒ Config error:', err.message);
++                                      ~~~~~~~~~~~
+Unexpected token 'err.message' in expression or statement.
+At line:125 char:37
++   console.error('âŒ Config error:', err.message);
++                                     ~
+Missing closing ')' in expression.
+At line:124 char:17
++ }).catch(err => {
++                 ~
+Missing closing '}' in statement block or type definition.
+At line:127 char:1
++ });
++ ~
+Unexpected token '}' in expression or statement.
+Not all parse errors were reported.  Correct the reported errors and try again.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingEndParenthesisInMethodCall
+ 
+
+PS C:\fmb-timetracker> # FMB TimeTracker On-Premises Deployment Script for Windows
+# Updates the application with new version
+
+param(
+    [string]$InstallPath = "C:\fmb-timetracker",
+    [string]$ServiceName = "FMBTimeTracker"
+)
+
 Write-Host "🚀 FMB TimeTracker Deployment (Windows)" -ForegroundColor Green
 Write-Host "======================================" -ForegroundColor Green
 
@@ -60,8 +398,8 @@ try {
     # Clean install to ensure all dependencies are properly installed
     Remove-Item -Path "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "package-lock.json" -Force -ErrorAction SilentlyContinue
-    npm install --production=false
-    npm audit fix --force
+    npm install --production=false --legacy-peer-deps
+    npm audit fix --force --legacy-peer-deps
     Write-Host "✅ All dependencies installed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Failed to install dependencies" -ForegroundColor Red
@@ -99,7 +437,7 @@ try {
 
     Write-Host "Installing production dependencies..." -ForegroundColor Yellow
     # Ensure production dependencies are available for the built application
-    npm install --only=production
+    npm install --only=production --legacy-peer-deps
     Write-Host "✅ Production dependencies installed" -ForegroundColor Green
 } catch {
     Write-Host "❌ Build failed" -ForegroundColor Red
@@ -330,18 +668,15 @@ https://v8.dev/blog/math-random for details.
 npm warn deprecated adal-node@0.2.4: This package is no longer supported. Please migrate to @azure/msal-node.
 npm warn deprecated passport-saml@3.2.4: For versions >= 4, please use scopped package @node-saml/passport-saml
 
-added 817 packages, and audited 818 packages in 2m
+added 810 packages, and audited 811 packages in 3m
 
-112 packages are looking for funding
+111 packages are looking for funding
   run `npm fund` for details
 
-10 vulnerabilities (1 low, 3 moderate, 5 high, 1 critical)
+8 vulnerabilities (1 low, 1 moderate, 5 high, 1 critical)
 
 To address issues that do not require attention, run:
   npm audit fix
-
-To address all issues possible (including breaking changes), run:
-  npm audit fix --force
 
 Some issues need review, and may require choosing
 a different dependency.
@@ -356,11 +691,10 @@ At line:1 char:1
  
 npm warn audit No fix available for passport-saml@*
 npm warn audit No fix available for pm2@*
-npm warn audit Updating vite to 7.1.3, which is a SemVer major change.
 
-added 2 packages, removed 2 packages, changed 1 package, and audited 818 packages in 7s
+up to date, audited 811 packages in 3s
 
-112 packages are looking for funding
+111 packages are looking for funding
   run `npm fund` for details
 
 # npm audit report
@@ -434,91 +768,134 @@ At line:1 char:1
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32mâœ“ built in 8.22s[39m
-X [ERROR] Could not resolve "../dist/server/db.js"
-    server/storage.ts:315:30:
-      315 â”‚       const db = await import('../dist/server/db.js');
-          â•µ                               ~~~~~~~~~~~~~~~~~~~~~~
-1 error
-node:child_process:954
-    throw err;
-    ^
-Error: Command failed: C:\fmb-timetracker\node_modules\@esbuild\win32-x64\esbuild.exe server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
-    at genericNodeError (node:internal/errors:983:15)
-    at wrappedFn (node:internal/errors:537:14)
-    at checkExecSyncError (node:child_process:915:11)
-    at Object.execFileSync (node:child_process:951:15)
-    at Object.<anonymous> (C:\fmb-timetracker\node_modules\esbuild\bin\esbuild:222:28)
-    at Module._compile (node:internal/modules/cjs/loader:1688:14)
-    at Object..js (node:internal/modules/cjs/loader:1820:10)
-    at Module.load (node:internal/modules/cjs/loader:1423:32)
-    at Function._load (node:internal/modules/cjs/loader:1246:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14) {
-  status: 1,
-  signal: null,
-  output: [ null, null, null ],
-  pid: 6844,
-  stdout: null,
-  stderr: null
-}
-Node.js v22.18.0
+[32mâœ“ built in 7.94s[39m
+â–² [WARNING] Duplicate member "getTasks" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:333:8:
+      333 â”‚   async getTasks(userId: string): Promise<Task[]> {
+          â•µ         ~~~~~~~~
+  The original member "getTasks" is here:
+    fmb-onprem/storage/fmb-storage.ts:44:8:
+      44 â”‚   async getTasks(): Promise<any[]> { return []; }
+         â•µ         ~~~~~~~~
+â–² [WARNING] Duplicate member "getTaskById" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:343:8:
+      343 â”‚   async getTaskById(id: string): Promise<Task | null> {
+          â•µ         ~~~~~~~~~~~
+  The original member "getTaskById" is here:
+    fmb-onprem/storage/fmb-storage.ts:45:8:
+      45 â”‚   async getTaskById(id: string): Promise<any> { return null; }
+         â•µ         ~~~~~~~~~~~
+â–² [WARNING] Duplicate member "getEmployees" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:458:8:
+      458 â”‚   async getEmployees(userId: string): Promise<Employee[]> {
+          â•µ         ~~~~~~~~~~~~
+  The original member "getEmployees" is here:
+    fmb-onprem/storage/fmb-storage.ts:50:8:
+      50 â”‚   async getEmployees(): Promise<any[]> { return []; }
+         â•µ         ~~~~~~~~~~~~
+â–² [WARNING] Duplicate member "getEmployeeById" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:463:8:
+      463 â”‚   async getEmployeeById(id: string): Promise<Employee | null> {
+          â•µ         ~~~~~~~~~~~~~~~
+  The original member "getEmployeeById" is here:
+    fmb-onprem/storage/fmb-storage.ts:51:8:
+      51 â”‚   async getEmployeeById(id: string): Promise<any> { return null; }
+         â•µ         ~~~~~~~~~~~~~~~
+â–² [WARNING] Duplicate member "updateEmployee" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:482:8:
+      482 â”‚   async updateEmployee(id: string, employeeData: Partial<InsertEm...
+          â•µ         ~~~~~~~~~~~~~~
+  The original member "updateEmployee" is here:
+    fmb-onprem/storage/fmb-storage.ts:52:8:
+      52 â”‚   async updateEmployee(id: string, employee: any): Promise<any> { ...
+         â•µ         ~~~~~~~~~~~~~~
+â–² [WARNING] Duplicate member "deleteEmployee" in class body [duplicate-class-member]
+    fmb-onprem/storage/fmb-storage.ts:510:8:
+      510 â”‚   async deleteEmployee(id: string): Promise<void> {
+          â•µ         ~~~~~~~~~~~~~~
+  The original member "deleteEmployee" is here:
+    fmb-onprem/storage/fmb-storage.ts:53:8:
+      53 â”‚   async deleteEmployee(id: string): Promise<void> {}
+         â•µ         ~~~~~~~~~~~~~~
+6 of 10 warnings shown (disable the message limit with --log-limit=0)
+  dist\index.js  145.4kb
+Done in 28ms
 📋 Copying FMB configuration files...
 node_modules/tedious/lib/connection.d.ts(755,29): error TS2304: Cannot find name 'AggregateError'.
 node_modules/tedious/lib/errors.d.ts(4,59): error TS2304: Cannot find name 'ErrorOptions'.
 node_modules/tedious/lib/errors.d.ts(14,59): error TS2304: Cannot find name 'ErrorOptions'.
-fmb-onprem/config/fmb-database.ts(34,24): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
 fmb-onprem/config/fmb-database.ts(111,10): error TS2352: Conversion of type 'FmbStorage' to type 'IStorage' may be a mistake because neither type sufficiently overlaps with the other. If this was intention
 al, convert the expression to 'unknown' first.
-  Type 'FmbStorage' is missing the following properties from type 'IStorage': getUsers, getUserById, createUser, updateUser, and 8 more.
-fmb-onprem/storage/fmb-storage.ts(28,14): error TS2420: Class 'FmbStorage' incorrectly implements interface 'IStorage'.
-  Type 'FmbStorage' is missing the following properties from type 'IStorage': getUsers, getUserById, createUser, updateUser, and 8 more.
-fmb-onprem/storage/fmb-storage.ts(173,21): error TS2555: Expected at least 1 arguments, but got 0.
-fmb-onprem/storage/fmb-storage.ts(185,9): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(198,59): error TS2551: Property 'userId' does not exist on type 'InsertOrganization'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(206,90): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(245,19): error TS2551: Property 'organizationId' does not exist on type 'InsertProject'. Did you mean 'organization_id'?
-fmb-onprem/storage/fmb-storage.ts(245,47): error TS2551: Property 'departmentId' does not exist on type 'InsertProject'. Did you mean 'department_id'?
-fmb-onprem/storage/fmb-storage.ts(245,73): error TS2551: Property 'managerId' does not exist on type 'InsertProject'. Did you mean 'manager_id'?
-fmb-onprem/storage/fmb-storage.ts(245,96): error TS2551: Property 'userId' does not exist on type 'InsertProject'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(246,19): error TS2551: Property 'startDate' does not exist on type 'InsertProject'. Did you mean 'start_date'?
-fmb-onprem/storage/fmb-storage.ts(246,42): error TS2551: Property 'endDate' does not exist on type 'InsertProject'. Did you mean 'end_date'?
-fmb-onprem/storage/fmb-storage.ts(246,83): error TS2551: Property 'projectNumber' does not exist on type 'InsertProject'. Did you mean 'project_number'?
-fmb-onprem/storage/fmb-storage.ts(247,19): error TS2551: Property 'isEnterpriseWide' does not exist on type 'InsertProject'. Did you mean 'is_enterprise_wide'?
-fmb-onprem/storage/fmb-storage.ts(247,58): error TS2551: Property 'isTemplate' does not exist on type 'InsertProject'. Did you mean 'is_template'?
-fmb-onprem/storage/fmb-storage.ts(248,19): error TS2551: Property 'allowTimeTracking' does not exist on type 'InsertProject'. Did you mean 'allow_time_tracking'?
-fmb-onprem/storage/fmb-storage.ts(248,60): error TS2551: Property 'requireTaskSelection' does not exist on type 'InsertProject'. Did you mean 'require_task_selection'?
-fmb-onprem/storage/fmb-storage.ts(249,19): error TS2551: Property 'enableBudgetTracking' does not exist on type 'InsertProject'. Did you mean 'enable_budget_tracking'?
-fmb-onprem/storage/fmb-storage.ts(249,62): error TS2551: Property 'enableBilling' does not exist on type 'InsertProject'. Did you mean 'enable_billing'?
-fmb-onprem/storage/fmb-storage.ts(303,9): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(326,24): error TS2551: Property 'projectId' does not exist on type 'InsertTask'. Did you mean 'project_id'?
-fmb-onprem/storage/fmb-storage.ts(327,77): error TS2551: Property 'assignedTo' does not exist on type 'InsertTask'. Did you mean 'assigned_to'?
-fmb-onprem/storage/fmb-storage.ts(328,16): error TS2551: Property 'createdBy' does not exist on type 'InsertTask'. Did you mean 'created_by'?
-fmb-onprem/storage/fmb-storage.ts(328,36): error TS2551: Property 'dueDate' does not exist on type 'InsertTask'. Did you mean 'due_date'?
-fmb-onprem/storage/fmb-storage.ts(328,54): error TS2551: Property 'estimatedHours' does not exist on type 'InsertTask'. Did you mean 'estimated_hours'?
-fmb-onprem/storage/fmb-storage.ts(383,9): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(413,30): error TS2551: Property 'userId' does not exist on type 'InsertTimeEntry'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(413,52): error TS2551: Property 'projectId' does not exist on type 'InsertTimeEntry'. Did you mean 'project_id'?
-fmb-onprem/storage/fmb-storage.ts(413,77): error TS2551: Property 'taskId' does not exist on type 'InsertTimeEntry'. Did you mean 'task_id'?
-fmb-onprem/storage/fmb-storage.ts(415,41): error TS2551: Property 'startTime' does not exist on type 'InsertTimeEntry'. Did you mean 'start_time'?
-fmb-onprem/storage/fmb-storage.ts(415,66): error TS2551: Property 'endTime' does not exist on type 'InsertTimeEntry'. Did you mean 'end_time'?
-fmb-onprem/storage/fmb-storage.ts(417,21): error TS2551: Property 'isBillable' does not exist on type 'InsertTimeEntry'. Did you mean 'is_billable'?
-fmb-onprem/storage/fmb-storage.ts(417,56): error TS2551: Property 'isApproved' does not exist on type 'InsertTimeEntry'. Did you mean 'is_approved'?
-fmb-onprem/storage/fmb-storage.ts(418,21): error TS2551: Property 'isManualEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_manual_entry'?
-fmb-onprem/storage/fmb-storage.ts(418,60): error TS2551: Property 'isTimerEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_timer_entry'?
-fmb-onprem/storage/fmb-storage.ts(419,21): error TS2551: Property 'isTemplate' does not exist on type 'InsertTimeEntry'. Did you mean 'is_template'?
-fmb-onprem/storage/fmb-storage.ts(467,91): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(482,27): error TS2551: Property 'employeeId' does not exist on type 'InsertEmployee'. Did you mean 'employee_id'?
-fmb-onprem/storage/fmb-storage.ts(482,52): error TS2551: Property 'firstName' does not exist on type 'InsertEmployee'. Did you mean 'first_name'?
-fmb-onprem/storage/fmb-storage.ts(483,20): error TS2551: Property 'lastName' does not exist on type 'InsertEmployee'. Did you mean 'last_name'?
-fmb-onprem/storage/fmb-storage.ts(483,68): error TS2551: Property 'userId' does not exist on type 'InsertEmployee'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(536,9): error TS2304: Cannot find name 'userId'.
-fmb-onprem/storage/fmb-storage.ts(551,39): error TS2551: Property 'organizationId' does not exist on type 'InsertDepartment'. Did you mean 'organization_id'?
-fmb-onprem/storage/fmb-storage.ts(551,64): error TS2551: Property 'managerId' does not exist on type 'InsertDepartment'. Did you mean 'manager_id'?
-fmb-onprem/storage/fmb-storage.ts(552,38): error TS2551: Property 'userId' does not exist on type 'InsertDepartment'. Did you mean 'user_id'?
+  Type 'FmbStorage' is missing the following properties from type 'IStorage': getOrganizationById, updateOrganization, deleteOrganization
+fmb-onprem/storage/fmb-storage.ts(44,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(45,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(50,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(51,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(52,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(53,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(55,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(56,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(57,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(58,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(201,9): error TS2416: Property 'getOrganizations' in type 'FmbStorage' is not assignable to the same property in base type 'IStorage'.
+  Type '(userId: string) => Promise<Organization[]>' is not assignable to type '() => Promise<Organization[]>'.
+    Target signature provides too few arguments. Expected 1 or more, but got 0.
+fmb-onprem/storage/fmb-storage.ts(220,59): error TS2551: Property 'userId' does not exist on type 'InsertOrganization'. Did you mean 'user_id'?
+fmb-onprem/storage/fmb-storage.ts(227,9): error TS2416: Property 'getProjects' in type 'FmbStorage' is not assignable to the same property in base type 'IStorage'.
+  Type '(userId: string) => Promise<Project[]>' is not assignable to type '() => Promise<Project[]>'.
+    Target signature provides too few arguments. Expected 1 or more, but got 0.
+fmb-onprem/storage/fmb-storage.ts(261,68): error TS2551: Property 'organizationId' does not exist on type 'InsertProject'. Did you mean 'organization_id'?
+fmb-onprem/storage/fmb-storage.ts(262,66): error TS2551: Property 'departmentId' does not exist on type 'InsertProject'. Did you mean 'department_id'?
+fmb-onprem/storage/fmb-storage.ts(263,63): error TS2551: Property 'managerId' does not exist on type 'InsertProject'. Did you mean 'manager_id'?
+fmb-onprem/storage/fmb-storage.ts(264,60): error TS2551: Property 'userId' does not exist on type 'InsertProject'. Did you mean 'user_id'?
+fmb-onprem/storage/fmb-storage.ts(265,54): error TS2551: Property 'startDate' does not exist on type 'InsertProject'. Did you mean 'start_date'?
+fmb-onprem/storage/fmb-storage.ts(266,52): error TS2551: Property 'endDate' does not exist on type 'InsertProject'. Did you mean 'end_date'?
+fmb-onprem/storage/fmb-storage.ts(268,66): error TS2551: Property 'projectNumber' does not exist on type 'InsertProject'. Did you mean 'project_number'?
+fmb-onprem/storage/fmb-storage.ts(269,60): error TS2551: Property 'isEnterpriseWide' does not exist on type 'InsertProject'. Did you mean 'is_enterprise_wide'?
+fmb-onprem/storage/fmb-storage.ts(270,54): error TS2551: Property 'isTemplate' does not exist on type 'InsertProject'. Did you mean 'is_template'?
+fmb-onprem/storage/fmb-storage.ts(271,61): error TS2551: Property 'allowTimeTracking' does not exist on type 'InsertProject'. Did you mean 'allow_time_tracking'?
+fmb-onprem/storage/fmb-storage.ts(272,64): error TS2551: Property 'requireTaskSelection' does not exist on type 'InsertProject'. Did you mean 'require_task_selection'?
+fmb-onprem/storage/fmb-storage.ts(273,64): error TS2551: Property 'enableBudgetTracking' does not exist on type 'InsertProject'. Did you mean 'enable_budget_tracking'?
+fmb-onprem/storage/fmb-storage.ts(274,57): error TS2551: Property 'enableBilling' does not exist on type 'InsertProject'. Did you mean 'enable_billing'?
+fmb-onprem/storage/fmb-storage.ts(333,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(343,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(357,24): error TS2551: Property 'projectId' does not exist on type 'InsertTask'. Did you mean 'project_id'?
+fmb-onprem/storage/fmb-storage.ts(358,77): error TS2551: Property 'assignedTo' does not exist on type 'InsertTask'. Did you mean 'assigned_to'?
+fmb-onprem/storage/fmb-storage.ts(359,16): error TS2551: Property 'createdBy' does not exist on type 'InsertTask'. Did you mean 'created_by'?
+fmb-onprem/storage/fmb-storage.ts(359,36): error TS2551: Property 'dueDate' does not exist on type 'InsertTask'. Did you mean 'due_date'?
+fmb-onprem/storage/fmb-storage.ts(359,54): error TS2551: Property 'estimatedHours' does not exist on type 'InsertTask'. Did you mean 'estimated_hours'?
+fmb-onprem/storage/fmb-storage.ts(367,9): error TS2416: Property 'getTimeEntries' in type 'FmbStorage' is not assignable to the same property in base type 'IStorage'.
+  Type '(userId: string) => Promise<TimeEntry[]>' is not assignable to type '() => Promise<TimeEntry[]>'.
+    Target signature provides too few arguments. Expected 1 or more, but got 0.
+fmb-onprem/storage/fmb-storage.ts(405,30): error TS2551: Property 'userId' does not exist on type 'InsertTimeEntry'. Did you mean 'user_id'?
+fmb-onprem/storage/fmb-storage.ts(405,52): error TS2551: Property 'projectId' does not exist on type 'InsertTimeEntry'. Did you mean 'project_id'?
+fmb-onprem/storage/fmb-storage.ts(405,77): error TS2551: Property 'taskId' does not exist on type 'InsertTimeEntry'. Did you mean 'task_id'?
+fmb-onprem/storage/fmb-storage.ts(407,41): error TS2551: Property 'startTime' does not exist on type 'InsertTimeEntry'. Did you mean 'start_time'?
+fmb-onprem/storage/fmb-storage.ts(407,66): error TS2551: Property 'endTime' does not exist on type 'InsertTimeEntry'. Did you mean 'end_time'?
+fmb-onprem/storage/fmb-storage.ts(409,21): error TS2551: Property 'isBillable' does not exist on type 'InsertTimeEntry'. Did you mean 'is_billable'?
+fmb-onprem/storage/fmb-storage.ts(409,56): error TS2551: Property 'isApproved' does not exist on type 'InsertTimeEntry'. Did you mean 'is_approved'?
+fmb-onprem/storage/fmb-storage.ts(410,21): error TS2551: Property 'isManualEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_manual_entry'?
+fmb-onprem/storage/fmb-storage.ts(410,60): error TS2551: Property 'isTimerEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_timer_entry'?
+fmb-onprem/storage/fmb-storage.ts(411,21): error TS2551: Property 'isTemplate' does not exist on type 'InsertTimeEntry'. Did you mean 'is_template'?
+fmb-onprem/storage/fmb-storage.ts(458,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(463,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(474,27): error TS2551: Property 'employeeId' does not exist on type 'InsertEmployee'. Did you mean 'employee_id'?
+fmb-onprem/storage/fmb-storage.ts(474,52): error TS2551: Property 'firstName' does not exist on type 'InsertEmployee'. Did you mean 'first_name'?
+fmb-onprem/storage/fmb-storage.ts(475,20): error TS2551: Property 'lastName' does not exist on type 'InsertEmployee'. Did you mean 'last_name'?
+fmb-onprem/storage/fmb-storage.ts(475,68): error TS2551: Property 'userId' does not exist on type 'InsertEmployee'. Did you mean 'user_id'?
+fmb-onprem/storage/fmb-storage.ts(482,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(510,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(522,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(532,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(543,39): error TS2551: Property 'organizationId' does not exist on type 'InsertDepartment'. Did you mean 'organization_id'?
+fmb-onprem/storage/fmb-storage.ts(543,64): error TS2551: Property 'managerId' does not exist on type 'InsertDepartment'. Did you mean 'manager_id'?
+fmb-onprem/storage/fmb-storage.ts(544,38): error TS2551: Property 'userId' does not exist on type 'InsertDepartment'. Did you mean 'user_id'?
+fmb-onprem/storage/fmb-storage.ts(551,9): error TS2393: Duplicate function implementation.
+fmb-onprem/storage/fmb-storage.ts(579,9): error TS2393: Duplicate function implementation.
 node_modules/tedious/lib/connection.d.ts(755,29): error TS2304: Cannot find name 'AggregateError'.
 node_modules/tedious/lib/errors.d.ts(4,59): error TS2304: Cannot find name 'ErrorOptions'.
 node_modules/tedious/lib/errors.d.ts(14,59): error TS2304: Cannot find name 'ErrorOptions'.
-server/storage.ts(315,31): error TS2307: Cannot find module '../dist/server/db.js' or its corresponding type declarations.
+server/storage.ts(317,17): error TS2339: Property 'default' does not exist on type 'typeof import("C:/fmb-timetracker/server/db")'.
 ✅ Application built successfully
 Installing production dependencies...
 node.exe : npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
@@ -528,10 +905,21 @@ At line:1 char:1
     + CategoryInfo          : NotSpecified: (npm warn config...om the install.:String) [], RemoteException
     + FullyQualifiedErrorId : NativeCommandError
  
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     'C:\\fmb-timetracker\\node_modules\\@pm2\\js-api',
+npm warn cleanup     [Error: EPERM: operation not permitted, rmdir 'C:\fmb-timetracker\node_modules\@pm2\js-api\node_modules\eventemitter2'] {
+npm warn cleanup       errno: -4048,
+npm warn cleanup       code: 'EPERM',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: 'C:\\fmb-timetracker\\node_modules\\@pm2\\js-api\\node_modules\\eventemitter2'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
 
-up to date, audited 657 packages in 3s
+up to date, audited 581 packages in 6s
 
-101 packages are looking for funding
+83 packages are looking for funding
   run `npm fund` for details
 
 7 vulnerabilities (1 moderate, 5 high, 1 critical)
@@ -572,17 +960,21 @@ pm2 launched in no-daemon mode (you can add DEBUG="*" env variable to get more m
 â”œâ”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â
 ”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”
 €â”€â”€â”€â”€â”€â”€â”¤
-â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ cluster â”‚ 10584    â”‚ 0      â”‚ 0    â”‚ waiting â€¦ â”‚ 0%       â”‚ 0b       â”‚ ADM91381 â”‚ disabled â”‚
+â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ cluster â”‚ 4440     â”‚ 0      â”‚ 0    â”‚ waiting â€¦ â”‚ 0%       â”‚ 0b       â”‚ ADM91381 â”‚ disabled â”‚
 â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â
 ”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”
 €â”€â”€â”€â”€â”€â”€â”˜
 [--no-daemon] Continue to stream logs
 [--no-daemon] Exit on target PM2 exit pid=13964
-15:42:07 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
-15:42:07 PM2      | App [fmb-timetracker:0] online
-15:42:07 PM2      | App name:fmb-timetracker id:0 disconnected
-15:42:07 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
-15:42:12 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
-15:42:12 PM2      | App [fmb-timetracker:0] online
-15:42:12 PM2      | App name:fmb-timetracker id:0 disconnected
-15:42:12 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
+15:57:24 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
+15:57:24 PM2      | App [fmb-timetracker:0] online
+15:57:24 PM2      | App name:fmb-timetracker id:0 disconnected
+15:57:24 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
+15:57:29 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
+15:57:29 PM2      | App [fmb-timetracker:0] online
+15:57:29 PM2      | App name:fmb-timetracker id:0 disconnected
+15:57:29 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
+15:57:34 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
+15:57:34 PM2      | App [fmb-timetracker:0] online
+15:57:34 PM2      | App name:fmb-timetracker id:0 disconnected
+15:57:34 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
