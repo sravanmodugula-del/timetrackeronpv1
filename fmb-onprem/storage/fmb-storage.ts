@@ -37,7 +37,7 @@ export class FmbStorage implements IStorage {
   private storageLog(operation: string, message: string, data?: any): void {
     const timestamp = new Date().toISOString();
     const logMessage = `${timestamp} 🗄️ [FMB-STORAGE] ${operation}: ${message}`;
-    
+
     if (data) {
       console.log(logMessage, data);
     } else {
@@ -47,28 +47,42 @@ export class FmbStorage implements IStorage {
 
   async connect(): Promise<boolean> {
     try {
-      if (this.pool) {
-        this.storageLog('CONNECT', 'Already connected to MS SQL Server');
-        return true;
+      console.log('🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...');
+
+      // Load configuration if not provided
+      if (!this.config.server) {
+        const envConfig = loadFmbOnPremConfig();
+        if (!envConfig || !envConfig.database) {
+          throw new Error('FMB database configuration not available');
+        }
+        this.config = {
+          server: envConfig.database.server,
+          database: envConfig.database.database,
+          user: envConfig.database.user,
+          password: envConfig.database.password,
+          port: envConfig.database.port,
+          encrypt: envConfig.database.options.encrypt,
+          trustServerCertificate: envConfig.database.options.trustServerCertificate,
+          options: envConfig.database.options
+        };
       }
 
-      this.storageLog('CONNECT', `Connecting to ${this.config.server}:${this.config.options?.port || 1433}/${this.config.database}`);
-      
-      this.pool = new sql.ConnectionPool({
+      const poolConfig: sql.config = {
         server: this.config.server,
         database: this.config.database,
         user: this.config.user,
         password: this.config.password,
-        port: this.config.options?.port || 1433,
-        encrypt: this.config.encrypt !== false,
-        trustServerCertificate: this.config.trustServerCertificate === true,
+        port: this.config.port,
         options: {
+          encrypt: this.config.encrypt,
+          trustServerCertificate: this.config.trustServerCertificate,
           enableArithAbort: true,
-          connectTimeout: this.config.options?.connectTimeout || 30000,
-          requestTimeout: this.config.options?.requestTimeout || 30000,
-          ...this.config.options
+          connectTimeout: 30000,
+          requestTimeout: 30000
         }
-      });
+      };
+
+      this.pool = new sql.ConnectionPool(poolConfig);
 
       await this.pool.connect();
       this.storageLog('CONNECT', 'Successfully connected to MS SQL Server');
@@ -124,7 +138,7 @@ export class FmbStorage implements IStorage {
 
   async upsertUser(userData: UpsertUser): Promise<User> {
     const existingUser = await this.getUserByEmail(userData.email);
-    
+
     if (existingUser) {
       // Update existing user
       await this.execute(`
@@ -141,14 +155,22 @@ export class FmbStorage implements IStorage {
     } else {
       // Insert new user
       const userId = `user-${Date.now()}`;
-      await this.execute(`
-        INSERT INTO users (id, email, first_name, last_name, profile_image_url, 
-                          role, organization_id, department, is_active, created_at, updated_at)
-        VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, @param7, 1, GETDATE(), GETDATE())
-      `, [
-        userId, userData.email, userData.firstName, userData.lastName, 
-        userData.profileImageUrl, userData.role, userData.organizationId, userData.department
-      ]);
+      const request = this.pool!.request();
+      await request.query(`
+        INSERT INTO users (id, email, first_name, last_name, profile_image_url, role, organization_id, department, is_active, created_at, updated_at)
+        VALUES (@id, @email, @firstName, @lastName, @profileImageUrl, @role, @organizationId, @department, 1, GETDATE(), GETDATE())
+      `);
+
+      request.input('id', sql.NVarChar(255), userId);
+      request.input('email', sql.NVarChar(255), userData.email);
+      request.input('firstName', sql.NVarChar(255), userData.firstName);
+      request.input('lastName', sql.NVarChar(255), userData.lastName);
+      request.input('profileImageUrl', sql.NVarChar(sql.MAX), userData.profileImageUrl);
+      request.input('role', sql.NVarChar(50), userData.role);
+      request.input('organizationId', sql.NVarChar(255), userData.organizationId);
+      request.input('department', sql.NVarChar(255), userData.department);
+
+      await request.query();
       return await this.getUser(userId) as User;
     }
   }
@@ -161,7 +183,7 @@ export class FmbStorage implements IStorage {
       FROM organizations o 
       WHERE o.user_id = @param0
     `, [userId]);
-    
+
     return result.map((org: any) => ({
       ...org,
       departments: org.departments ? JSON.parse(org.departments) : []
@@ -174,7 +196,7 @@ export class FmbStorage implements IStorage {
       INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, GETDATE(), GETDATE())
     `, [orgId, orgData.name, orgData.description, orgData.userId]);
-    
+
     const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
     return result[0];
   }
@@ -200,7 +222,7 @@ export class FmbStorage implements IStorage {
       FROM projects p 
       WHERE p.user_id = @param0
     `, [userId]);
-    
+
     return result.map((project: any) => ({
       ...project,
       employees: project.employees ? JSON.parse(project.employees) : []
@@ -226,7 +248,7 @@ export class FmbStorage implements IStorage {
       projectData.allowTimeTracking !== false, projectData.requireTaskSelection || false,
       projectData.enableBudgetTracking || false, projectData.enableBilling || false
     ]);
-    
+
     const result = await this.execute('SELECT * FROM projects WHERE id = @param0', [projectId]);
     return result[0];
   }
@@ -249,7 +271,7 @@ export class FmbStorage implements IStorage {
     if (fields.length > 0) {
       fields.push('updated_at = GETDATE()');
       params.push(id);
-      
+
       await this.execute(`
         UPDATE projects 
         SET ${fields.join(', ')} 
@@ -260,9 +282,15 @@ export class FmbStorage implements IStorage {
     return await this.getProjectById(id) as Project;
   }
 
-  async deleteProject(id: string): Promise<boolean> {
-    await this.execute('DELETE FROM projects WHERE id = @param0', [id]);
-    return true;
+  async deleteProject(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM projects WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting project:', error);
+      throw error;
+    }
   }
 
   // Task Methods
@@ -299,7 +327,7 @@ export class FmbStorage implements IStorage {
       taskData.status || 'pending', taskData.priority || 'medium', taskData.assignedTo,
       taskData.createdBy, taskData.dueDate, taskData.estimatedHours
     ]);
-    
+
     const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [taskId]);
     return result[0];
   }
@@ -321,7 +349,7 @@ export class FmbStorage implements IStorage {
     if (fields.length > 0) {
       fields.push('updated_at = GETDATE()');
       params.push(id);
-      
+
       await this.execute(`
         UPDATE tasks 
         SET ${fields.join(', ')} 
@@ -332,9 +360,15 @@ export class FmbStorage implements IStorage {
     return await this.getTaskById(id) as Task;
   }
 
-  async deleteTask(id: string): Promise<boolean> {
-    await this.execute('DELETE FROM tasks WHERE id = @param0', [id]);
-    return true;
+  async deleteTask(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM tasks WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting task:', error);
+      throw error;
+    }
   }
 
   // Time Entry Methods
@@ -384,7 +418,7 @@ export class FmbStorage implements IStorage {
       timeEntryData.isManualEntry !== false, timeEntryData.isTimerEntry || false,
       timeEntryData.isTemplate || false
     ]);
-    
+
     const result = await this.execute('SELECT * FROM time_entries WHERE id = @param0', [entryId]);
     return result[0];
   }
@@ -406,7 +440,7 @@ export class FmbStorage implements IStorage {
     if (fields.length > 0) {
       fields.push('updated_at = GETDATE()');
       params.push(id);
-      
+
       await this.execute(`
         UPDATE time_entries 
         SET ${fields.join(', ')} 
@@ -417,9 +451,15 @@ export class FmbStorage implements IStorage {
     return await this.getTimeEntryById(id) as TimeEntry;
   }
 
-  async deleteTimeEntry(id: string): Promise<boolean> {
-    await this.execute('DELETE FROM time_entries WHERE id = @param0', [id]);
-    return true;
+  async deleteTimeEntry(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM time_entries WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting time entry:', error);
+      throw error;
+    }
   }
 
   // Employee Methods
@@ -442,7 +482,7 @@ export class FmbStorage implements IStorage {
       empId, employeeData.employeeId, employeeData.firstName, 
       employeeData.lastName, employeeData.department, employeeData.userId
     ]);
-    
+
     const result = await this.execute('SELECT * FROM employees WHERE id = @param0', [empId]);
     return result[0];
   }
@@ -464,7 +504,7 @@ export class FmbStorage implements IStorage {
     if (fields.length > 0) {
       fields.push('updated_at = GETDATE()');
       params.push(id);
-      
+
       await this.execute(`
         UPDATE employees 
         SET ${fields.join(', ')} 
@@ -475,9 +515,15 @@ export class FmbStorage implements IStorage {
     return await this.getEmployeeById(id) as Employee;
   }
 
-  async deleteEmployee(id: string): Promise<boolean> {
-    await this.execute('DELETE FROM employees WHERE id = @param0', [id]);
-    return true;
+  async deleteEmployee(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM employees WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting employee:', error);
+      throw error;
+    }
   }
 
   // Department Methods
@@ -505,7 +551,7 @@ export class FmbStorage implements IStorage {
       deptId, deptData.name, deptData.organizationId, deptData.managerId, 
       deptData.description, deptData.userId
     ]);
-    
+
     const result = await this.execute('SELECT * FROM departments WHERE id = @param0', [deptId]);
     return result[0];
   }
@@ -527,7 +573,7 @@ export class FmbStorage implements IStorage {
     if (fields.length > 0) {
       fields.push('updated_at = GETDATE()');
       params.push(id);
-      
+
       await this.execute(`
         UPDATE departments 
         SET ${fields.join(', ')} 
@@ -538,9 +584,15 @@ export class FmbStorage implements IStorage {
     return await this.getDepartmentById(id) as Department;
   }
 
-  async deleteDepartment(id: string): Promise<boolean> {
-    await this.execute('DELETE FROM departments WHERE id = @param0', [id]);
-    return true;
+  async deleteDepartment(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM departments WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting department:', error);
+      throw error;
+    }
   }
 
   // Dashboard Stats
@@ -581,7 +633,7 @@ export class FmbStorage implements IStorage {
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       return id;
     }
-    
+
     // If it's an email or other identifier, use it directly as string
     return id;
   }
@@ -597,7 +649,7 @@ interface FmbStorageConfig {
     enableArithAbort: boolean;
     connectTimeout: number;
     requestTimeout: number;
+    encrypt: boolean;
+    trustServerCertificate: boolean;
   };
-  encrypt: boolean;
-  trustServerCertificate: boolean;
 }
