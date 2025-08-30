@@ -108,7 +108,7 @@ export function getFmbStorage(): import('../../server/storage.js').IStorage {
     }
   }
 
-  return fmbStorageInstance as import('../../server/storage.js').IStorage;
+  return fmbStorageInstance as any as import('../../server/storage.js').IStorage;
 }
 
 function createMockStorage(): import('../../server/storage.js').IStorage {

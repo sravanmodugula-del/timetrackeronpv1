@@ -313,8 +313,8 @@ class StorageImplementation implements IStorage {
       return getFmbStorage();
     } else {
       // Use relative import for Replit deployment
-      const db = await import('./db.js');
-      return db.default || db;
+      const dbModule = await import('./db.js');
+      return dbModule.db || dbModule.default || dbModule;
     }
   }
 }

@@ -1,4 +1,3 @@
-
 import passport from 'passport';
 import { Strategy as SamlStrategy } from 'passport-saml';
 import type { Express } from 'express';
@@ -10,7 +9,7 @@ function authLog(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', message: string, da
   const timestamp = new Date().toISOString();
   const emoji = level === 'ERROR' ? '🔴' : level === 'WARN' ? '🟡' : level === 'INFO' ? '🔵' : '🟢';
   const logMessage = `${timestamp} ${emoji} [FMB-SAML] ${message}`;
-  
+
   if (data) {
     console.log(logMessage, typeof data === 'object' ? JSON.stringify(data, null, 2) : data);
   } else {
@@ -20,7 +19,7 @@ function authLog(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', message: string, da
 
 export async function setupFmbSamlAuth(app: Express) {
   authLog('INFO', 'Initializing FMB SAML Authentication');
-  
+
   const fmbConfig = getFmbConfig();
   const fmbStorage = getFmbStorage();
 
@@ -50,26 +49,29 @@ export async function setupFmbSamlAuth(app: Express) {
         const firstName = profile.firstName || profile.givenName || email.split('@')[0];
         const lastName = profile.lastName || profile.surname || '';
 
-        // Create user object for FMB
-        const user = {
-          userId: email,
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          id: email
-        };
-
-        // Upsert user in database
-        await fmbStorage.upsertUser({
+        // Upsert user in database first
+        const upsertedUser = await fmbStorage.upsertUser({
           id: email,
           email: email,
-          firstName: firstName,
-          lastName: lastName,
-          profileImageUrl: null
+          first_name: firstName,
+          last_name: lastName,
+          profile_image_url: null,
+          role: 'user',
+          organization_id: null,
+          department: null
         });
 
+        authLog('INFO', 'User upserted in database', { email });
+
+        // Create session user object
+        const sessionUser = {
+          ...upsertedUser,
+          userId: upsertedUser.id,
+          sub: upsertedUser.id
+        };
+
         authLog('INFO', 'User authenticated and stored', { email });
-        done(null, user);
+        done(null, sessionUser);
       } catch (error) {
         authLog('ERROR', 'SAML authentication error', error);
         done(error);
@@ -82,7 +84,7 @@ export async function setupFmbSamlAuth(app: Express) {
   // Serialize user for session with enhanced security logging
   passport.serializeUser((user: any, done) => {
     const userId = user.userId || user.email;
-    authLog('DEBUG', 'Serializing user for session', { 
+    authLog('DEBUG', 'Serializing user for session', {
       userId: userId,
       timestamp: new Date().toISOString(),
       source: 'saml'
@@ -97,15 +99,6 @@ export async function setupFmbSamlAuth(app: Express) {
       const user = await fmbStorage.getUser(id);
 
       if (user) {
-        // Validate session integrity
-        if (!user.isActive) {
-          authLog('WARN', 'Inactive user attempted session access', { userId: id });
-          return done(null, false);
-        }
-
-        // Update last activity timestamp
-        await fmbStorage.updateUserLastLogin(id);
-
         // Create consistent user object structure with security metadata
         const sessionUser = {
           ...user,
@@ -114,13 +107,12 @@ export async function setupFmbSamlAuth(app: Express) {
           sessionStartTime: Date.now(),
           lastActivity: Date.now()
         };
-        
-        authLog('DEBUG', 'User deserialized successfully', { 
-          userId: id, 
-          role: user.role,
-          lastLogin: user.lastLoginAt 
+
+        authLog('DEBUG', 'User deserialized successfully', {
+          userId: id,
+          email: user.email
         });
-        
+
         done(null, sessionUser);
       } else {
         authLog('WARN', 'User not found during deserialization', { userId: id });
@@ -146,57 +138,62 @@ export async function setupFmbSamlAuth(app: Express) {
   });
 
   app.post('/saml/acs', (req, res, next) => {
-    authLog('INFO', 'SAML ACS callback received', { 
-      ip: req.ip, 
+    authLog('INFO', 'SAML ACS callback received', {
+      ip: req.ip,
       userAgent: req.get('User-Agent'),
       timestamp: new Date().toISOString()
     });
-    
+
     passport.authenticate('saml', (err, user, info) => {
       if (err) {
         authLog('ERROR', 'SAML authentication error', { error: err.message, info });
         return res.redirect('/login-error');
       }
-      
+
       if (!user) {
         authLog('WARN', 'SAML authentication failed - no user', { info });
         return res.redirect('/login-error');
       }
-      
+
       // Regenerate session ID after successful SAML authentication (security best practice)
       req.session.regenerate((regenerateErr) => {
         if (regenerateErr) {
           authLog('ERROR', 'Session regeneration failed', { error: regenerateErr.message });
           return res.redirect('/login-error');
         }
-        
+
         // Log the user in
         req.logIn(user, (loginErr) => {
           if (loginErr) {
             authLog('ERROR', 'Login failed after SAML validation', { error: loginErr.message });
             return res.redirect('/login-error');
           }
-          
-          // Mark session for enhanced security monitoring
-          req.session.samlAuthenticated = true;
-          req.session.authTimestamp = Date.now();
-          req.session.ipAddress = req.ip;
-          req.session.userAgent = req.get('User-Agent');
-          
-          authLog('INFO', 'SAML authentication successful with session regeneration', { 
-            userId: user.userId || user.email,
-            sessionId: req.sessionID?.substring(0, 8) + '...',
-            ip: req.ip
-          });
-          
-          // Save session explicitly to ensure persistence
-          req.session.save((saveErr) => {
-            if (saveErr) {
-              authLog('ERROR', 'Session save failed after authentication', { error: saveErr.message });
-              return res.redirect('/login-error');
+
+          // Set user in session for authentication state
+          req.session.user = {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+            organization_id: user.organization_id,
+            department: user.department,
+            is_active: user.is_active
+          };
+
+          // Mark session as authenticated
+          req.session.isAuthenticated = true;
+          req.session.authTime = Date.now();
+
+          // Save session explicitly
+          req.session.save((err) => {
+            if (err) {
+              console.log('🔴 [FMB-SAML] Session save error:', err);
+            } else {
+              console.log('🔵 [FMB-SAML] User session established and saved:', user.email);
             }
-            
-            authLog('INFO', 'Session saved successfully, redirecting to application');
+
+            // Redirect to root application after successful authentication
             res.redirect('/');
           });
         });
@@ -243,7 +240,10 @@ export const isAuthenticated = (req: any, res: any, next: any) => {
     isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false
   });
 
-  if (!req.isAuthenticated() || !req.user) {
+  const hasSession = !!req.session;
+  const isAuthenticated = hasSession && !!req.session.user && req.session.isAuthenticated === true;
+
+  if (!isAuthenticated) {
     authLog('WARN', 'Unauthorized access attempt', {
       path: req.path,
       method: req.method,

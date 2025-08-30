@@ -318,7 +318,16 @@ export class FmbStorage implements IStorage {
   }
 
   // Task Methods
-  async getTasks(userId: string): Promise<Task[]> {
+  async getTasks(): Promise<Task[]> {
+    const result = await this.execute(`
+      SELECT t.*, p.name as project_name 
+      FROM tasks t 
+      JOIN projects p ON t.project_id = p.id
+    `);
+    return result;
+  }
+
+  async getTasksByUserId(userId: string): Promise<Task[]> {
     const result = await this.execute(`
       SELECT t.*, p.name as project_name 
       FROM tasks t 
@@ -334,7 +343,19 @@ export class FmbStorage implements IStorage {
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
-    const taskId = `task-${Date.now()}`;
+    const insertData = {
+      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      project_id: taskData.project_id || taskData.projectId,
+      title: taskData.title,
+      name: taskData.name,
+      description: taskData.description,
+      status: taskData.status || 'pending',
+      priority: taskData.priority || 'medium',
+      assigned_to: taskData.assigned_to || taskData.assignedTo,
+      created_by: taskData.created_by || taskData.createdBy,
+      due_date: taskData.due_date || taskData.dueDate,
+      estimated_hours: taskData.estimated_hours || taskData.estimatedHours
+    };
     await this.execute(`
       INSERT INTO tasks (id, project_id, title, name, description, status, priority, 
                         assigned_to, created_by, due_date, estimated_hours, 
@@ -342,12 +363,12 @@ export class FmbStorage implements IStorage {
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, 
               @param7, @param8, @param9, @param10, GETDATE(), GETDATE())
     `, [
-      taskId, taskData.projectId, taskData.title, taskData.name, taskData.description,
-      taskData.status || 'pending', taskData.priority || 'medium', taskData.assignedTo,
-      taskData.createdBy, taskData.dueDate, taskData.estimatedHours
+      insertData.id, insertData.project_id, insertData.title, insertData.name, insertData.description,
+      insertData.status, insertData.priority, insertData.assigned_to,
+      insertData.created_by, insertData.due_date, insertData.estimated_hours
     ]);
 
-    const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [taskId]);
+    const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [insertData.id]);
     return result[0];
   }
 
@@ -391,7 +412,18 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntries(userId: string): Promise<TimeEntry[]> {
+  async getTimeEntries(): Promise<TimeEntry[]> {
+    const result = await this.execute(`
+      SELECT te.*, p.name as project_name, t.title as task_name 
+      FROM time_entries te 
+      LEFT JOIN projects p ON te.project_id = p.id 
+      LEFT JOIN tasks t ON te.task_id = t.id 
+      ORDER BY te.date DESC, te.created_at DESC
+    `);
+    return result;
+  }
+
+  async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
     const result = await this.execute(`
       SELECT te.*, p.name as project_name, t.title as task_name 
       FROM time_entries te 
@@ -419,7 +451,25 @@ export class FmbStorage implements IStorage {
   }
 
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
-    const entryId = `entry-${Date.now()}`;
+    const insertData = {
+      id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      user_id: timeEntryData.user_id || timeEntryData.userId,
+      project_id: timeEntryData.project_id || timeEntryData.projectId,
+      task_id: timeEntryData.task_id || timeEntryData.taskId,
+      description: timeEntryData.description,
+      hours: timeEntryData.hours,
+      duration: timeEntryData.duration,
+      date: timeEntryData.date,
+      start_time: timeEntryData.start_time || timeEntryData.startTime,
+      end_time: timeEntryData.end_time || timeEntryData.endTime,
+      status: timeEntryData.status || 'draft',
+      billable: timeEntryData.billable || false,
+      is_billable: timeEntryData.is_billable || timeEntryData.isBillable || false,
+      is_approved: timeEntryData.is_approved || timeEntryData.isApproved || false,
+      is_manual_entry: timeEntryData.is_manual_entry !== false && timeEntryData.isManualEntry !== false,
+      is_timer_entry: timeEntryData.is_timer_entry || timeEntryData.isTimerEntry || false,
+      is_template: timeEntryData.is_template || timeEntryData.isTemplate || false
+    };
     await this.execute(`
       INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours, 
                                duration, date, start_time, end_time, status, billable, 
@@ -429,16 +479,16 @@ export class FmbStorage implements IStorage {
               @param8, @param9, @param10, @param11, @param12, @param13, @param14, 
               @param15, @param16, GETDATE(), GETDATE())
     `, [
-      entryId, timeEntryData.userId, timeEntryData.projectId, timeEntryData.taskId,
-      timeEntryData.description, timeEntryData.hours, timeEntryData.duration,
-      timeEntryData.date, timeEntryData.startTime, timeEntryData.endTime,
-      timeEntryData.status || 'draft', timeEntryData.billable || false,
-      timeEntryData.isBillable || false, timeEntryData.isApproved || false,
-      timeEntryData.isManualEntry !== false, timeEntryData.isTimerEntry || false,
-      timeEntryData.isTemplate || false
+      insertData.id, insertData.user_id, insertData.project_id, insertData.task_id,
+      insertData.description, insertData.hours, insertData.duration,
+      insertData.date, insertData.start_time, insertData.end_time,
+      insertData.status, insertData.billable,
+      insertData.is_billable, insertData.is_approved,
+      insertData.is_manual_entry, insertData.is_timer_entry,
+      insertData.is_template
     ]);
 
-    const result = await this.execute('SELECT * FROM time_entries WHERE id = @param0', [entryId]);
+    const result = await this.execute('SELECT * FROM time_entries WHERE id = @param0', [insertData.id]);
     return result[0];
   }
 
@@ -482,7 +532,12 @@ export class FmbStorage implements IStorage {
   }
 
   // Employee Methods
-  async getEmployees(userId: string): Promise<Employee[]> {
+  async getEmployees(): Promise<Employee[]> {
+    const result = await this.execute('SELECT * FROM employees');
+    return result;
+  }
+
+  async getEmployeesByUserId(userId: string): Promise<Employee[]> {
     const result = await this.execute('SELECT * FROM employees WHERE user_id = @param0', [userId]);
     return result;
   }
@@ -493,16 +548,23 @@ export class FmbStorage implements IStorage {
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
-    const empId = `emp-${Date.now()}`;
+    const insertData = {
+      id: `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      employee_id: employeeData.employee_id || employeeData.employeeId,
+      first_name: employeeData.first_name || employeeData.firstName,
+      last_name: employeeData.last_name || employeeData.lastName,
+      department: employeeData.department,
+      user_id: employeeData.user_id || employeeData.userId
+    };
     await this.execute(`
       INSERT INTO employees (id, employee_id, first_name, last_name, department, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, GETDATE(), GETDATE())
     `, [
-      empId, employeeData.employeeId, employeeData.firstName, 
-      employeeData.lastName, employeeData.department, employeeData.userId
+      insertData.id, insertData.employee_id, insertData.first_name, 
+      insertData.last_name, insertData.department, insertData.user_id
     ]);
 
-    const result = await this.execute('SELECT * FROM employees WHERE id = @param0', [empId]);
+    const result = await this.execute('SELECT * FROM employees WHERE id = @param0', [insertData.id]);
     return result[0];
   }
 
@@ -546,7 +608,16 @@ export class FmbStorage implements IStorage {
   }
 
   // Department Methods
-  async getDepartments(userId: string): Promise<Department[]> {
+  async getDepartments(): Promise<Department[]> {
+    const result = await this.execute(`
+      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
+      FROM departments d 
+      LEFT JOIN employees e ON d.manager_id = e.id
+    `);
+    return result;
+  }
+
+  async getDepartmentsByUserId(userId: string): Promise<Department[]> {
     const result = await this.execute(`
       SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
       FROM departments d 
@@ -562,16 +633,23 @@ export class FmbStorage implements IStorage {
   }
 
   async createDepartment(deptData: InsertDepartment): Promise<Department> {
-    const deptId = `dept-${Date.now()}`;
+    const insertData = {
+      id: `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: deptData.name,
+      description: deptData.description,
+      organization_id: deptData.organization_id || deptData.organizationId,
+      manager_id: deptData.manager_id || deptData.managerId,
+      user_id: deptData.user_id || deptData.userId
+    };
     await this.execute(`
       INSERT INTO departments (id, name, organization_id, manager_id, description, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, GETDATE(), GETDATE())
     `, [
-      deptId, deptData.name, deptData.organizationId, deptData.managerId, 
-      deptData.description, deptData.userId
+      insertData.id, insertData.name, insertData.organization_id, insertData.manager_id, 
+      insertData.description, insertData.user_id
     ]);
 
-    const result = await this.execute('SELECT * FROM departments WHERE id = @param0', [deptId]);
+    const result = await this.execute('SELECT * FROM departments WHERE id = @param0', [insertData.id]);
     return result[0];
   }
 
@@ -618,6 +696,53 @@ export class FmbStorage implements IStorage {
   async getUsers(): Promise<User[]> {
     const result = await this.execute('SELECT * FROM users');
     return result;
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    return await this.getUser(id);
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    return await this.upsertUser(userData);
+  }
+
+  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
+    const fields = [];
+    const params = [];
+    let paramIndex = 0;
+
+    for (const [key, value] of Object.entries(userData)) {
+      if (value !== undefined) {
+        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        fields.push(`${dbField} = @param${paramIndex}`);
+        params.push(value);
+        paramIndex++;
+      }
+    }
+
+    if (fields.length > 0) {
+      fields.push('updated_at = GETDATE()');
+      params.push(id);
+
+      await this.execute(`
+        UPDATE users 
+        SET ${fields.join(', ')} 
+        WHERE id = @param${paramIndex}
+      `, params);
+    }
+
+    return await this.getUser(id) as User;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      await request.query('DELETE FROM users WHERE id = @id');
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error deleting user:', error);
+      throw error;
+    }
   }
 
   async getOrganizationById(id: string): Promise<Organization | null> {

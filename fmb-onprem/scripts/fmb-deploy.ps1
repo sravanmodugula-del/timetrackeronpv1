@@ -132,7 +132,7 @@ import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
   process.exit(1);
 });
 "@
-            node -e $nodeScript --input-type=module
+            node --input-type=module -e $nodeScript
         } else {
             # Basic FMB environment variable check
             $requiredVars = @('FMB_SESSION_SECRET', 'FMB_DB_SERVER', 'FMB_DB_NAME')

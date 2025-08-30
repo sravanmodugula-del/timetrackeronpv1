@@ -221,7 +221,7 @@ export class CustomMSSQLStore extends Store {
         return callback();
       }
 
-      const session = JSON.parse(result.recordset[0].sess);
+      const session = JSON.parse(result.recordset0.sess);
       callback(null, session);
     } catch (error) {
       console.error('🔴 [FMB-SESSION] Error getting session:', {
@@ -522,10 +522,130 @@ export class CustomMSSQLStore extends Store {
     }
   }
 
-  
+
 }
 
 export function createSessionStore() {
+  async function getSession() {
+    console.log('🟢 [SESSION] Session configured for production mode');
+
+    try {
+      if (process.env.FMB_DEPLOYMENT === 'onprem') {
+        // Try to initialize MS SQL session store for FMB on-premises
+        console.log('Database password:', '*'.repeat(20));
+
+        // Import the connect-mssql-v2 module
+        const connectMssqlModule = await import('connect-mssql-v2');
+
+        // Try different possible exports
+        let MSSQLStore;
+        if (connectMssqlModule.default) {
+          MSSQLStore = connectMssqlModule.default;
+        } else if (connectMssqlModule.MSSQLStore) {
+          MSSQLStore = connectMssqlModule.MSSQLStore;
+        } else if (typeof connectMssqlModule === 'function') {
+          MSSQLStore = connectMssqlModule;
+        } else {
+          throw new Error('Could not find MSSQLStore constructor in connect-mssql-v2');
+        }
+
+        // Initialize the store
+        const store = new MSSQLStore({
+          server: process.env.FMB_DB_SERVER,
+          database: process.env.FMB_DB_NAME,
+          user: process.env.FMB_DB_USER,
+          password: process.env.FMB_DB_PASSWORD,
+          options: {
+            encrypt: true,
+            trustServerCertificate: true,
+            enableArithAbort: true,
+          },
+          table: 'sessions',
+          autoRemove: 'interval',
+          autoRemoveInterval: 300000, // 5 minutes
+        });
+
+        console.log('🟢 [SESSION] MS SQL session store initialized successfully');
+
+        return session({
+          store,
+          secret: process.env.FMB_SESSION_SECRET || 'fallback-secret',
+          resave: false,
+          saveUninitialized: false,
+          rolling: true,
+          cookie: {
+            secure: false, // Set to true in production with HTTPS
+            httpOnly: true,
+            maxAge: 24 * 60 * 60 * 1000, // 24 hours
+            sameSite: 'lax'
+          }
+        });
+      }
+    } catch (error) {
+      console.log('🔴 [SESSION] Failed to initialize MS SQL session store:', {
+        message: error?.message || 'Unknown error',
+        code: error?.code || 'NO_CODE',
+        name: error?.name || 'Unknown',
+        stack: error?.stack || 'No stack trace',
+        originalError: error?.originalError || 'NO_ORIGINAL',
+        number: error?.number || 'NO_NUMBER',
+        severity: error?.severity || 'NO_SEVERITY',
+        state: error?.state || 'NO_STATE',
+        fullError: JSON.stringify({
+          stack: error?.stack,
+          message: error?.message
+        })
+      });
+
+      // Try custom MS SQL session store as backup
+      try {
+        if (process.env.FMB_DEPLOYMENT === 'onprem') {
+          const { CustomMSSQLStore } = await import('../fmb-onprem/storage/session-manager.js'); // Assuming CustomMSSQLStore is exported from this path
+          const customStore = new CustomMSSQLStore({
+            server: process.env.FMB_DB_SERVER,
+            database: process.env.FMB_DB_NAME,
+            user: process.env.FMB_DB_USER,
+            password: process.env.FMB_DB_PASSWORD,
+          });
+
+          console.log('🟢 [SESSION] Custom MS SQL session store initialized successfully');
+
+          return session({
+            store: customStore,
+            secret: process.env.FMB_SESSION_SECRET || 'fallback-secret',
+            resave: false,
+            saveUninitialized: false,
+            rolling: true,
+            cookie: {
+              secure: false,
+              httpOnly: true,
+              maxAge: 24 * 60 * 60 * 1000,
+              sameSite: 'lax'
+            }
+          });
+        }
+      } catch (customError) {
+        console.log('🔴 [SESSION] Custom MS SQL session store also failed:', customError?.message);
+      }
+
+      console.log('🟡 [SESSION] Using default memory session store as final fallback');
+    }
+
+    // Fallback to memory store
+    return session({
+      secret: process.env.FMB_SESSION_SECRET || process.env.SESSION_SECRET || 'fallback-secret',
+      resave: false,
+      saveUninitialized: false,
+      rolling: true,
+      cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax'
+      }
+    });
+  }
+
   // Development: Use memory store
   if (process.env.NODE_ENV === 'development') {
     console.log('🔧 [SESSION] Using memory store (development)');

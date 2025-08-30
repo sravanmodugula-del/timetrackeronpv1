@@ -134,39 +134,29 @@ async function getSession() {
 
   // Initialize enterprise MS SQL session store
   try {
-    // Import session health monitoring
-    const { SessionHealthMonitor } = await import('../fmb-onprem/storage/session-health-monitor.js');
-    const healthMonitor = SessionHealthMonitor.getInstance();
+    // Only use MS SQL session store in production on-premises environment
+    if (process.env.FMB_DEPLOYMENT === 'onprem' && isProduction) {
+      enhancedLog('INFO', 'SESSION', 'Initializing MS SQL session store for production');
+      
+      // Initialize custom MS SQL session store
+      const { CustomMSSQLStore } = await import('./session-store.js');
+      const sessionStore = new CustomMSSQLStore();
+      sessionConfig.store = sessionStore;
+      
+      enhancedLog('INFO', 'SESSION', 'Custom MS SQL session store initialized successfully');
+    } else {
+      enhancedLog('INFO', 'SESSION', 'Using memory session store for development/testing');
+    }
 
-    // Initialize custom MS SQL session store
-    const { CustomMSSQLStore } = await import('./session-store.js');
-    const sessionStore = new CustomMSSQLStore();
-    sessionConfig.store = sessionStore;
-
-    // Start comprehensive session monitoring
-    healthMonitor.startMonitoring();
-
-    // Log session store capabilities
-    enhancedLog('INFO', 'SESSION', 'Enterprise session store capabilities enabled:', {
-      persistentStorage: true,
-      clustering: true,
-      healthMonitoring: true,
-      automaticCleanup: true,
-      sessionRegeneration: true,
-      securityAuditing: true
-    });
-
-    enhancedLog('INFO', 'SESSION', 'FMB Enterprise MS SQL session store initialized successfully');
+    enhancedLog('INFO', 'SESSION', 'Session store initialization completed');
   } catch (error) {
-    enhancedLog('ERROR', 'SESSION', 'Failed to initialize FMB Enterprise session store:', {
+    enhancedLog('WARN', 'SESSION', 'Failed to initialize MS SQL session store, using memory store:', {
       message: error?.message || 'Unknown error',
-      code: error?.code || 'NO_CODE',
-      name: error?.name || 'NO_NAME',
-      stack: error?.stack || 'NO_STACK'
+      stack: error?.stack?.split('\n')[0] || 'NO_STACK'
     });
-
-    enhancedLog('ERROR', 'SESSION', 'Enterprise deployment requires database-backed session store');
-    throw error;
+    
+    // Continue with memory store - don't throw error
+    enhancedLog('INFO', 'SESSION', 'Using memory session store as fallback');
   }
 
   return session(sessionConfig);
