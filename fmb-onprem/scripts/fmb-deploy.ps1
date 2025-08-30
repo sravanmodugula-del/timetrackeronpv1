@@ -123,15 +123,16 @@ try {
 
         # Check if built config exists, otherwise use ts-node for health check
         if (Test-Path "dist/fmb-onprem/config/fmb-env.js") {
-            node -e "
-            import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
-              config.loadFmbOnPremConfig();
-              console.log('✅ Configuration valid');
-            }).catch(err => {
-              console.error('❌ Config error:', err.message);
-              process.exit(1);
-            });
-            " --input-type=module
+            $nodeScript = @"
+import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
+  config.loadFmbOnPremConfig();
+  console.log('✅ Configuration valid');
+}).catch(err => {
+  console.error('❌ Config error:', err.message);
+  process.exit(1);
+});
+"@
+            node -e $nodeScript --input-type=module
         } else {
             # Basic FMB environment variable check
             $requiredVars = @('FMB_SESSION_SECRET', 'FMB_DB_SERVER', 'FMB_DB_NAME')
