@@ -1,4 +1,3 @@
-
 -- =============================================================================
 -- FMB TimeTracker Database Setup for MS SQL Server
 -- Target: HUB-SQL1TST-LIS
@@ -399,26 +398,26 @@ CREATE OR ALTER PROCEDURE sp_CleanupExpiredSessions
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     DECLARE @TotalDeleted INT = 0;
     DECLARE @RowsDeleted INT = 1;
-    
+
     -- Delete in batches to avoid blocking
     WHILE @RowsDeleted > 0
     BEGIN
         DELETE TOP (@BatchSize) FROM sessions 
         WHERE expire < GETDATE();
-        
+
         SET @RowsDeleted = @@ROWCOUNT;
         SET @TotalDeleted = @TotalDeleted + @RowsDeleted;
-        
+
         -- Brief pause between batches to reduce blocking
         IF @RowsDeleted > 0
             WAITFOR DELAY '00:00:00.100'; -- 100ms delay
     END
-    
+
     SET @DeletedCount = @TotalDeleted;
-    
+
     -- Update statistics after cleanup
     IF @TotalDeleted > 0
     BEGIN
@@ -433,16 +432,19 @@ CREATE OR ALTER PROCEDURE sp_GetSessionStats
 AS
 BEGIN
     SET NOCOUNT ON;
-    
+
     SELECT 
         COUNT(*) as total_sessions,
         COUNT(CASE WHEN expire > GETDATE() THEN 1 END) as active_sessions,
         COUNT(CASE WHEN expire <= GETDATE() THEN 1 END) as expired_sessions,
-        AVG(DATEDIFF(MINUTE, created_at, expire)) as avg_session_duration_minutes,
-        MAX(created_at) as last_session_created,
-        MIN(expire) as earliest_expiry
+        ISNULL(AVG(CASE 
+            WHEN expire > GETDATE() THEN 
+                DATEDIFF(MINUTE, created_at, expire) 
+            END), 0) as avg_session_duration_minutes,
+        MAX(CASE WHEN expire > GETDATE() THEN created_at END) as last_session_created,
+        MIN(CASE WHEN expire > GETDATE() THEN expire END) as earliest_expiry
     FROM sessions;
-    
+
     -- Show index usage statistics
     SELECT 
         i.name as index_name,
@@ -456,7 +458,7 @@ BEGIN
     WHERE o.name = 'sessions'
     ORDER BY s.user_seeks + s.user_scans + s.user_lookups DESC;
 END;
-GO</old_str>
+GO
 
 -- Create session monitoring view
 CREATE OR ALTER VIEW v_SessionMonitoring
@@ -483,23 +485,23 @@ BEGIN TRY
             @job_name = 'TimeTracker_OptimizedSessionCleanup',
             @enabled = 1,
             @description = 'Optimized cleanup of expired TimeTracker sessions using batched deletes';
-            
+
         EXEC msdb.dbo.sp_add_jobstep
             @job_name = 'TimeTracker_OptimizedSessionCleanup',
             @step_name = 'Cleanup_Expired_Sessions_Batched',
             @command = 'DECLARE @DeletedCount INT; EXEC sp_CleanupExpiredSessions @BatchSize = 1000, @DeletedCount = @DeletedCount OUTPUT; PRINT CONCAT(''Session cleanup completed. Deleted: '', @DeletedCount, '' sessions'');';
-            
+
         EXEC msdb.dbo.sp_add_schedule
             @schedule_name = 'Every_3_Minutes_Optimized',
             @freq_type = 4,
             @freq_interval = 1,
             @freq_subday_type = 4,
             @freq_subday_interval = 3;
-            
+
         EXEC msdb.dbo.sp_attach_schedule
             @job_name = 'TimeTracker_OptimizedSessionCleanup',
             @schedule_name = 'Every_3_Minutes_Optimized';
-            
+
         PRINT 'Optimized session cleanup job created successfully';
     END
     ELSE
