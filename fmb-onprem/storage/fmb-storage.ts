@@ -294,29 +294,25 @@ export class FmbStorage implements IStorage {
         hasDescription: !!sanitizedDescription
       });
       
-      const request = this.pool!.request();
-      request.input('id', sql.NVarChar(255), orgId);
-      request.input('name', sql.NVarChar(255), sanitizedName);
-      request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-      request.input('userId', sql.NVarChar(255), orgData.user_id);
-
-      // Use transaction for data consistency
-      const transaction = this.pool!.transaction();
-      await transaction.begin();
-
+      // Use direct query execution with proper parameter binding
       try {
-        const transactionRequest = transaction.request();
-        transactionRequest.input('id', sql.NVarChar(255), orgId);
-        transactionRequest.input('name', sql.NVarChar(255), sanitizedName);
-        transactionRequest.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-        transactionRequest.input('userId', sql.NVarChar(255), orgData.user_id);
+        const request = this.pool!.request();
+        request.input('id', sql.NVarChar(255), orgId);
+        request.input('name', sql.NVarChar(255), sanitizedName);
+        request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
+        request.input('user_id', sql.NVarChar(255), orgData.user_id);
 
-        await transactionRequest.query(`
+        this.storageLog('CREATE_ORG', 'Executing INSERT with parameters', {
+          id: orgId,
+          name: sanitizedName,
+          description: sanitizedDescription,
+          user_id: orgData.user_id
+        });
+
+        await request.query(`
           INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-          VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
+          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
         `);
-
-        await transaction.commit();
         
         // Fetch the created organization
         const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
@@ -332,13 +328,24 @@ export class FmbStorage implements IStorage {
         });
         
         return result[0];
-      } catch (transactionError) {
-        await transaction.rollback();
-        throw transactionError;
+      } catch (insertError) {
+        this.storageLog('CREATE_ORG', 'Database INSERT failed', {
+          error: insertError.message,
+          orgData: {
+            id: orgId,
+            name: sanitizedName,
+            user_id: orgData.user_id,
+            hasDescription: !!sanitizedDescription
+          }
+        });
+        throw insertError;
       }
     } catch (error) {
       this.storageLog('CREATE_ORG', 'Failed to create organization', { 
-        orgData: { ...orgData, user_id: orgData?.user_id ? '[REDACTED]' : 'undefined' }, 
+        orgData: { 
+          name: orgData?.name,
+          user_id: orgData?.user_id ? '[PRESENT]' : '[MISSING]'
+        }, 
         error: error.message 
       });
       throw new Error(`Failed to create organization: ${error.message}`);
