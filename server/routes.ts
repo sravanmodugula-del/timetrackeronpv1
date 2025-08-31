@@ -1094,6 +1094,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create organization
   app.post('/api/organizations', isAuthenticated, async (req: any, res) => {
+    // IMMEDIATE DETECTION - This should appear FIRST in logs
+    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] POST /api/organizations handler called at ${new Date().toISOString()}`);
+    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] Request body:`, req.body);
+    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] User object:`, req.user);
+    
     const routeRequestId = `route-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // ROUTE CHECKPOINT 1: Initial request logging
