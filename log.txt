@@ -1,3 +1,284 @@
+2025-08-30T21:51:55: 2025-08-31T04:51:55.528Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T21:51:55: [dotenv@17.2.1] injecting env (22) from fmb-onprem\.env.fmb-onprem -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+2025-08-30T21:51:55: [dotenv@17.2.1] injecting env (11) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+2025-08-30T21:51:55: 🏢 FMB On-Premises configuration loaded
+2025-08-30T21:51:55: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T21:51:55: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T21:51:55: 2025-08-31T04:51:55.534Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T21:51:55: 2025-08-31T04:51:55.534Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T21:51:55: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T21:51:55: ✅ FMB Database connection established successfully
+2025-08-30T21:51:55: 2025-08-31T04:51:55.737Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T21:51:55: 2025-08-31T04:51:55.741Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T21:51:55: 2025-08-31T04:51:55.742Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T21:51:55: 2025-08-31T04:51:55.743Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T21:51:55: 2025-08-31T04:51:55.743Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T21:51:55: 2025-08-31T04:51:55.743Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T21:51:55: 2025-08-31T04:51:55.746Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T21:51:55: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T21:51:55: 2025-08-31T04:51:55.749Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T21:51:55: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T21:51:55: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  enable debug logging with { debug: true }
+2025-08-30T21:51:55: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+2025-08-30T21:51:55: 🏢 FMB On-Premises configuration loaded
+2025-08-30T21:51:55: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T21:51:55: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T21:51:55: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T21:51:55: 2025-08-31T04:51:55.753Z 🔵 [FMB-SAML] FMB SAML Authentication setup completed
+2025-08-30T21:51:55: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
+2025-08-30T21:51:55: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
+2025-08-30T21:51:55: 2025-08-31T04:51:55.758Z 🟢 [SERVER] FMB TimeTracker running on http://0.0.0.0:3000
+2025-08-30T21:51:55: 2025-08-31T04:51:55.758Z 🟢 [SERVER] Environment: fmb-onprem
+2025-08-30T21:51:55: 2025-08-31T04:51:55.758Z 🟢 [FMB-ONPREM] On-premises deployment active - SAML authentication enabled
+2025-08-30T21:51:55: 2025-08-31T04:51:55.867Z 🗄️ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
+2025-08-30T21:51:56: 🟢 [FMB-SESSION] Session table structure verified
+2025-08-30T21:53:20: 2025-08-31T04:53:20.675Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+2025-08-30T21:53:20:   "ip": "127.0.0.1",
+2025-08-30T21:53:20:   "sessionId": "1ccd923cbf874e726aae474385fdb4a84270153fb7a455b6b886983d3712faa9",
+2025-08-30T21:53:20:   "isAuthenticated": false
+2025-08-30T21:53:20: }
+2025-08-30T21:53:20: 2025-08-31T04:53:20.675Z 🟡 [FMB-SAML] Unauthorized access attempt {
+2025-08-30T21:53:20:   "path": "/api/auth/user",
+2025-08-30T21:53:20:   "method": "GET",
+2025-08-30T21:53:20:   "ip": "127.0.0.1",
+2025-08-30T21:53:20:   "sessionId": "1ccd923cbf874e726aae474385fdb4a84270153fb7a455b6b886983d3712faa9"
+2025-08-30T21:53:20: }
+2025-08-30T21:53:20: 2025-08-31T04:53:20.693Z 🔴 [FRONTEND-API] HTTP 401 error on http://localhost:3000/api/auth/user {
+2025-08-30T21:53:20:   data: {
+2025-08-30T21:53:20:     status: 401,
+2025-08-30T21:53:20:     statusText: 'Unauthorized',
+2025-08-30T21:53:20:     responseText: '{"message":"Unauthorized - Please log in via SAML"}',
+2025-08-30T21:53:20:     url: 'http://localhost:3000/api/auth/user'
+2025-08-30T21:53:20:   },
+2025-08-30T21:53:20:   url: 'http://localhost:3000/',
+2025-08-30T21:53:20:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+2025-08-30T21:53:20:   ip: '127.0.0.1',
+2025-08-30T21:53:20:   sessionId: 'f4759e8fdaea2f1f89ab27c689e63d2c653449cf9c4ccb5a0c3c6d2be8434796'
+2025-08-30T21:53:20: }
+2025-08-30T21:53:24: 2025-08-31T04:53:24.634Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+2025-08-30T21:53:24:   "ip": "10.0.123.65:57832",
+2025-08-30T21:53:24:   "sessionId": "4a5b6548d6259f4f832443f112ad92517edd69f57674f77d5f227ab208bd229d",
+2025-08-30T21:53:24:   "isAuthenticated": false
+2025-08-30T21:53:24: }
+2025-08-30T21:53:24: 2025-08-31T04:53:24.635Z 🟡 [FMB-SAML] Unauthorized access attempt {
+2025-08-30T21:53:24:   "path": "/api/auth/user",
+2025-08-30T21:53:24:   "method": "GET",
+2025-08-30T21:53:24:   "ip": "10.0.123.65:57832",
+2025-08-30T21:53:24:   "sessionId": "4a5b6548d6259f4f832443f112ad92517edd69f57674f77d5f227ab208bd229d"
+2025-08-30T21:53:24: }
+2025-08-30T21:53:24: 2025-08-31T04:53:24.662Z 🔴 [FRONTEND-API] HTTP 401 error on https://timetracker.fmb.com/api/auth/user {
+2025-08-30T21:53:24:   data: {
+2025-08-30T21:53:24:     status: 401,
+2025-08-30T21:53:24:     statusText: '',
+2025-08-30T21:53:24:     responseText: '{"message":"Unauthorized - Please log in via SAML"}',
+2025-08-30T21:53:24:     url: 'https://timetracker.fmb.com/api/auth/user'
+2025-08-30T21:53:24:   },
+2025-08-30T21:53:24:   url: 'https://timetracker.fmb.com/IdPServlet?idp_id=a0tt0vrnu3tt&SAMLRequest=nZLNbtswEIRfheDdEm1Hrk1YNpQYRQWkrRA7PeQS0OSqIcoflbty07cvLNeJe0gOvZKDb2Znd7l%2B9o4dIKGNoeTjTPD1aonKu05WPT2FO%2FjZAxJ79i6gHD5K3qcgo0KLMigPKEnLbfX5Vk4yIbsUKeroOKs3JX%2BcXc20affjop3pD4u5afdXBWffzoaTTHBWI%2FZQByQVqOQTMSlGYj6aip1YSLGQ0yIrFvMHzpq%2F6GsbjA3f38%2BxP4lQftrtmlHzdbvjbANINigarJ%2BIOpR53sVEymWt32c6%2Brw2zRbSwQGtrekerSmVIBKHFPopEWcVIqQj4SYG7D2ko9pquL%2B7fWWS9UBJ6R%2BQXsDH7nKlkZ%2F6lcPU6aLY9%2BdRZ1%2B%2Bugy0zC9g5819UR7qTROd1b%2F%2FZ3MfY%2FKK3laPs%2FHwYs2oHaQSvLKuMiYBImeVc%2FHXTQJFUHJKPfB8dQr671Wt%2FgA%3D',
+2025-08-30T21:53:24:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+2025-08-30T21:53:24:   ip: '10.0.123.65:57832',
+2025-08-30T21:53:24:   sessionId: '5b0fef9f279e6a62f2c6fbd141bf72d997f9ea3d7177e9c5d903204fad203c06'
+2025-08-30T21:53:24: }
+2025-08-30T21:53:28: 2025-08-31T04:53:28.282Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+2025-08-30T21:53:28:   "ip": "[::1]:57838",
+2025-08-30T21:53:28:   "sessionId": "90938cb266c1140c24ebb217683200c9d5eae5d08aeba94789261bde78d169a0",
+2025-08-30T21:53:28:   "isAuthenticated": false
+2025-08-30T21:53:28: }
+2025-08-30T21:53:28: 2025-08-31T04:53:28.282Z 🟡 [FMB-SAML] Unauthorized access attempt {
+2025-08-30T21:53:28:   "path": "/api/auth/user",
+2025-08-30T21:53:28:   "method": "GET",
+2025-08-30T21:53:28:   "ip": "[::1]:57838",
+2025-08-30T21:53:28:   "sessionId": "90938cb266c1140c24ebb217683200c9d5eae5d08aeba94789261bde78d169a0"
+2025-08-30T21:53:28: }
+2025-08-30T21:53:28: 2025-08-31T04:53:28.301Z 🔴 [FRONTEND-API] HTTP 401 error on http://localhost/api/auth/user {
+2025-08-30T21:53:28:   data: {
+2025-08-30T21:53:28:     status: 401,
+2025-08-30T21:53:28:     statusText: 'Unauthorized',
+2025-08-30T21:53:28:     responseText: '{"message":"Unauthorized - Please log in via SAML"}',
+2025-08-30T21:53:28:     url: 'http://localhost/api/auth/user'
+2025-08-30T21:53:28:   },
+2025-08-30T21:53:28:   url: 'http://localhost/',
+2025-08-30T21:53:28:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+2025-08-30T21:53:28:   ip: '[::1]:57838',
+2025-08-30T21:53:28:   sessionId: '0e082e1db7861e4b1dad1b5d8464fd54635482f95cf2f89ef1c19ba712cabef8'
+2025-08-30T21:53:28: }
+2025-08-30T21:53:31: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:31:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:31:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:31:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:31:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:31:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:31:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:31:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:31:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:31:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:31:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:41: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:41:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:41:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:41:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:41:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:41:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:41:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:41:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:41:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:41:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:41:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:42: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:42:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:42:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:42:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:42:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:42:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:42:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:42:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:42:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:42:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:42:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:43: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:43:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:43:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:43:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:43:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:43:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:43: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:43:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:43:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:43:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:43:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:43:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:43: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:43:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:43:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:43:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:43:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:43:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:43:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:43:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:43:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:44: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:44:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:44:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:44:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:44:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:44:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:44:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:44:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:44:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:44:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:44:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:53:44: Database health check failed: TypeError: storage2.pingDatabase is not a function
+2025-08-30T21:53:44:     at checkDatabaseHealth2 (file:///C:/fmb-timetracker/dist/index.js:2694:20)
+2025-08-30T21:53:44:     at file:///C:/fmb-timetracker/dist/index.js:3631:31
+2025-08-30T21:53:44:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:44:     at next (C:\fmb-timetracker\node_modules\express\lib\router\route.js:149:13)
+2025-08-30T21:53:44:     at Route.dispatch (C:\fmb-timetracker\node_modules\express\lib\router\route.js:119:3)
+2025-08-30T21:53:44:     at Layer.handle [as handle_request] (C:\fmb-timetracker\node_modules\express\lib\router\layer.js:95:5)
+2025-08-30T21:53:44:     at C:\fmb-timetracker\node_modules\express\lib\router\index.js:284:15
+2025-08-30T21:53:44:     at Function.process_params (C:\fmb-timetracker\node_modules\express\lib\router\index.js:346:12)
+2025-08-30T21:53:44:     at next (C:\fmb-timetracker\node_modules\express\lib\router\index.js:280:10)
+2025-08-30T21:53:44:     at strategy.pass (C:\fmb-timetracker\node_modules\passport\lib\middleware\authenticate.js:355:9)
+2025-08-30T21:55:03: 2025-08-31T04:55:03.008Z 🔵 [FMB-SAML] SAML ACS callback received {
+2025-08-30T21:55:03:   "ip": "192.168.210.12:56539",
+2025-08-30T21:55:03:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+2025-08-30T21:55:03:   "timestamp": "2025-08-31T04:55:03.008Z"
+2025-08-30T21:55:03: }
+2025-08-30T21:55:03: 2025-08-31T04:55:03.025Z 🔴 [FMB-SAML] SAML authentication error {
+2025-08-30T21:55:03:   "error": "Invalid document signature"
+2025-08-30T21:55:03: }
+2025-08-30T21:55:03: 2025-08-31T04:55:03.110Z 🔴 [FMB-SAML] SAML login error page accessed
+2025-08-30T21:55:09: 2025-08-31T04:55:09.174Z 🔵 [FMB-SAML] SAML login initiated {
+2025-08-30T21:55:09:   "ip": "192.168.210.12:56539",
+2025-08-30T21:55:09:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"
+2025-08-30T21:55:09: }
+2025-08-30T21:55:09: 2025-08-31T04:55:09.677Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+2025-08-30T21:55:09:   "ip": "192.168.210.12:56539",
+2025-08-30T21:55:09:   "sessionId": "974ade9ca9ba22b8d8e0d23e300e0c7454a3bd9d9b92ddac1df8d33702e642ea",
+2025-08-30T21:55:09:   "isAuthenticated": false
+2025-08-30T21:55:09: }
+2025-08-30T21:55:09: 2025-08-31T04:55:09.678Z 🟡 [FMB-SAML] Unauthorized access attempt {
+2025-08-30T21:55:09:   "path": "/api/auth/user",
+2025-08-30T21:55:09:   "method": "GET",
+2025-08-30T21:55:09:   "ip": "192.168.210.12:56539",
+2025-08-30T21:55:09:   "sessionId": "974ade9ca9ba22b8d8e0d23e300e0c7454a3bd9d9b92ddac1df8d33702e642ea"
+2025-08-30T21:55:09: }
+2025-08-30T21:55:09: 2025-08-31T04:55:09.701Z 🔴 [FRONTEND-API] HTTP 401 error on https://timetracker.fmb.com/api/auth/user {
+2025-08-30T21:55:09:   data: {
+2025-08-30T21:55:09:     status: 401,
+2025-08-30T21:55:09:     statusText: '',
+2025-08-30T21:55:09:     responseText: '{"message":"Unauthorized - Please log in via SAML"}',
+2025-08-30T21:55:09:     url: 'https://timetracker.fmb.com/api/auth/user'
+2025-08-30T21:55:09:   },
+2025-08-30T21:55:09:   url: 'https://timetracker.fmb.com/IdPServlet?idp_id=a0tt0vrnu3tt&SAMLRequest=nVNNj9owFPwrke8kThYaahEQBVVF2rYR0B56WRn70bXqj9TvhaX%2FvkqALYcuB65%2Bo3nzZsaT2dHZ5AARTfAVy1POZtMJSmcbMW%2Fp2a%2FhdwtIydFZj6IfVKyNXgSJBoWXDlCQEpv550dRpFw0MVBQwbJktazYE5RDqUrFi32p3pVjCcNxqUoFw7HSIHc8L4pipEtgyfeLiCLlLFkhtrDySNJTxQpejAZ8PHjIt3woRiPB36d5OfrBkvq87oPx2vift7XtTiAUn7bbelB%2F3WxZsgQk4yX1q5%2BJGhRZ1oRI0qZ7t0tVcNlK1xuIBws0M7p5MrqSnIgfom8fiFgyR4TYMSyCx9ZB7NBGwbf14z9OMg4oSvUL4itx52cmFbKT56K%2FOl6ZffseednLpteCJtkV2SXNL9LBalkHa9Sfe9KcWxteFhEkQcUotsCSjyE6SW8T5Gnevxg92PdQAU4aO9c6AiLLLtLOHQPdN24RPMHxrsYtgmtkNNhFCUep6OLrNfHCSsQ17O9x%2BSZMCdVRA4paIr6EqLtygiLQ2yg9dqU6R%2FM%2FPdPT7A07XqfXv3L6Fw%3D%3D',
+2025-08-30T21:55:09:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+2025-08-30T21:55:09:   ip: '192.168.210.12:56539',
+2025-08-30T21:55:09:   sessionId: 'b42082e2582e7be1496badc79bce863a7cdcb1f595fc71011fa2240940a4f5be'
+2025-08-30T21:55:09: }
+2025-08-30T21:55:16: 2025-08-31T04:55:16.520Z 🔵 [FMB-SAML] SAML ACS callback received {
+2025-08-30T21:55:16:   "ip": "192.168.210.12:56539",
+2025-08-30T21:55:16:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+2025-08-30T21:55:16:   "timestamp": "2025-08-31T04:55:16.520Z"
+2025-08-30T21:55:16: }
+2025-08-30T21:55:16: 2025-08-31T04:55:16.523Z 🔴 [FMB-SAML] SAML authentication error {
+2025-08-30T21:55:16:   "error": "Invalid document signature"
+2025-08-30T21:55:16: }
+2025-08-30T21:55:16: 2025-08-31T04:55:16.600Z 🔴 [FMB-SAML] SAML login error page accessed
+2025-08-30T22:09:27: 2025-08-31T05:09:27.422Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T22:09:27: [dotenv@17.2.1] injecting env (22) from fmb-onprem\.env.fmb-onprem -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T22:09:27: [dotenv@17.2.1] injecting env (11) from .env -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T22:09:27: 🏢 FMB On-Premises configuration loaded
+2025-08-30T22:09:27: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T22:09:27: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T22:09:27: 2025-08-31T05:09:27.429Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T22:09:27: 2025-08-31T05:09:27.430Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T22:09:27: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T22:09:27: ✅ FMB Database connection established successfully
+2025-08-30T22:09:27: 2025-08-31T05:09:27.634Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T22:09:27: 2025-08-31T05:09:27.638Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T22:09:27: 2025-08-31T05:09:27.639Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T22:09:27: 2025-08-31T05:09:27.640Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T22:09:27: 2025-08-31T05:09:27.641Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T22:09:27: 2025-08-31T05:09:27.641Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T22:09:27: 2025-08-31T05:09:27.643Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T22:09:27: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T22:09:27: 2025-08-31T05:09:27.647Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T22:09:27: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T22:09:27: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+2025-08-30T22:09:27: [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+2025-08-30T22:09:27: 🏢 FMB On-Premises configuration loaded
+2025-08-30T22:09:27: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T22:09:27: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T22:09:27: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T22:09:27: 2025-08-31T05:09:27.651Z 🔵 [FMB-SAML] FMB SAML Authentication setup completed
+2025-08-30T22:09:27: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
+2025-08-30T22:09:27: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
+2025-08-30T22:09:27: 2025-08-31T05:09:27.655Z 🟢 [SERVER] FMB TimeTracker running on http://0.0.0.0:3000
+2025-08-30T22:09:27: 2025-08-31T05:09:27.656Z 🟢 [SERVER] Environment: fmb-onprem
+2025-08-30T22:09:27: 2025-08-31T05:09:27.656Z 🟢 [FMB-ONPREM] On-premises deployment active - SAML authentication enabled
+2025-08-30T22:09:27: 2025-08-31T05:09:27.757Z 🗄️ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
+2025-08-30T22:09:27: 🟢 [FMB-SESSION] Session table structure verified
+2025-08-30T22:09:56: 2025-08-31T05:09:56.787Z 🔵 [FMB-SAML] SAML ACS callback received {
+2025-08-30T22:09:56:   "ip": "192.168.210.12:57629",
+2025-08-30T22:09:56:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+2025-08-30T22:09:56:   "timestamp": "2025-08-31T05:09:56.787Z"
+2025-08-30T22:09:56: }
+2025-08-30T22:09:56: 2025-08-31T05:09:56.801Z 🔴 [FMB-SAML] SAML authentication error {
+2025-08-30T22:09:56:   "error": "Invalid document signature"
+2025-08-30T22:09:56: }
+2025-08-30T22:09:56: 2025-08-31T05:09:56.904Z 🔴 [FMB-SAML] SAML login error page accessed
+
+
 PS C:\Users\ADM91381> cd..
 
 PS C:\Users> cd..
