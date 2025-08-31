@@ -292,6 +292,23 @@ export class FmbStorage implements IStorage {
         }
       });
 
+      // DEBUG: Log all input parameters before database operation
+      console.log(`🔍 [CREATE_ORG-DEBUG] Input Parameters Analysis:`, {
+        originalInput: JSON.stringify(orgData, null, 2),
+        sanitizedValues: {
+          name: sanitizedName,
+          description: sanitizedDescription,
+          user_id: sanitizedUserId
+        },
+        validation: {
+          nameIsString: typeof sanitizedName === 'string',
+          nameNotEmpty: sanitizedName && sanitizedName.length > 0,
+          userIdIsString: typeof sanitizedUserId === 'string',
+          userIdNotEmpty: sanitizedUserId && sanitizedUserId.length > 0,
+          descriptionValidOrNull: sanitizedDescription === null || typeof sanitizedDescription === 'string'
+        }
+      });
+
       // Verify user exists first
       const userExists = await this.execute('SELECT id FROM users WHERE id = @param0', [sanitizedUserId]);
       if (!userExists || userExists.length === 0) {
@@ -311,7 +328,7 @@ export class FmbStorage implements IStorage {
         request.input('id', sql.NVarChar(255), orgId);
         request.input('name', sql.NVarChar(255), sanitizedName);
         request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-        request.input('userId', sql.NVarChar(255), sanitizedUserId);
+        request.input('user_id', sql.NVarChar(255), sanitizedUserId);
 
         this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
           id: orgId,
@@ -321,9 +338,26 @@ export class FmbStorage implements IStorage {
           parameterCount: 4
         });
 
+        // DEBUG: Log SQL parameter binding details
+        console.log(`🔍 [CREATE_ORG-SQL] Parameter Binding Debug:`, {
+          sqlQuery: insertQuery.trim(),
+          parameters: {
+            '@id': { value: orgId, type: 'NVarChar(255)' },
+            '@name': { value: sanitizedName, type: 'NVarChar(255)' },
+            '@description': { value: sanitizedDescription, type: 'NVarChar(MAX)' },
+            '@user_id': { value: sanitizedUserId, type: 'NVarChar(255)' }
+          },
+          parameterValidation: {
+            allParametersHaveValues: !!(orgId && sanitizedName && sanitizedUserId),
+            userIdNotNull: sanitizedUserId !== null && sanitizedUserId !== undefined,
+            userIdNotEmpty: sanitizedUserId !== '',
+            nameNotEmpty: sanitizedName !== ''
+          }
+        });
+
         const insertQuery = `
           INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-          VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
+          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
         `;
 
         await request.query(insertQuery);
