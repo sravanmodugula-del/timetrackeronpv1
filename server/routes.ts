@@ -1094,29 +1094,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create organization
   app.post('/api/organizations', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = extractUserId(req.user);
-      const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const routeRequestId = `route-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // ROUTE CHECKPOINT 1: Initial request logging
+    console.log(`🚀 [ROUTE-CHECKPOINT-1-${routeRequestId}] Organization creation request received:`, {
+      method: req.method,
+      url: req.url,
+      hasBody: !!req.body,
+      bodyType: typeof req.body,
+      bodyKeys: Object.keys(req.body || {}),
+      hasUser: !!req.user,
+      userType: typeof req.user,
+      sessionId: req.sessionID,
+      ip: req.ip
+    });
 
-      console.log(`🔍 [ORG-CREATE-${requestId}] Starting organization creation`, {
-        userId: userId ? '[PRESENT]' : '[MISSING]',
-        bodyKeys: Object.keys(req.body || {}),
-        userAgent: req.get('User-Agent')?.substring(0, 100)
+    try {
+      // ROUTE CHECKPOINT 2: User extraction and validation
+      console.log(`🎯 [ROUTE-CHECKPOINT-2-${routeRequestId}] Extracting user information...`);
+      
+      const userId = extractUserId(req.user);
+      console.log(`🎯 [ROUTE-CHECKPOINT-2-${routeRequestId}] User extraction result:`, {
+        extractedUserId: userId,
+        userIdType: typeof userId,
+        userIdLength: userId?.length || 0,
+        rawUserObject: req.user,
+        extractionFunction: 'extractUserId'
       });
 
-      // Input validation
       if (!userId || typeof userId !== 'string') {
-        console.error(`❌ [ORG-CREATE-${requestId}] Invalid user session`, {
-          extractedUserId: userId
-        });
+        console.error(`❌ [ROUTE-CHECKPOINT-2-${routeRequestId}] FAILED: Invalid user session`);
         return res.status(401).json({
           message: "Invalid user session. Please log in again.",
           code: "INVALID_SESSION"
         });
       }
+      console.log(`✅ [ROUTE-CHECKPOINT-2-${routeRequestId}] User extraction passed`);
 
+      // ROUTE CHECKPOINT 3: Request body validation
+      console.log(`🎯 [ROUTE-CHECKPOINT-3-${routeRequestId}] Validating request body...`);
+      
       if (!req.body || typeof req.body !== 'object') {
-        console.error(`❌ [ORG-CREATE-${requestId}] Invalid request body`);
+        console.error(`❌ [ROUTE-CHECKPOINT-3-${routeRequestId}] FAILED: Invalid request body`);
         return res.status(400).json({
           message: "Invalid request data",
           code: "INVALID_REQUEST_BODY"
@@ -1124,10 +1143,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { name, description } = req.body;
+      console.log(`✅ [ROUTE-CHECKPOINT-3-${routeRequestId}] Request body extracted:`, {
+        name: { value: name, type: typeof name, length: name?.length || 0 },
+        description: { value: description, type: typeof description, length: description?.length || 0 }
+      });
 
-      // Validate organization name
+      // ROUTE CHECKPOINT 4: Field validation
+      console.log(`🎯 [ROUTE-CHECKPOINT-4-${routeRequestId}] Validating organization fields...`);
+      
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        console.error(`❌ [ORG-CREATE-${requestId}] Invalid organization name`, { name });
+        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Invalid organization name`);
         return res.status(400).json({
           message: "Organization name is required",
           code: "INVALID_NAME"
@@ -1135,26 +1160,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (name.trim().length > 255) {
+        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Name too long`);
         return res.status(400).json({
           message: "Organization name must be less than 255 characters",
           code: "INVALID_NAME"
         });
       }
 
-      // Validate description if provided
       if (description && (typeof description !== 'string' || description.length > 1000)) {
+        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Invalid description`);
         return res.status(400).json({
           message: "Description must be a string with less than 1000 characters",
           code: "INVALID_DESCRIPTION"
         });
       }
+      console.log(`✅ [ROUTE-CHECKPOINT-4-${routeRequestId}] Field validation passed`);
 
+      // ROUTE CHECKPOINT 5: Storage initialization
+      console.log(`🎯 [ROUTE-CHECKPOINT-5-${routeRequestId}] Initializing storage...`);
+      
       const activeStorage = getStorage();
+      console.log(`✅ [ROUTE-CHECKPOINT-5-${routeRequestId}] Storage initialized:`, {
+        storageType: activeStorage.constructor.name,
+        hasCreateOrganization: typeof activeStorage.createOrganization === 'function'
+      });
 
-      // Get user and validate permissions
+      // ROUTE CHECKPOINT 6: User database lookup and permissions
+      console.log(`🎯 [ROUTE-CHECKPOINT-6-${routeRequestId}] Looking up user in database...`);
+      
       const user = await activeStorage.getUser(userId);
       if (!user) {
-        console.error(`❌ [ORG-CREATE-${requestId}] User not found in database`, { userId });
+        console.error(`❌ [ROUTE-CHECKPOINT-6-${routeRequestId}] FAILED: User not found in database`);
         return res.status(401).json({
           message: "User not found. Please log in again.",
           code: "USER_NOT_FOUND"
@@ -1162,14 +1198,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userRole = user.role || 'employee';
-      console.log(`🔍 [ORG-CREATE-${requestId}] User validation successful`, {
+      console.log(`✅ [ROUTE-CHECKPOINT-6-${routeRequestId}] User found in database:`, {
         userRole,
-        userName: `${user.first_name} ${user.last_name}`
+        userName: `${user.first_name} ${user.last_name}`,
+        userEmail: user.email
       });
 
-      // Check admin permissions
+      // ROUTE CHECKPOINT 7: Permission check
+      console.log(`🎯 [ROUTE-CHECKPOINT-7-${routeRequestId}] Checking admin permissions...`);
+      
       if (userRole !== 'admin') {
-        console.warn(`🚫 [ORG-CREATE-${requestId}] Insufficient permissions`, { userRole });
+        console.warn(`❌ [ROUTE-CHECKPOINT-7-${routeRequestId}] FAILED: Insufficient permissions`);
         return res.status(403).json({
           message: "Only System Administrators can create organizations",
           code: "INSUFFICIENT_PERMISSIONS",
@@ -1177,46 +1216,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentRole: userRole
         });
       }
+      console.log(`✅ [ROUTE-CHECKPOINT-7-${routeRequestId}] Permission check passed`);
 
-      // Prepare organization data with proper structure matching the schema
+      // ROUTE CHECKPOINT 8: Schema verification
+      console.log(`🎯 [ROUTE-CHECKPOINT-8-${routeRequestId}] Verifying database schema...`);
+      
+      try {
+        const schemaInfo = await activeStorage.verifyOrganizationsTableSchema();
+        console.log(`✅ [ROUTE-CHECKPOINT-8-${routeRequestId}] Schema verification completed`);
+      } catch (schemaError) {
+        console.error(`❌ [ROUTE-CHECKPOINT-8-${routeRequestId}] FAILED: Schema verification failed:`, schemaError);
+        // Continue anyway to see if it's a schema issue
+      }
+
+      // ROUTE CHECKPOINT 9: Final data preparation
+      console.log(`🎯 [ROUTE-CHECKPOINT-9-${routeRequestId}] Preparing final organization data...`);
+      
       const organizationData = {
         name: name.trim(),
         description: description?.trim() || null,
         user_id: userId
       };
 
-      console.log(`🏢 [ORG-CREATE-${requestId}] Creating organization with data:`, {
-        name: organizationData.name,
-        hasDescription: !!organizationData.description,
-        user_id: organizationData.user_id,
-        user_id_type: typeof organizationData.user_id,
-        user_id_length: organizationData.user_id?.length || 0
+      console.log(`✅ [ROUTE-CHECKPOINT-9-${routeRequestId}] Final data prepared:`, {
+        finalData: organizationData,
+        dataValidation: {
+          nameNotEmpty: organizationData.name.length > 0,
+          userIdNotEmpty: organizationData.user_id.length > 0,
+          descriptionHandled: organizationData.description === null || (typeof organizationData.description === 'string')
+        }
       });
 
-      // Create the organization
+      // ROUTE CHECKPOINT 10: Call storage method
+      console.log(`🎯 [ROUTE-CHECKPOINT-10-${routeRequestId}] Calling storage.createOrganization...`);
+      
       const organization = await activeStorage.createOrganization(organizationData);
 
-      console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully:`, {
-        organizationId: organization.id,
-        name: organization.name
+      console.log(`✅ [ROUTE-CHECKPOINT-10-${routeRequestId}] Storage method returned successfully:`, {
+        returnedOrgId: organization.id,
+        returnedOrgName: organization.name
       });
 
-      res.status(201).json({
+      // ROUTE CHECKPOINT 11: Response preparation
+      console.log(`🎯 [ROUTE-CHECKPOINT-11-${routeRequestId}] Preparing successful response...`);
+      
+      const responseData = {
         ...organization,
         message: "Organization created successfully"
-      });
+      };
+
+      console.log(`✅ [ROUTE-CHECKPOINT-11-${routeRequestId}] Sending successful response`);
+      res.status(201).json(responseData);
 
     } catch (error: any) {
-      const requestId = `req-${Date.now()}`;
-      console.error(`❌ [ORG-CREATE-${requestId}] Organization creation failed`, {
-        message: error?.message,
-        code: error?.code,
+      console.error(`❌ [ROUTE-CHECKPOINT-FINAL-${routeRequestId}] Route-level error caught:`, {
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorType: error?.constructor?.name,
+        sqlNumber: error?.number,
         sqlState: error?.state,
-        number: error?.number,
-        severity: error?.class,
-        procedure: error?.procName,
-        lineNumber: error?.lineNumber,
-        serverName: error?.serverName
+        sqlSeverity: error?.class,
+        errorStack: error?.stack?.split('\n').slice(0, 10)
       });
 
       // Handle specific error types
@@ -1227,7 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      if (error?.message?.includes("user_id")) {
+      if (error?.message?.includes("user_id") || error?.message?.includes("User")) {
         return res.status(400).json({
           message: "Invalid user data. Please log in again.",
           code: "INVALID_USER_DATA"
@@ -1238,7 +1298,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         message: "Failed to create organization. Please try again.",
         code: "INTERNAL_ERROR",
-        requestId
+        requestId: routeRequestId,
+        debug: {
+          errorMessage: error?.message,
+          errorCode: error?.code
+        }
       });
     }
   });
