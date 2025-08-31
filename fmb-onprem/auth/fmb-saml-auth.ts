@@ -50,7 +50,7 @@ export async function setupFmbSamlAuth(app: Express) {
       signatureAlgorithm: 'sha256',
       
       // Validation Settings
-      validateInResponseTo: false, // Critical for IdP-initiated flow
+      validateInResponseTo: 'never', // Critical for IdP-initiated flow
       audience: false, // Disable for flexibility
       acceptedClockSkewMs: 10000,
       
