@@ -12,7 +12,8 @@ export function loadFmbOnPremConfig() {
 
   console.log('🏢 FMB On-Premises configuration loaded');
 
-  return getFmbConfig();
+  // Load and cache the config instead of calling getFmbConfig
+  return loadAndExportFmbConfig();
 }
 
 // Always return true for FMB on-premises only version
@@ -48,7 +49,7 @@ export function validateFmbEnvironment(): boolean {
 export function getFmbConfig() {
   // Ensure config is loaded
   if (!global.fmbConfig) {
-    loadFmbOnPremConfig();
+    loadAndExportFmbConfig();
   }
   return global.fmbConfig!;
 }
