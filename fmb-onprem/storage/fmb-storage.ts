@@ -961,6 +961,27 @@ export class FmbStorage implements IStorage {
       updated_at: row.updated_at
     };
   }
+
+  async close(): Promise<void> {
+    if (this.pool) {
+      await this.pool.close();
+      console.log('🔴 [FMB-STORAGE] Database connection closed');
+    }
+  }
+
+  /**
+   * Health check method to verify database connectivity
+   */
+  async pingDatabase(): Promise<boolean> {
+    try {
+      const request = this.pool.request();
+      await request.query('SELECT 1 as ping');
+      return true;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Database ping failed:', error?.message);
+      return false;
+    }
+  }
 }
 
 interface FmbStorageConfig {

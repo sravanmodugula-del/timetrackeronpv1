@@ -64,8 +64,21 @@ function readCertificateFile(certPath: string): string {
     console.log(`🔍 [FMB-CONFIG] Looking for certificate at: ${fullPath}`);
 
     if (fs.existsSync(fullPath)) {
-      const certContent = fs.readFileSync(fullPath, 'utf8').trim();
+      let certContent = fs.readFileSync(fullPath, 'utf8').trim();
+
+      // Remove any extra whitespace and ensure proper certificate format
+      certContent = certContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+      // Ensure the certificate has proper BEGIN/END markers
+      if (!certContent.includes('-----BEGIN CERTIFICATE-----')) {
+        throw new Error('Invalid certificate format: missing BEGIN marker');
+      }
+      if (!certContent.includes('-----END CERTIFICATE-----')) {
+        throw new Error('Invalid certificate format: missing END marker');
+      }
+
       console.log(`✅ [FMB-CONFIG] Certificate loaded successfully from: ${fullPath}`);
+      console.log(`🔍 [FMB-CONFIG] Certificate length: ${certContent.length} characters`);
       return certContent;
     } else {
       console.error(`🔴 [FMB-CONFIG] Certificate file not found at: ${fullPath}`);
@@ -92,13 +105,15 @@ export function loadAndExportFmbConfig() {
         trustServerCertificate: process.env.FMB_DB_TRUST_SERVER_CERTIFICATE === 'true'
       }
     },
-    // SAML configuration
+    // SAML Configuration
     saml: {
-      issuer: process.env.FMB_SAML_ISSUER!,
-      // Fix: Load SAML certificate content from file
-      cert: readCertificateFile(process.env.FMB_SAML_CERT!),
-      entryPoint: process.env.FMB_SAML_SSO_URL!,
-      callbackUrl: process.env.FMB_SAML_ACS_URL!
+      issuer: process.env.FMB_SAML_ISSUER || 'fmb-timetracker',
+      entryPoint: process.env.FMB_SAML_SSO_URL || '',
+      callbackUrl: process.env.FMB_SAML_ACS_URL || '',
+      certPath: process.env.FMB_SAML_CERT || './saml_cert.pem',
+      cert: '',
+      nameIdFormat: process.env.FMB_SAML_NAME_ID_FORMAT || 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+      binding: process.env.FMB_SAML_BINDING || 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
     },
     session: {
       secret: process.env.FMB_SESSION_SECRET!,

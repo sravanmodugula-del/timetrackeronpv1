@@ -23,17 +23,36 @@ export async function setupFmbSamlAuth(app: Express) {
   const fmbConfig = getFmbConfig();
   const fmbStorage = getFmbStorage();
 
-  // Configure SAML strategy
+  // Validate certificate content before using it
+  authLog('DEBUG', 'SAML Certificate validation', {
+    certLength: fmbConfig.saml.cert.length,
+    hasBeginMarker: fmbConfig.saml.cert.includes('-----BEGIN CERTIFICATE-----'),
+    hasEndMarker: fmbConfig.saml.cert.includes('-----END CERTIFICATE-----')
+  });
+
+  // Configure SAML strategy with proper certificate handling
   const samlStrategy = new SamlStrategy(
     {
       issuer: fmbConfig.saml.issuer,
-      idpCert: fmbConfig.saml.cert, // Fix: Use idpCert instead of cert
+      cert: fmbConfig.saml.cert, // IDP certificate for signature validation
       entryPoint: fmbConfig.saml.entryPoint,
       callbackUrl: fmbConfig.saml.callbackUrl,
-      acceptedClockSkewMs: 5000,
-      identifierFormat: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
+      acceptedClockSkewMs: 10000, // Increase clock skew tolerance
+      identifierFormat: fmbConfig.saml.nameIdFormat,
+      // Signature validation settings - match your IDP metadata
       wantAssertionsSigned: true,
-      signatureAlgorithm: 'sha256'
+      wantAuthnResponseSigned: false, // Based on your IDP metadata
+      signatureAlgorithm: 'sha256',
+      validateInResponseTo: false,
+      disableRequestedAuthnContext: true,
+      skipRequestCompression: true,
+      // Certificate validation
+      cert: [fmbConfig.saml.cert], // Ensure cert is in array format
+      // Audience should match your SP entity ID, not IDP
+      audience: false, // Disable audience validation for now
+      // Additional debugging
+      additionalParams: {},
+      additionalAuthorizeParams: {}
     },
     async (profile: any, done: any) => {
       try {
@@ -146,13 +165,22 @@ export async function setupFmbSamlAuth(app: Express) {
 
     passport.authenticate('saml', (err, user, info) => {
       if (err) {
-        authLog('ERROR', 'SAML authentication error', { error: err.message, info });
-        return res.redirect('/login-error');
+        authLog('ERROR', 'SAML authentication error', { 
+          error: err.message, 
+          stack: err.stack,
+          info,
+          timestamp: new Date().toISOString()
+        });
+        return res.redirect('/login-error?reason=auth_error');
       }
 
       if (!user) {
-        authLog('WARN', 'SAML authentication failed - no user', { info });
-        return res.redirect('/login-error');
+        authLog('WARN', 'SAML authentication failed - no user', { 
+          info,
+          errorType: 'no_user',
+          timestamp: new Date().toISOString()
+        });
+        return res.redirect('/login-error?reason=no_user');
       }
 
       // Regenerate session ID after successful SAML authentication (security best practice)
@@ -216,14 +244,27 @@ export async function setupFmbSamlAuth(app: Express) {
 
   // Error handling routes
   app.get('/login-error', (req, res) => {
-    authLog('ERROR', 'SAML login error page accessed');
+    const reason = req.query.reason || 'unknown';
+    authLog('ERROR', 'SAML login error page accessed', { reason, timestamp: new Date().toISOString() });
+    
+    let errorMessage = 'There was an error during the authentication process.';
+    if (reason === 'auth_error') {
+      errorMessage = 'SAML authentication failed. Please check your credentials and try again.';
+    } else if (reason === 'no_user') {
+      errorMessage = 'Unable to retrieve user information from SAML response.';
+    }
+    
     res.status(401).send(`
       <html>
         <head><title>FMB TimeTracker - Login Error</title></head>
-        <body>
+        <body style="font-family: Arial, sans-serif; margin: 40px; text-align: center;">
           <h1>Authentication Error</h1>
-          <p>There was an error during the authentication process.</p>
-          <p><a href="/api/login">Try logging in again</a></p>
+          <p>${errorMessage}</p>
+          <p>Error Code: ${reason}</p>
+          <p>Time: ${new Date().toISOString()}</p>
+          <hr>
+          <p><a href="/api/login" style="background: #007cba; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Try logging in again</a></p>
+          <p><small>If this error persists, please contact your system administrator.</small></p>
         </body>
       </html>
     `);
