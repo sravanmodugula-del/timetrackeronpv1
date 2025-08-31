@@ -998,10 +998,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Organization ID is required" });
       }
 
-      // Verify organization exists
-      const organization = await activeStorage.getOrganization(organizationId, userId);
+      // Verify organization exists and user has access
+      const userOrganizations = await activeStorage.getUserOrganizations(userId);
+      const organization = userOrganizations.find(org => org.id === organizationId);
       if (!organization) {
-        return res.status(404).json({ message: "Organization not found" });
+        return res.status(404).json({ message: "Organization not found or access denied" });
       }
 
       const departmentData = insertDepartmentSchema.parse({
