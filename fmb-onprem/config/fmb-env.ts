@@ -88,8 +88,8 @@ export function loadAndExportFmbConfig() {
       port: parseInt(process.env.FMB_DB_PORT || '1433'),
       options: {
         encrypt: process.env.FMB_DB_ENCRYPT === 'true',
-        // Fix: Disable trustServerCertificate for self-signed certificates as per log
-        trustServerCertificate: false
+        // Fix: Enable trustServerCertificate for self-signed certificates
+        trustServerCertificate: process.env.FMB_DB_TRUST_SERVER_CERTIFICATE === 'true'
       }
     },
     // SAML configuration
