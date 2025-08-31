@@ -131,11 +131,22 @@ export class FmbStorage implements IStorage {
       params.forEach((param, index) => {
         const paramName = `param${index}`;
         
+        // CRITICAL DEBUG: Log each parameter as it's being bound
+        console.log(`🔍 [EXECUTE-PARAM-BINDING] Binding parameter ${paramName}:`, {
+          originalValue: param,
+          type: typeof param,
+          isNull: param === null || param === undefined,
+          stringLength: typeof param === 'string' ? param.length : 'N/A'
+        });
+        
         // Determine appropriate SQL type based on the parameter value
         if (param === null || param === undefined) {
+          console.log(`⚠️ [EXECUTE-PARAM-BINDING] WARNING: Binding NULL value for ${paramName}`);
           request.input(paramName, sql.NVarChar(255), null);
         } else if (typeof param === 'string') {
-          request.input(paramName, sql.NVarChar(param.length > 255 ? sql.MAX : 255), param);
+          const sqlType = param.length > 255 ? sql.NVarChar(sql.MAX) : sql.NVarChar(255);
+          console.log(`🔗 [EXECUTE-PARAM-BINDING] Binding string ${paramName} with type ${sqlType.name || 'NVarChar'} and value: "${param}"`);
+          request.input(paramName, sqlType, param);
         } else if (typeof param === 'number') {
           if (Number.isInteger(param)) {
             request.input(paramName, sql.Int, param);
@@ -350,6 +361,14 @@ export class FmbStorage implements IStorage {
         userFound: true
       });
 
+      // CRITICAL DEBUG: Log all variables before creating insertParams
+      console.log(`🔍 [CREATE_ORG-VARIABLES] All variables before insertParams:`, {
+        orgId: { value: orgId, type: typeof orgId, isNull: orgId === null || orgId === undefined },
+        sanitizedName: { value: sanitizedName, type: typeof sanitizedName, isNull: sanitizedName === null || sanitizedName === undefined },
+        sanitizedDescription: { value: sanitizedDescription, type: typeof sanitizedDescription, isNull: sanitizedDescription === null || sanitizedDescription === undefined },
+        sanitizedUserId: { value: sanitizedUserId, type: typeof sanitizedUserId, isNull: sanitizedUserId === null || sanitizedUserId === undefined }
+      });
+
       // Prepare parameters array for the INSERT query
       const insertParams = [orgId, sanitizedName, sanitizedDescription, sanitizedUserId];
       
@@ -362,11 +381,30 @@ export class FmbStorage implements IStorage {
         parameterTypes: insertParams.map((p, i) => ({ [`param${i}`]: typeof p, value: p, isNull: p === null || p === undefined }))
       });
 
-      // Use the execute method that works for other queries
-      await this.execute(`
+      // CRITICAL DEBUG: Log the actual SQL query to be executed
+      console.log(`🔍 [CREATE_ORG-SQL] SQL Query:`, `
         INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
         VALUES (@param0, @param1, @param2, @param3, GETDATE(), GETDATE())
-      `, insertParams);
+      `);
+
+      // Use direct request method with explicit parameter names to avoid mapping issues
+      const request = this.pool!.request();
+      request.input('orgId', sql.NVarChar(255), orgId);
+      request.input('name', sql.NVarChar(255), sanitizedName);
+      request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
+      request.input('userId', sql.NVarChar(255), sanitizedUserId);
+
+      console.log(`🔍 [CREATE_ORG-DIRECT-PARAMS] Direct parameter binding:`, {
+        orgId: { value: orgId, sqlType: 'NVarChar(255)' },
+        name: { value: sanitizedName, sqlType: 'NVarChar(255)' },
+        description: { value: sanitizedDescription, sqlType: 'NVarChar(MAX)' },
+        userId: { value: sanitizedUserId, sqlType: 'NVarChar(255)' }
+      });
+
+      await request.query(`
+        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+        VALUES (@orgId, @name, @description, @userId, GETDATE(), GETDATE())
+      `);
 
       this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
         id: orgId
