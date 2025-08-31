@@ -1104,6 +1104,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get('User-Agent')?.substring(0, 100)
       });
 
+      // DEBUG: Log exact POST parameters being received
+      console.log(`🔍 [ORG-CREATE-${requestId}] POST Parameters Debug:`, {
+        rawBody: req.body,
+        bodyType: typeof req.body,
+        bodyStringified: JSON.stringify(req.body, null, 2),
+        headers: {
+          contentType: req.get('Content-Type'),
+          contentLength: req.get('Content-Length'),
+          authorization: req.get('Authorization') ? '[PRESENT]' : '[MISSING]'
+        },
+        user: {
+          id: req.user?.id || '[MISSING]',
+          email: req.user?.email || '[MISSING]',
+          extractedUserId: userId,
+          userKeys: req.user ? Object.keys(req.user) : 'null'
+        }
+      });
+
       // Comprehensive input validation
       if (!userId || typeof userId !== 'string') {
         console.error(`❌ [ORG-CREATE-${requestId}] Invalid user session`, {
@@ -1191,6 +1209,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: organizationData.name,
         hasDescription: !!organizationData.description,
         descriptionLength: organizationData.description?.length || 0
+      });
+
+      // DEBUG: Log exact data being passed to createOrganization
+      console.log(`🔍 [ORG-CREATE-${requestId}] Database Call Parameters:`, {
+        organizationData: JSON.stringify(organizationData, null, 2),
+        name: organizationData.name,
+        description: organizationData.description,
+        user_id: organizationData.user_id,
+        dataTypes: {
+          name: typeof organizationData.name,
+          description: typeof organizationData.description,
+          user_id: typeof organizationData.user_id
+        },
+        lengths: {
+          name: organizationData.name?.length,
+          description: organizationData.description?.length,
+          user_id: organizationData.user_id?.length
+        }
       });
 
       // Create organization with enhanced error handling
