@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import type { RequestHandler } from "express";
 // Storage abstraction - use appropriate storage based on environment
 import { getFmbStorage } from '../fmb-onprem/config/fmb-database.js';
-import { insertProjectSchema, insertTaskSchema, insertTimeEntrySchema, insertEmployeeSchema } from "../shared/schema.js";
+import { insertProjectSchema, insertTaskSchema, insertTimeEntrySchema, insertEmployeeSchema, insertDepartmentSchema } from "../shared/schema.js";
 import { z } from "zod";
 
 // Import SAML debug routes
@@ -176,26 +176,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
+      
+      // Validate user session
+      if (!userId || typeof userId !== 'string') {
+        return res.status(401).json({ message: "Invalid user session. Please log in again." });
+      }
+
       const user = await activeStorage.getUser(userId);
-      const userRole = user?.role || 'employee';
+      if (!user) {
+        return res.status(401).json({ message: "User not found. Please log in again." });
+      }
+
+      const userRole = user.role || 'employee';
 
       // Only project managers and admins can create projects
       if (!['admin', 'project_manager'].includes(userRole)) {
-        return res.status(403).json({ message: "Insufficient permissions to create projects" });
+        return res.status(403).json({ 
+          message: "Insufficient permissions to create projects",
+          requiredRole: "admin or project_manager",
+          currentRole: userRole
+        });
+      }
+
+      // Validate required fields
+      const { name } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: "Project name is required" });
+      }
+
+      if (name.trim().length > 255) {
+        return res.status(400).json({ message: "Project name must be less than 255 characters" });
+      }
+
+      // Validate optional organization/department references if provided
+      if (req.body.organizationId) {
+        const organization = await activeStorage.getOrganization(req.body.organizationId, userId);
+        if (!organization) {
+          return res.status(404).json({ message: "Organization not found" });
+        }
       }
 
       // Ensure user_id is properly set
-      const projectData = insertProjectSchema.parse({ ...req.body, user_id: userId });
-      console.log('📁 Creating project with data:', { ...projectData, user_id: userId });
+      const projectData = insertProjectSchema.parse({ 
+        ...req.body, 
+        name: name.trim(),
+        user_id: userId 
+      });
+
+      console.log(`📁 Creating project: "${projectData.name}" by user: ${user.email} (${userRole})`);
 
       const project = await activeStorage.createProject(projectData);
+      
+      console.log(`✅ Project created successfully: ${project.id} - "${project.name}"`);
+      
       res.status(201).json(project);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
+        console.error("❌ Project validation error:", error.errors);
         return res.status(400).json({ message: "Invalid project data", errors: error.errors });
       }
-      console.error("Error creating project:", error);
-      res.status(500).json({ message: "Failed to create project" });
+      
+      console.error("❌ Error creating project:", error);
+      
+      // Handle specific database errors
+      if (error?.message?.includes("already exists")) {
+        return res.status(409).json({ message: "A project with this name already exists" });
+      }
+      
+      if (error?.message?.includes("organization_id") || error?.message?.includes("department_id")) {
+        return res.status(400).json({ message: "Invalid organization or department reference" });
+      }
+      
+      if (error?.message?.includes("user_id") || error?.message?.includes("FOREIGN KEY")) {
+        return res.status(400).json({ message: "Invalid user reference" });
+      }
+      
+      res.status(500).json({ message: "Failed to create project. Please try again." });
     }
   });
 
@@ -760,22 +817,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
+      
+      // Validate user session
+      if (!userId || typeof userId !== 'string') {
+        return res.status(401).json({ message: "Invalid user session. Please log in again." });
+      }
+
       const user = await activeStorage.getUser(userId);
-      const userRole = user?.role || 'employee';
+      if (!user) {
+        return res.status(401).json({ message: "User not found. Please log in again." });
+      }
+
+      const userRole = user.role || 'employee';
 
       // Only admins and department managers can create employees
       if (!['admin', 'manager'].includes(userRole)) {
         return res.status(403).json({ message: "Insufficient permissions to create employees" });
       }
 
-      const employeeData = insertEmployeeSchema.parse({ ...req.body, userId });
+      // Validate required fields
+      const { employeeId, firstName, lastName, department } = req.body;
+      
+      if (!employeeId || typeof employeeId !== 'string' || employeeId.trim().length === 0) {
+        return res.status(400).json({ message: "Employee ID is required" });
+      }
+
+      if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
+        return res.status(400).json({ message: "First name is required" });
+      }
+
+      if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
+        return res.status(400).json({ message: "Last name is required" });
+      }
+
+      if (!department || typeof department !== 'string' || department.trim().length === 0) {
+        return res.status(400).json({ message: "Department is required" });
+      }
+
+      const employeeData = insertEmployeeSchema.parse({
+        employeeId: employeeId.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        department: department.trim(),
+        userId
+      });
+
+      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId})`);
+      
       const employee = await activeStorage.createEmployee(employeeData);
+      
+      console.log(`✅ Employee created successfully: ${employee.id} - ${employee.firstName} ${employee.lastName}`);
+      
       res.status(201).json(employee);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid employee data", errors: error.errors });
       }
-      console.error("Error creating employee:", error);
+      
+      console.error("❌ Error creating employee:", error);
+      
+      // Handle specific database errors
+      if (error?.message?.includes("already exists") || error?.message?.includes("UNIQUE")) {
+        return res.status(409).json({ message: "An employee with this ID already exists" });
+      }
+      
+      if (error?.message?.includes("user_id") || error?.message?.includes("FOREIGN KEY")) {
+        return res.status(400).json({ message: "Invalid user reference" });
+      }
+      
       res.status(500).json({ message: "Failed to create employee" });
     }
   });
@@ -878,11 +987,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Insufficient permissions to create departments" });
       }
 
-      const departmentData = { ...req.body, userId };
+      // Validate required fields
+      const { name, organizationId, description, managerId } = req.body;
+      
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ message: "Department name is required" });
+      }
+
+      if (!organizationId || typeof organizationId !== 'string') {
+        return res.status(400).json({ message: "Organization ID is required" });
+      }
+
+      // Verify organization exists
+      const organization = await activeStorage.getOrganization(organizationId, userId);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+
+      const departmentData = insertDepartmentSchema.parse({
+        name: name.trim(),
+        organizationId,
+        description: description?.trim() || undefined,
+        managerId: managerId || undefined,
+        userId
+      });
+
+      console.log(`🏢 Creating department: "${departmentData.name}" in organization: ${organization.name}`);
+      
       const department = await activeStorage.createDepartment(departmentData);
+      
+      console.log(`✅ Department created successfully: ${department.id} - "${department.name}"`);
+      
       res.status(201).json(department);
-    } catch (error) {
-      console.error("Error creating department:", error);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid department data", errors: error.errors });
+      }
+      
+      console.error("❌ Error creating department:", error);
+      
+      // Handle specific database errors
+      if (error?.message?.includes("already exists")) {
+        return res.status(409).json({ message: "A department with this name already exists in the organization" });
+      }
+      
+      if (error?.message?.includes("organization_id") || error?.message?.includes("FOREIGN KEY")) {
+        return res.status(400).json({ message: "Invalid organization reference" });
+      }
+      
       res.status(500).json({ message: "Failed to create department" });
     }
   });
@@ -1094,70 +1246,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create organization
   app.post('/api/organizations', isAuthenticated, async (req: any, res) => {
-    // IMMEDIATE DETECTION - This should appear FIRST in logs
-    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] POST /api/organizations handler called at ${new Date().toISOString()}`);
-    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] Request body:`, req.body);
-    console.log(`🟨 [IMMEDIATE-ROUTE-DETECTION] User object:`, req.user);
-    
-    const routeRequestId = `route-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // ROUTE CHECKPOINT 1: Initial request logging
-    console.log(`🚀 [ROUTE-CHECKPOINT-1-${routeRequestId}] Organization creation request received:`, {
-      method: req.method,
-      url: req.url,
-      hasBody: !!req.body,
-      bodyType: typeof req.body,
-      bodyKeys: Object.keys(req.body || {}),
-      hasUser: !!req.user,
-      userType: typeof req.user,
-      sessionId: req.sessionID,
-      ip: req.ip
-    });
-
     try {
-      // ROUTE CHECKPOINT 2: User extraction and validation
-      console.log(`🎯 [ROUTE-CHECKPOINT-2-${routeRequestId}] Extracting user information...`);
-      
       const userId = extractUserId(req.user);
-      console.log(`🎯 [ROUTE-CHECKPOINT-2-${routeRequestId}] User extraction result:`, {
-        extractedUserId: userId,
-        userIdType: typeof userId,
-        userIdLength: userId?.length || 0,
-        rawUserObject: req.user,
-        extractionFunction: 'extractUserId'
-      });
+      const { name, description } = req.body;
 
+      // Validate user session
       if (!userId || typeof userId !== 'string') {
-        console.error(`❌ [ROUTE-CHECKPOINT-2-${routeRequestId}] FAILED: Invalid user session`);
         return res.status(401).json({
           message: "Invalid user session. Please log in again.",
           code: "INVALID_SESSION"
         });
       }
-      console.log(`✅ [ROUTE-CHECKPOINT-2-${routeRequestId}] User extraction passed`);
 
-      // ROUTE CHECKPOINT 3: Request body validation
-      console.log(`🎯 [ROUTE-CHECKPOINT-3-${routeRequestId}] Validating request body...`);
-      
-      if (!req.body || typeof req.body !== 'object') {
-        console.error(`❌ [ROUTE-CHECKPOINT-3-${routeRequestId}] FAILED: Invalid request body`);
-        return res.status(400).json({
-          message: "Invalid request data",
-          code: "INVALID_REQUEST_BODY"
-        });
-      }
-
-      const { name, description } = req.body;
-      console.log(`✅ [ROUTE-CHECKPOINT-3-${routeRequestId}] Request body extracted:`, {
-        name: { value: name, type: typeof name, length: name?.length || 0 },
-        description: { value: description, type: typeof description, length: description?.length || 0 }
-      });
-
-      // ROUTE CHECKPOINT 4: Field validation
-      console.log(`🎯 [ROUTE-CHECKPOINT-4-${routeRequestId}] Validating organization fields...`);
-      
+      // Validate request data
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Invalid organization name`);
         return res.status(400).json({
           message: "Organization name is required",
           code: "INVALID_NAME"
@@ -1165,7 +1267,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (name.trim().length > 255) {
-        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Name too long`);
         return res.status(400).json({
           message: "Organization name must be less than 255 characters",
           code: "INVALID_NAME"
@@ -1173,29 +1274,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (description && (typeof description !== 'string' || description.length > 1000)) {
-        console.error(`❌ [ROUTE-CHECKPOINT-4-${routeRequestId}] FAILED: Invalid description`);
         return res.status(400).json({
-          message: "Description must be a string with less than 1000 characters",
+          message: "Description must be less than 1000 characters",
           code: "INVALID_DESCRIPTION"
         });
       }
-      console.log(`✅ [ROUTE-CHECKPOINT-4-${routeRequestId}] Field validation passed`);
 
-      // ROUTE CHECKPOINT 5: Storage initialization
-      console.log(`🎯 [ROUTE-CHECKPOINT-5-${routeRequestId}] Initializing storage...`);
-      
       const activeStorage = getStorage();
-      console.log(`✅ [ROUTE-CHECKPOINT-5-${routeRequestId}] Storage initialized:`, {
-        storageType: activeStorage.constructor.name,
-        hasCreateOrganization: typeof activeStorage.createOrganization === 'function'
-      });
-
-      // ROUTE CHECKPOINT 6: User database lookup and permissions
-      console.log(`🎯 [ROUTE-CHECKPOINT-6-${routeRequestId}] Looking up user in database...`);
       
+      // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
-        console.error(`❌ [ROUTE-CHECKPOINT-6-${routeRequestId}] FAILED: User not found in database`);
         return res.status(401).json({
           message: "User not found. Please log in again.",
           code: "USER_NOT_FOUND"
@@ -1203,17 +1292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const userRole = user.role || 'employee';
-      console.log(`✅ [ROUTE-CHECKPOINT-6-${routeRequestId}] User found in database:`, {
-        userRole,
-        userName: `${user.first_name} ${user.last_name}`,
-        userEmail: user.email
-      });
-
-      // ROUTE CHECKPOINT 7: Permission check
-      console.log(`🎯 [ROUTE-CHECKPOINT-7-${routeRequestId}] Checking admin permissions...`);
-      
       if (userRole !== 'admin') {
-        console.warn(`❌ [ROUTE-CHECKPOINT-7-${routeRequestId}] FAILED: Insufficient permissions`);
         return res.status(403).json({
           message: "Only System Administrators can create organizations",
           code: "INSUFFICIENT_PERMISSIONS",
@@ -1221,67 +1300,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentRole: userRole
         });
       }
-      console.log(`✅ [ROUTE-CHECKPOINT-7-${routeRequestId}] Permission check passed`);
 
-      // ROUTE CHECKPOINT 8: Schema verification
-      console.log(`🎯 [ROUTE-CHECKPOINT-8-${routeRequestId}] Verifying database schema...`);
-      
-      try {
-        const schemaInfo = await activeStorage.verifyOrganizationsTableSchema();
-        console.log(`✅ [ROUTE-CHECKPOINT-8-${routeRequestId}] Schema verification completed`);
-      } catch (schemaError) {
-        console.error(`❌ [ROUTE-CHECKPOINT-8-${routeRequestId}] FAILED: Schema verification failed:`, schemaError);
-        // Continue anyway to see if it's a schema issue
-      }
-
-      // ROUTE CHECKPOINT 9: Final data preparation
-      console.log(`🎯 [ROUTE-CHECKPOINT-9-${routeRequestId}] Preparing final organization data...`);
-      
+      // Create organization
       const organizationData = {
         name: name.trim(),
         description: description?.trim() || null,
         user_id: userId
       };
 
-      console.log(`✅ [ROUTE-CHECKPOINT-9-${routeRequestId}] Final data prepared:`, {
-        finalData: organizationData,
-        dataValidation: {
-          nameNotEmpty: organizationData.name.length > 0,
-          userIdNotEmpty: organizationData.user_id.length > 0,
-          descriptionHandled: organizationData.description === null || (typeof organizationData.description === 'string')
-        }
-      });
-
-      // ROUTE CHECKPOINT 10: Call storage method
-      console.log(`🎯 [ROUTE-CHECKPOINT-10-${routeRequestId}] Calling storage.createOrganization...`);
+      console.log(`🏢 Creating organization: "${organizationData.name}" by user: ${user.email}`);
       
       const organization = await activeStorage.createOrganization(organizationData);
 
-      console.log(`✅ [ROUTE-CHECKPOINT-10-${routeRequestId}] Storage method returned successfully:`, {
-        returnedOrgId: organization.id,
-        returnedOrgName: organization.name
-      });
+      console.log(`✅ Organization created successfully: ${organization.id} - "${organization.name}"`);
 
-      // ROUTE CHECKPOINT 11: Response preparation
-      console.log(`🎯 [ROUTE-CHECKPOINT-11-${routeRequestId}] Preparing successful response...`);
-      
-      const responseData = {
+      res.status(201).json({
         ...organization,
         message: "Organization created successfully"
-      };
-
-      console.log(`✅ [ROUTE-CHECKPOINT-11-${routeRequestId}] Sending successful response`);
-      res.status(201).json(responseData);
+      });
 
     } catch (error: any) {
-      console.error(`❌ [ROUTE-CHECKPOINT-FINAL-${routeRequestId}] Route-level error caught:`, {
-        errorMessage: error?.message,
-        errorCode: error?.code,
-        errorType: error?.constructor?.name,
-        sqlNumber: error?.number,
-        sqlState: error?.state,
-        sqlSeverity: error?.class,
-        errorStack: error?.stack?.split('\n').slice(0, 10)
+      console.error(`❌ Error creating organization:`, {
+        message: error?.message,
+        code: error?.code,
+        type: error?.constructor?.name
       });
 
       // Handle specific error types
@@ -1302,12 +1344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generic server error
       res.status(500).json({
         message: "Failed to create organization. Please try again.",
-        code: "INTERNAL_ERROR",
-        requestId: routeRequestId,
-        debug: {
-          errorMessage: error?.message,
-          errorCode: error?.code
-        }
+        code: "INTERNAL_ERROR"
       });
     }
   });
