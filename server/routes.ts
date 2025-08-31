@@ -175,54 +175,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/projects', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const activeStorage = getStorage();
-      
+      const { name, description, organizationId, departmentId, status, budget, startDate, endDate, projectNumber } = req.body;
+
       // Validate user session
       if (!userId || typeof userId !== 'string') {
-        return res.status(401).json({ message: "Invalid user session. Please log in again." });
+        return res.status(401).json({
+          message: "Invalid user session. Please log in again.",
+          code: "INVALID_SESSION"
+        });
       }
 
+      // Validate request data
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({
+          message: "Project name is required",
+          code: "INVALID_NAME"
+        });
+      }
+
+      if (name.trim().length > 255) {
+        return res.status(400).json({
+          message: "Project name must be less than 255 characters",
+          code: "INVALID_NAME"
+        });
+      }
+
+      if (description && (typeof description !== 'string' || description.length > 2000)) {
+        return res.status(400).json({
+          message: "Description must be less than 2000 characters",
+          code: "INVALID_DESCRIPTION"
+        });
+      }
+
+      // Validate status if provided
+      const validStatuses = ['active', 'inactive', 'completed', 'archived'];
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+          message: "Invalid status",
+          code: "INVALID_STATUS",
+          validStatuses: validStatuses
+        });
+      }
+
+      // Validate budget if provided
+      if (budget && (typeof budget !== 'number' || budget < 0)) {
+        return res.status(400).json({
+          message: "Budget must be a positive number",
+          code: "INVALID_BUDGET"
+        });
+      }
+
+      // Validate dates if provided
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (start > end) {
+          return res.status(400).json({
+            message: "Start date cannot be after end date",
+            code: "INVALID_DATE_RANGE"
+          });
+        }
+      }
+
+      const activeStorage = getStorage();
+      
+      // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
-        return res.status(401).json({ message: "User not found. Please log in again." });
+        return res.status(401).json({
+          message: "User not found. Please log in again.",
+          code: "USER_NOT_FOUND"
+        });
       }
 
       const userRole = user.role || 'employee';
-
-      // Only project managers and admins can create projects
       if (!['admin', 'project_manager'].includes(userRole)) {
-        return res.status(403).json({ 
-          message: "Insufficient permissions to create projects",
+        return res.status(403).json({
+          message: "Only System Administrators and Project Managers can create projects",
+          code: "INSUFFICIENT_PERMISSIONS",
           requiredRole: "admin or project_manager",
           currentRole: userRole
         });
       }
 
-      // Validate required fields
-      const { name } = req.body;
-      
-      if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ message: "Project name is required" });
-      }
-
-      if (name.trim().length > 255) {
-        return res.status(400).json({ message: "Project name must be less than 255 characters" });
-      }
-
       // Validate optional organization/department references if provided
-      if (req.body.organizationId) {
-        const organization = await activeStorage.getOrganization(req.body.organizationId, userId);
+      if (organizationId) {
+        const organization = await activeStorage.getOrganization(organizationId, userId);
         if (!organization) {
-          return res.status(404).json({ message: "Organization not found" });
+          return res.status(404).json({
+            message: "Organization not found or access denied",
+            code: "ORGANIZATION_NOT_FOUND"
+          });
         }
       }
 
-      // Ensure user_id is properly set
-      const projectData = insertProjectSchema.parse({ 
-        ...req.body, 
+      if (departmentId) {
+        const department = await activeStorage.getDepartment(departmentId);
+        if (!department) {
+          return res.status(404).json({
+            message: "Department not found",
+            code: "DEPARTMENT_NOT_FOUND"
+          });
+        }
+        
+        // If both organization and department are specified, verify they match
+        if (organizationId && department.organization_id !== organizationId) {
+          return res.status(400).json({
+            message: "Department does not belong to the specified organization",
+            code: "DEPARTMENT_ORGANIZATION_MISMATCH"
+          });
+        }
+      }
+
+      // Create project
+      const projectData = {
         name: name.trim(),
-        user_id: userId 
-      });
+        description: description?.trim() || null,
+        status: status || 'active',
+        organizationId: organizationId || null,
+        departmentId: departmentId || null,
+        budget: budget || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        projectNumber: projectNumber?.trim() || null,
+        user_id: userId
+      };
 
       console.log(`📁 Creating project: "${projectData.name}" by user: ${user.email} (${userRole})`);
 
@@ -230,29 +307,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ Project created successfully: ${project.id} - "${project.name}"`);
       
-      res.status(201).json(project);
+      res.status(201).json({
+        ...project,
+        message: "Project created successfully"
+      });
+
     } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        console.error("❌ Project validation error:", error.errors);
-        return res.status(400).json({ message: "Invalid project data", errors: error.errors });
-      }
-      
-      console.error("❌ Error creating project:", error);
-      
-      // Handle specific database errors
+      console.error(`❌ Error creating project:`, {
+        message: error?.message,
+        code: error?.code,
+        type: error?.constructor?.name
+      });
+
+      // Handle specific error types
       if (error?.message?.includes("already exists")) {
-        return res.status(409).json({ message: "A project with this name already exists" });
+        return res.status(409).json({
+          message: error.message,
+          code: "DUPLICATE_NAME"
+        });
       }
-      
-      if (error?.message?.includes("organization_id") || error?.message?.includes("department_id")) {
-        return res.status(400).json({ message: "Invalid organization or department reference" });
+
+      if (error?.message?.includes("organization_id") || error?.message?.includes("Organization")) {
+        return res.status(400).json({
+          message: "Invalid organization data. Please verify organization exists.",
+          code: "INVALID_ORGANIZATION_DATA"
+        });
       }
-      
-      if (error?.message?.includes("user_id") || error?.message?.includes("FOREIGN KEY")) {
-        return res.status(400).json({ message: "Invalid user reference" });
+
+      if (error?.message?.includes("department_id") || error?.message?.includes("Department")) {
+        return res.status(400).json({
+          message: "Invalid department data. Please verify department exists.",
+          code: "INVALID_DEPARTMENT_DATA"
+        });
       }
-      
-      res.status(500).json({ message: "Failed to create project. Please try again." });
+
+      if (error?.message?.includes("user_id") || error?.message?.includes("User")) {
+        return res.status(400).json({
+          message: "Invalid user data. Please log in again.",
+          code: "INVALID_USER_DATA"
+        });
+      }
+
+      if (error?.message?.includes("budget") || error?.message?.includes("numeric")) {
+        return res.status(400).json({
+          message: "Invalid budget value",
+          code: "INVALID_BUDGET"
+        });
+      }
+
+      if (error?.message?.includes("date")) {
+        return res.status(400).json({
+          message: "Invalid date format",
+          code: "INVALID_DATE_FORMAT"
+        });
+      }
+
+      // Generic server error
+      res.status(500).json({
+        message: "Failed to create project. Please try again.",
+        code: "INTERNAL_ERROR"
+      });
     }
   });
 
@@ -816,76 +930,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/employees', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const activeStorage = getStorage();
-      
+      const { employeeId, firstName, lastName, department, email, phone, position } = req.body;
+
       // Validate user session
       if (!userId || typeof userId !== 'string') {
-        return res.status(401).json({ message: "Invalid user session. Please log in again." });
+        return res.status(401).json({
+          message: "Invalid user session. Please log in again.",
+          code: "INVALID_SESSION"
+        });
       }
 
-      const user = await activeStorage.getUser(userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found. Please log in again." });
-      }
-
-      const userRole = user.role || 'employee';
-
-      // Only admins and department managers can create employees
-      if (!['admin', 'manager'].includes(userRole)) {
-        return res.status(403).json({ message: "Insufficient permissions to create employees" });
-      }
-
-      // Validate required fields
-      const { employeeId, firstName, lastName, department } = req.body;
-      
+      // Validate request data
       if (!employeeId || typeof employeeId !== 'string' || employeeId.trim().length === 0) {
-        return res.status(400).json({ message: "Employee ID is required" });
+        return res.status(400).json({
+          message: "Employee ID is required",
+          code: "INVALID_EMPLOYEE_ID"
+        });
+      }
+
+      if (employeeId.trim().length > 50) {
+        return res.status(400).json({
+          message: "Employee ID must be less than 50 characters",
+          code: "INVALID_EMPLOYEE_ID"
+        });
       }
 
       if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
-        return res.status(400).json({ message: "First name is required" });
+        return res.status(400).json({
+          message: "First name is required",
+          code: "INVALID_FIRST_NAME"
+        });
+      }
+
+      if (firstName.trim().length > 100) {
+        return res.status(400).json({
+          message: "First name must be less than 100 characters",
+          code: "INVALID_FIRST_NAME"
+        });
       }
 
       if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
-        return res.status(400).json({ message: "Last name is required" });
+        return res.status(400).json({
+          message: "Last name is required",
+          code: "INVALID_LAST_NAME"
+        });
+      }
+
+      if (lastName.trim().length > 100) {
+        return res.status(400).json({
+          message: "Last name must be less than 100 characters",
+          code: "INVALID_LAST_NAME"
+        });
       }
 
       if (!department || typeof department !== 'string' || department.trim().length === 0) {
-        return res.status(400).json({ message: "Department is required" });
+        return res.status(400).json({
+          message: "Department is required",
+          code: "INVALID_DEPARTMENT"
+        });
       }
 
-      const employeeData = insertEmployeeSchema.parse({
+      if (department.trim().length > 100) {
+        return res.status(400).json({
+          message: "Department name must be less than 100 characters",
+          code: "INVALID_DEPARTMENT"
+        });
+      }
+
+      // Validate email format if provided
+      if (email && (typeof email !== 'string' || !email.includes('@'))) {
+        return res.status(400).json({
+          message: "Invalid email format",
+          code: "INVALID_EMAIL"
+        });
+      }
+
+      const activeStorage = getStorage();
+      
+      // Check user permissions
+      const user = await activeStorage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({
+          message: "User not found. Please log in again.",
+          code: "USER_NOT_FOUND"
+        });
+      }
+
+      const userRole = user.role || 'employee';
+      if (!['admin', 'manager'].includes(userRole)) {
+        return res.status(403).json({
+          message: "Only System Administrators and Managers can create employees",
+          code: "INSUFFICIENT_PERMISSIONS",
+          requiredRole: "admin or manager",
+          currentRole: userRole
+        });
+      }
+
+      // Create employee
+      const employeeData = {
         employeeId: employeeId.trim(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         department: department.trim(),
         userId
-      });
+      };
 
-      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId})`);
+      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId}) by user: ${user.email} (${userRole})`);
       
       const employee = await activeStorage.createEmployee(employeeData);
       
       console.log(`✅ Employee created successfully: ${employee.id} - ${employee.firstName} ${employee.lastName}`);
       
-      res.status(201).json(employee);
+      res.status(201).json({
+        ...employee,
+        message: "Employee created successfully"
+      });
+
     } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid employee data", errors: error.errors });
+      console.error(`❌ Error creating employee:`, {
+        message: error?.message,
+        code: error?.code,
+        type: error?.constructor?.name
+      });
+
+      // Handle specific error types
+      if (error?.message?.includes("already exists")) {
+        return res.status(409).json({
+          message: error.message,
+          code: "DUPLICATE_EMPLOYEE_ID"
+        });
       }
-      
-      console.error("❌ Error creating employee:", error);
-      
-      // Handle specific database errors
-      if (error?.message?.includes("already exists") || error?.message?.includes("UNIQUE")) {
-        return res.status(409).json({ message: "An employee with this ID already exists" });
+
+      if (error?.message?.includes("user_id") || error?.message?.includes("User")) {
+        return res.status(400).json({
+          message: "Invalid user data. Please log in again.",
+          code: "INVALID_USER_DATA"
+        });
       }
-      
-      if (error?.message?.includes("user_id") || error?.message?.includes("FOREIGN KEY")) {
-        return res.status(400).json({ message: "Invalid user reference" });
+
+      if (error?.message?.includes("department") || error?.message?.includes("Department")) {
+        return res.status(400).json({
+          message: "Invalid department data. Please verify department exists.",
+          code: "INVALID_DEPARTMENT_DATA"
+        });
       }
-      
-      res.status(500).json({ message: "Failed to create employee" });
+
+      // Generic server error
+      res.status(500).json({
+        message: "Failed to create employee. Please try again.",
+        code: "INTERNAL_ERROR"
+      });
     }
   });
 
@@ -978,65 +1172,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/departments", isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const activeStorage = getStorage();
-      const user = await activeStorage.getUser(userId);
-      const userRole = user?.role || 'employee';
+      const { name, organizationId, description, managerId } = req.body;
 
-      // Only system administrators can create departments
-      if (userRole !== 'admin') {
-        return res.status(403).json({ message: "Insufficient permissions to create departments" });
+      // Validate user session
+      if (!userId || typeof userId !== 'string') {
+        return res.status(401).json({
+          message: "Invalid user session. Please log in again.",
+          code: "INVALID_SESSION"
+        });
       }
 
-      // Validate required fields
-      const { name, organizationId, description, managerId } = req.body;
-      
+      // Validate request data
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ message: "Department name is required" });
+        return res.status(400).json({
+          message: "Department name is required",
+          code: "INVALID_NAME"
+        });
+      }
+
+      if (name.trim().length > 255) {
+        return res.status(400).json({
+          message: "Department name must be less than 255 characters",
+          code: "INVALID_NAME"
+        });
       }
 
       if (!organizationId || typeof organizationId !== 'string') {
-        return res.status(400).json({ message: "Organization ID is required" });
+        return res.status(400).json({
+          message: "Organization ID is required",
+          code: "INVALID_ORGANIZATION_ID"
+        });
+      }
+
+      if (description && (typeof description !== 'string' || description.length > 1000)) {
+        return res.status(400).json({
+          message: "Description must be less than 1000 characters",
+          code: "INVALID_DESCRIPTION"
+        });
+      }
+
+      const activeStorage = getStorage();
+      
+      // Check user permissions
+      const user = await activeStorage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({
+          message: "User not found. Please log in again.",
+          code: "USER_NOT_FOUND"
+        });
+      }
+
+      const userRole = user.role || 'employee';
+      if (userRole !== 'admin') {
+        return res.status(403).json({
+          message: "Only System Administrators can create departments",
+          code: "INSUFFICIENT_PERMISSIONS",
+          requiredRole: "admin",
+          currentRole: userRole
+        });
       }
 
       // Verify organization exists and user has access
-      const userOrganizations = await activeStorage.getUserOrganizations(userId);
-      const organization = userOrganizations.find(org => org.id === organizationId);
+      const organization = await activeStorage.getOrganization(organizationId, userId);
       if (!organization) {
-        return res.status(404).json({ message: "Organization not found or access denied" });
+        return res.status(404).json({
+          message: "Organization not found or access denied",
+          code: "ORGANIZATION_NOT_FOUND"
+        });
       }
 
-      const departmentData = insertDepartmentSchema.parse({
+      // Validate manager if provided
+      if (managerId) {
+        const manager = await activeStorage.getUser(managerId);
+        if (!manager) {
+          return res.status(404).json({
+            message: "Manager not found",
+            code: "MANAGER_NOT_FOUND"
+          });
+        }
+      }
+
+      // Create department
+      const departmentData = {
         name: name.trim(),
         organizationId,
-        description: description?.trim() || undefined,
-        managerId: managerId || undefined,
+        description: description?.trim() || null,
+        managerId: managerId || null,
         userId
-      });
+      };
 
-      console.log(`🏢 Creating department: "${departmentData.name}" in organization: ${organization.name}`);
+      console.log(`🏢 Creating department: "${departmentData.name}" in organization: ${organization.name} by user: ${user.email}`);
       
       const department = await activeStorage.createDepartment(departmentData);
       
       console.log(`✅ Department created successfully: ${department.id} - "${department.name}"`);
       
-      res.status(201).json(department);
+      res.status(201).json({
+        ...department,
+        message: "Department created successfully"
+      });
+
     } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid department data", errors: error.errors });
-      }
-      
-      console.error("❌ Error creating department:", error);
-      
-      // Handle specific database errors
+      console.error(`❌ Error creating department:`, {
+        message: error?.message,
+        code: error?.code,
+        type: error?.constructor?.name
+      });
+
+      // Handle specific error types
       if (error?.message?.includes("already exists")) {
-        return res.status(409).json({ message: "A department with this name already exists in the organization" });
+        return res.status(409).json({
+          message: error.message,
+          code: "DUPLICATE_NAME"
+        });
       }
-      
-      if (error?.message?.includes("organization_id") || error?.message?.includes("FOREIGN KEY")) {
-        return res.status(400).json({ message: "Invalid organization reference" });
+
+      if (error?.message?.includes("organization_id") || error?.message?.includes("Organization")) {
+        return res.status(400).json({
+          message: "Invalid organization data. Please verify organization exists.",
+          code: "INVALID_ORGANIZATION_DATA"
+        });
       }
-      
-      res.status(500).json({ message: "Failed to create department" });
+
+      if (error?.message?.includes("manager_id") || error?.message?.includes("Manager")) {
+        return res.status(400).json({
+          message: "Invalid manager data. Please verify manager exists.",
+          code: "INVALID_MANAGER_DATA"
+        });
+      }
+
+      // Generic server error
+      res.status(500).json({
+        message: "Failed to create department. Please try again.",
+        code: "INTERNAL_ERROR"
+      });
     }
   });
 

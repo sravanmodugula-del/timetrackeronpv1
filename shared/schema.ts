@@ -9,22 +9,24 @@ import { z } from "zod";
 // =============================================================================
 
 export const insertProjectSchema = z.object({
-  name: z.string().min(1, "Project name is required"),
-  description: z.string().optional(),
+  name: z.string().min(1, "Project name is required").max(255, "Project name must be less than 255 characters"),
+  description: z.string().max(2000, "Description must be less than 2000 characters").optional(),
   status: z.enum(['active', 'inactive', 'completed', 'archived']).default('active'),
   organizationId: z.string().optional(),
   departmentId: z.string().optional(),
   managerId: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  budget: z.number().optional(),
-  projectNumber: z.string().optional(),
+  budget: z.number().min(0, "Budget must be a positive number").optional(),
+  projectNumber: z.string().max(50, "Project number must be less than 50 characters").optional(),
+  color: z.string().optional(),
   isEnterpriseWide: z.boolean().default(false),
   isTemplate: z.boolean().default(false),
   allowTimeTracking: z.boolean().default(true),
   requireTaskSelection: z.boolean().default(false),
   enableBudgetTracking: z.boolean().default(false),
   enableBilling: z.boolean().default(false),
+  user_id: z.string().min(1, "User ID is required"),
 });
 
 export const insertTaskSchema = z.object({
@@ -61,10 +63,10 @@ export const insertTimeEntrySchema = z.object({
 });
 
 export const insertEmployeeSchema = z.object({
-  employeeId: z.string().min(1, "Employee ID is required"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  department: z.string().min(1, "Department is required"),
+  employeeId: z.string().min(1, "Employee ID is required").max(50, "Employee ID must be less than 50 characters"),
+  firstName: z.string().min(1, "First name is required").max(100, "First name must be less than 100 characters"),
+  lastName: z.string().min(1, "Last name is required").max(100, "Last name must be less than 100 characters"),
+  department: z.string().min(1, "Department is required").max(100, "Department must be less than 100 characters"),
   userId: z.string().optional(),
 });
 
@@ -75,7 +77,7 @@ export const insertOrganizationSchema = z.object({
 });
 
 export const insertDepartmentSchema = z.object({
-  name: z.string().min(1, "Department name is required"),
+  name: z.string().min(1, "Department name is required").max(255, "Department name must be less than 255 characters"),
   organizationId: z.string().min(1, "Organization ID is required"),
   managerId: z.string().optional(),
   description: z.string().optional(),
@@ -185,6 +187,7 @@ export interface Project {
   end_date?: Date;
   budget?: number;
   project_number?: string;
+  color?: string;
   is_enterprise_wide: boolean;
   is_template: boolean;
   allow_time_tracking: boolean;
@@ -208,6 +211,7 @@ export interface InsertProject {
   end_date?: Date;
   budget?: number;
   project_number?: string;
+  color?: string;
   is_enterprise_wide?: boolean;
   is_template?: boolean;
   allow_time_tracking?: boolean;

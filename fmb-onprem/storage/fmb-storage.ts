@@ -82,10 +82,7 @@ export class FmbStorage implements IStorage {
           requestTimeout: 30000,
           connectionTimeout: 30000,
           validateBulkLoadParameters: false,
-          cryptoCredentialsDetails: {
-            rejectUnauthorized: false, // Allow self-signed certificates
-            secureProtocol: 'TLSv1_2_method' // Use TLS 1.2
-          }
+          // SSL configuration removed for compatibility
         }
       };
 
@@ -120,11 +117,6 @@ export class FmbStorage implements IStorage {
   }
 
   async execute(query: string, params: any[] = []): Promise<any> {
-    // Minimal execution logging
-    if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
-      console.log(`🔄 [SQL] ${query.split(' ')[0]} operation on ${query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i)?.[1] || 'table'}`);
-    }
-
     if (!this.pool) {
       throw new Error('Database not connected. Call connect() first.');
     }
@@ -139,22 +131,7 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool.request();
 
-      // Bind parameters efficiently
-      params.forEach((param, index) => {
-        request.input(`param${index}`, param);
-      });
-
-      // Minimal execution logging
-      if (params.length > 0) {
-        console.log(`🗄️ [SQL] Executing with ${params.length} parameters`);
-      }
-
-      // Minimal execution logging
-      if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
-        console.log(`🔄 [SQL] ${query.split(' ')[0]} operation on ${query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i)?.[1] || 'table'}`);
-      }
-
-      // Bind parameters efficiently
+      // Bind parameters efficiently - only once
       params.forEach((param, index) => {
         request.input(`param${index}`, param);
       });

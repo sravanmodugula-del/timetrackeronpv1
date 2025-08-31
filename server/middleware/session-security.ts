@@ -1,9 +1,16 @@
-
 import type { Request, Response, NextFunction } from 'express';
+import type { Session } from 'express-session';
 
 interface SecureSessionRequest extends Request {
-  sessionStore?: any;
-  user?: any;
+  sessionStore: any;
+  session: Session & {
+    samlAuthenticated?: boolean;
+    authTimestamp?: number;
+    lastActivity?: number;
+    lastRegeneration?: number;
+    ipAddress?: string;
+    userAgent?: string;
+  };
 }
 
 // Enhanced session security middleware for FMB enterprise environment
@@ -17,7 +24,7 @@ export function sessionSecurityMiddleware() {
     try {
       const now = Date.now();
       const session = req.session as any;
-      
+
       // 1. Session tampering detection
       if (session.ipAddress && session.ipAddress !== req.ip) {
         console.log('🚨 [SECURITY] Session IP mismatch detected', {
@@ -26,7 +33,7 @@ export function sessionSecurityMiddleware() {
           userId: req.user?.userId || req.user?.email,
           sessionId: req.sessionID?.substring(0, 8) + '...'
         });
-        
+
         // Destroy potentially compromised session
         return req.session.destroy((err) => {
           if (err) console.error('Error destroying compromised session:', err);
@@ -41,14 +48,14 @@ export function sessionSecurityMiddleware() {
       // 2. Inactivity timeout check
       const lastActivity = session.lastActivity || session.authTimestamp || now;
       const inactivityTimeout = 2 * 60 * 60 * 1000; // 2 hours
-      
+
       if (now - lastActivity > inactivityTimeout) {
         console.log('⏰ [SECURITY] Session expired due to inactivity', {
           userId: req.user?.userId || req.user?.email,
           lastActivity: new Date(lastActivity).toISOString(),
           inactiveMinutes: Math.round((now - lastActivity) / (1000 * 60))
         });
-        
+
         return req.session.destroy((err) => {
           if (err) console.error('Error destroying inactive session:', err);
           res.status(401).json({ 
@@ -62,13 +69,13 @@ export function sessionSecurityMiddleware() {
       // 3. Session aging check (force re-authentication after extended periods)
       const maxSessionAge = 8 * 60 * 60 * 1000; // 8 hours maximum
       const sessionAge = now - (session.authTimestamp || now);
-      
+
       if (sessionAge > maxSessionAge) {
         console.log('🔄 [SECURITY] Session aged out, requiring re-authentication', {
           userId: req.user?.userId || req.user?.email,
           sessionAgeHours: Math.round(sessionAge / (1000 * 60 * 60))
         });
-        
+
         return req.session.destroy((err) => {
           if (err) console.error('Error destroying aged session:', err);
           res.status(401).json({ 
@@ -81,20 +88,20 @@ export function sessionSecurityMiddleware() {
 
       // 4. Update activity timestamp
       session.lastActivity = now;
-      
+
       // 5. Regenerate session ID periodically for enhanced security
       const timeSinceRegeneration = now - (session.lastRegeneration || session.authTimestamp || now);
       const regenerationInterval = 60 * 60 * 1000; // 1 hour
-      
+
       if (timeSinceRegeneration > regenerationInterval) {
         console.log('🔄 [SECURITY] Regenerating session ID for enhanced security');
-        
+
         req.session.regenerate((err) => {
           if (err) {
             console.error('Session regeneration failed:', err);
             return next(); // Continue with existing session
           }
-          
+
           // Preserve critical session data after regeneration
           req.session.samlAuthenticated = true;
           req.session.authTimestamp = session.authTimestamp;
@@ -102,7 +109,7 @@ export function sessionSecurityMiddleware() {
           req.session.lastRegeneration = now;
           req.session.ipAddress = req.ip;
           req.session.userAgent = req.get('User-Agent');
-          
+
           // Re-establish passport user
           req.logIn(req.user, (loginErr) => {
             if (loginErr) {
@@ -111,7 +118,7 @@ export function sessionSecurityMiddleware() {
             next();
           });
         });
-        
+
         return; // Exit early, next() called in regenerate callback
       }
 
@@ -137,7 +144,7 @@ export function sessionActivityTracker() {
       const session = req.session as any;
       session.lastActivity = Date.now();
       session.requestCount = (session.requestCount || 0) + 1;
-      
+
       // Track API vs page requests
       if (req.path.startsWith('/api/')) {
         session.lastApiActivity = Date.now();
@@ -152,7 +159,7 @@ export function enhancedLogout() {
   return async (req: SecureSessionRequest, res: Response) => {
     const userId = req.user?.userId || req.user?.email;
     const sessionId = req.sessionID;
-    
+
     console.log('🚪 [AUTH] Enhanced logout initiated', {
       userId,
       sessionId: sessionId?.substring(0, 8) + '...',
@@ -162,7 +169,7 @@ export function enhancedLogout() {
 
     // Clear all user sessions if requested
     const clearAllSessions = req.query.clearAll === 'true';
-    
+
     if (clearAllSessions && req.sessionStore && userId) {
       try {
         // Revoke all sessions for this user
@@ -180,16 +187,16 @@ export function enhancedLogout() {
       if (err) {
         console.error('🔴 [AUTH] Logout error:', err);
       }
-      
+
       if (req.session) {
         req.session.destroy((destroyErr) => {
           if (destroyErr) {
             console.error('🔴 [AUTH] Session destruction error:', destroyErr);
           }
-          
+
           // Clear the session cookie
           res.clearCookie('fmb.timetracker.sid');
-          
+
           console.log('✅ [AUTH] Logout completed successfully');
           res.redirect('/');
         });

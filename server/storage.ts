@@ -20,68 +20,93 @@ import type {
   Organization,
   InsertOrganization,
   OrganizationWithDepartments,
+  UpsertOrganization,
+  UpsertEmployee,
+  UpsertDepartment,
+  UpsertProject,
+  UpsertTask,
+  UpsertTimeEntry,
 } from "../shared/schema.js";
 
 export interface IStorage {
-  // Users
-  getUsers(): Promise<User[]>;
+  // User management
+  getUser(id: string): Promise<User | null>;
   getUserById(id: string): Promise<User | null>;
-  getUserByEmail(email: string): Promise<User | null>;
+  getUsers(): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: UpsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User>;
+  updateUserRole(id: string, role: string): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  getUsersWithoutEmployeeProfile(): Promise<User[]>;
+  linkUserToEmployee(userId: string, employeeId: string): Promise<Employee>;
 
-  // Organizations
+  // Organization management
   getOrganizations(): Promise<Organization[]>;
+  getOrganization(id: string, userId?: string): Promise<Organization | null>;
   getOrganizationById(id: string): Promise<Organization | null>;
-  createOrganization(org: InsertOrganization): Promise<Organization>;
-  updateOrganization(id: string, org: Partial<InsertOrganization>): Promise<Organization>;
+  getOrganizationsByUserId(userId: string): Promise<Organization[]>;
+  createOrganization(organization: UpsertOrganization): Promise<Organization>;
+  updateOrganization(id: string, organization: Partial<UpsertOrganization>): Promise<Organization>;
   deleteOrganization(id: string): Promise<void>;
+  getDepartmentsByOrganization(organizationId: string): Promise<Department[]>;
 
-  // Employees
+  // Employee management
   getEmployees(): Promise<Employee[]>;
+  getEmployee(id: string, userId?: string): Promise<Employee | null>;
   getEmployeeById(id: string): Promise<Employee | null>;
-  createEmployee(employee: InsertEmployee): Promise<Employee>;
-  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee>;
+  createEmployee(employee: UpsertEmployee): Promise<Employee>;
+  updateEmployee(id: string, employee: Partial<UpsertEmployee>): Promise<Employee>;
   deleteEmployee(id: string): Promise<void>;
 
-  // Departments
+  // Department management
   getDepartments(): Promise<Department[]>;
+  getDepartment(id: string): Promise<Department | null>;
   getDepartmentById(id: string): Promise<Department | null>;
-  createDepartment(dept: InsertDepartment): Promise<Department>;
-  updateDepartment(id: string, dept: Partial<InsertDepartment>): Promise<Department>;
+  createDepartment(department: UpsertDepartment): Promise<Department>;
+  updateDepartment(id: string, department: Partial<UpsertDepartment>): Promise<Department>;
   deleteDepartment(id: string): Promise<void>;
+  assignManagerToDepartment(departmentId: string, managerId: string, userId: string): Promise<void>;
 
-  // Projects
+  // Project management
   getProjects(): Promise<Project[]>;
+  getProject(id: string, userId?: string): Promise<Project | null>;
   getProjectById(id: string): Promise<Project | null>;
-  getProjectsByUserId(userId: string): Promise<Project[]>;
-  createProject(project: InsertProject): Promise<Project>;
-  updateProject(id: string, project: Partial<InsertProject>): Promise<Project>;
+  createProject(project: UpsertProject): Promise<Project>;
+  updateProject(id: string, project: Partial<UpsertProject>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
+  getProjectEmployees(): Promise<any[]>;
+  assignEmployeesToProject(projectId: string, employeeIds: string[], userId: string): Promise<void>;
+  removeEmployeeFromProject(projectId: string, employeeId: string, userId: string): Promise<boolean>;
 
-  // Tasks
+  // Task management
   getTasks(): Promise<Task[]>;
+  getAllUserTasks(userId: string): Promise<Task[]>;
+  getTask(id: string, userId?: string): Promise<Task | null>;
   getTaskById(id: string): Promise<Task | null>;
-  getTasksByProjectId(projectId: string): Promise<Task[]>;
-  createTask(task: InsertTask): Promise<Task>;
-  updateTask(id: string, task: Partial<InsertTask>): Promise<Task>;
+  createTask(task: UpsertTask): Promise<Task>;
+  updateTask(id: string, task: Partial<UpsertTask>): Promise<Task>;
   deleteTask(id: string): Promise<void>;
 
-  // Time Entries
+  // Time entry management
   getTimeEntries(): Promise<TimeEntry[]>;
-  getTimeEntryById(id: string): Promise<TimeEntry | null>;
-  getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]>;
+  getTimeEntry(id: string, userId?: string): Promise<TimeEntry | null>;
   getTimeEntriesByProjectId(projectId: string): Promise<TimeEntry[]>;
-  createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry>;
-  updateTimeEntry(id: string, entry: Partial<InsertTimeEntry>): Promise<TimeEntry>;
+  getTimeEntriesForProject(projectId: string): Promise<TimeEntry[]>;
+  createTimeEntry(entry: UpsertTimeEntry): Promise<TimeEntry>;
+  updateTimeEntry(id: string, entry: Partial<UpsertTimeEntry>): Promise<TimeEntry>;
   deleteTimeEntry(id: string): Promise<void>;
 
-  // Project Employees
-  getProjectEmployees(): Promise<ProjectEmployee[]>;
-  getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]>;
-  createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee>;
-  deleteProjectEmployee(id: string): Promise<void>;
+  // Dashboard and analytics
+  getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any>;
+  getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any>;
+  getRecentActivity(userId: string, limit?: number): Promise<any>;
+  getDepartmentHoursSummary(userId: string, startDate: string, endDate: string): Promise<any>;
+
+  // Database utilities
+  pingDatabase(): Promise<boolean>;
+  connect?(): Promise<void>;
 }
 
 // Create storage implementation that delegates to the database instance
@@ -312,12 +337,12 @@ class StorageImplementation implements IStorage {
       if (process.env.FMB_DEPLOYMENT === 'onprem') {
         const { getFmbStorage } = await import('../fmb-onprem/config/fmb-database.js');
         const storage = getFmbStorage();
-        
+
         // Ensure connection is established
         if (typeof storage.connect === 'function') {
           await storage.connect();
         }
-        
+
         return storage;
       } else {
         // Use relative import for Replit deployment
@@ -333,3 +358,11 @@ class StorageImplementation implements IStorage {
 }
 
 export const storage = new StorageImplementation();
+
+export function getStorage(): IStorage {
+  return storage;
+}
+
+export function getStorageInstance(): IStorage {
+  return storage;
+}

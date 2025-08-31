@@ -49,10 +49,10 @@ export function validateFmbEnvironment(): boolean {
 // Get FMB-specific configuration
 export function getFmbConfig() {
   // Ensure config is loaded
-  if (!global.fmbConfig) {
-    loadAndExportFmbConfig();
+  if (!(global as any).fmbConfig) {
+    return null;
   }
-  return global.fmbConfig!;
+  return (global as any).fmbConfig!;
 }
 
 // Helper function to read certificate file content
@@ -124,6 +124,6 @@ export function loadAndExportFmbConfig() {
     }
   };
   // Store config in global scope to be accessible by getFmbConfig
-  global.fmbConfig = config;
+  (global as any).fmbConfig = config;
   return config;
 }

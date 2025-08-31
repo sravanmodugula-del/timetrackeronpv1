@@ -13,12 +13,9 @@ function getFmbDatabaseConfig() {
     password: config.database.password,
     port: config.database.port,
     options: {
-      encrypt: config.database.options.encrypt,
-      trustServerCertificate: true, // Trust all certificates
-      enableArithAbort: true,
-      cryptoCredentialsDetails: {
-        rejectUnauthorized: false // Allow self-signed certificates
-      }
+      encrypt: process.env.FMB_DB_ENCRYPT === 'true',
+      trustServerCertificate: true,
+      enableArithAbort: true
     },
     pool: {
       max: 20,
