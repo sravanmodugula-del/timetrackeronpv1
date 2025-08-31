@@ -320,92 +320,47 @@ export class FmbStorage implements IStorage {
         userFound: true
       });
 
-      // Use direct query execution with explicit parameter binding
-      try {
-        const request = this.pool!.request();
+      // Use the working execute method that handles parameters correctly
+      this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
+        id: orgId,
+        name: sanitizedName,
+        description: sanitizedDescription,
+        user_id: sanitizedUserId,
+        method: 'execute_method'
+      });
 
-        // Add parameters with explicit types and values
-        console.log(`🔍 [CREATE_ORG-SQL] Adding parameters one by one...`);
-        
-        request.input('id', sql.NVarChar(255), orgId);
-        console.log(`✅ Parameter 'id' added:`, orgId);
-        
-        request.input('name', sql.NVarChar(255), sanitizedName);
-        console.log(`✅ Parameter 'name' added:`, sanitizedName);
-        
-        request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-        console.log(`✅ Parameter 'description' added:`, sanitizedDescription);
-        
-        request.input('user_id', sql.NVarChar(255), sanitizedUserId);
-        console.log(`✅ Parameter 'user_id' added:`, sanitizedUserId);
-        
-        // Verify all parameters were added
-        console.log(`🔍 [CREATE_ORG-SQL] Total parameters added:`, Object.keys(request.parameters || {}).length);
-
-        this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
-          id: orgId,
-          name: sanitizedName,
-          description: sanitizedDescription,
-          user_id: sanitizedUserId,
-          parameterCount: 4
-        });
-
-        const insertQuery = `
-          INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
-        `;
-
-        // DEBUG: Log SQL parameter binding details
-        console.log(`🔍 [CREATE_ORG-SQL] Parameter Binding Debug:`, {
-          sqlQuery: insertQuery.trim(),
-          parameters: {
-            '@id': { value: orgId, type: 'NVarChar(255)' },
-            '@name': { value: sanitizedName, type: 'NVarChar(255)' },
-            '@description': { value: sanitizedDescription, type: 'NVarChar(MAX)' },
-            '@user_id': { value: sanitizedUserId, type: 'NVarChar(255)' }
-          },
-          parameterValidation: {
-            allParametersHaveValues: !!(orgId && sanitizedName && sanitizedUserId),
-            userIdNotNull: sanitizedUserId !== null && sanitizedUserId !== undefined,
-            userIdNotEmpty: sanitizedUserId !== '',
-            nameNotEmpty: sanitizedName !== ''
-          }
-        });
-
-        // DEBUG: Log final parameter values right before execution
-        console.log(`🔍 [CREATE_ORG-SQL] Final Parameter Values:`, {
-          requestInputs: {
-            id: request.parameters.id ? { value: request.parameters.id.value, type: request.parameters.id.type } : 'MISSING',
-            name: request.parameters.name ? { value: request.parameters.name.value, type: request.parameters.name.type } : 'MISSING',
-            description: request.parameters.description ? { value: request.parameters.description.value, type: request.parameters.description.type } : 'MISSING',
-            user_id: request.parameters.user_id ? { value: request.parameters.user_id.value, type: request.parameters.user_id.type } : 'MISSING'
-          },
-          sqlQuery: insertQuery,
-          parameterKeys: Object.keys(request.parameters || {}),
-          hasParameters: !!(request.parameters && Object.keys(request.parameters).length > 0)
-        });
-
-        // Execute the query
-        const result = await request.query(insertQuery);
-
-        this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
-          id: orgId
-        });
-
-        // Fetch the created organization to verify
-        const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
-
-        if (!result || result.length === 0) {
-          throw new Error('Organization was not created successfully');
+      console.log(`🔍 [CREATE_ORG-SQL] Using execute method with parameters:`, {
+        parameters: [orgId, sanitizedName, sanitizedDescription, sanitizedUserId],
+        validation: {
+          allParametersPresent: !!(orgId && sanitizedName && sanitizedUserId),
+          userIdValid: sanitizedUserId && sanitizedUserId.trim().length > 0
         }
+      });
 
-        this.storageLog('CREATE_ORG', 'Organization creation completed successfully', {
-          id: orgId,
-          name: result[0].name,
-          user_id: result[0].user_id
-        });
+      // Use the execute method that works for other queries
+      await this.execute(`
+        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+        VALUES (@param0, @param1, @param2, @param3, GETDATE(), GETDATE())
+      `, [orgId, sanitizedName, sanitizedDescription, sanitizedUserId]);
 
-        return result[0];
+      this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
+        id: orgId
+      });
+
+      // Fetch the created organization to verify
+      const fetchResult = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
+
+      if (!fetchResult || fetchResult.length === 0) {
+        throw new Error('Organization was not created successfully');
+      }
+
+      this.storageLog('CREATE_ORG', 'Organization creation completed successfully', {
+        id: orgId,
+        name: fetchResult[0].name,
+        user_id: fetchResult[0].user_id
+      });
+
+      return fetchResult[0];
       } catch (insertError) {
         this.storageLog('CREATE_ORG', 'Database INSERT operation failed', {
           error: insertError.message,
