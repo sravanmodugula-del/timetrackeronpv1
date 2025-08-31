@@ -325,10 +325,22 @@ export class FmbStorage implements IStorage {
         const request = this.pool!.request();
 
         // Add parameters with explicit types and values
+        console.log(`🔍 [CREATE_ORG-SQL] Adding parameters one by one...`);
+        
         request.input('id', sql.NVarChar(255), orgId);
+        console.log(`✅ Parameter 'id' added:`, orgId);
+        
         request.input('name', sql.NVarChar(255), sanitizedName);
+        console.log(`✅ Parameter 'name' added:`, sanitizedName);
+        
         request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
+        console.log(`✅ Parameter 'description' added:`, sanitizedDescription);
+        
         request.input('user_id', sql.NVarChar(255), sanitizedUserId);
+        console.log(`✅ Parameter 'user_id' added:`, sanitizedUserId);
+        
+        // Verify all parameters were added
+        console.log(`🔍 [CREATE_ORG-SQL] Total parameters added:`, Object.keys(request.parameters || {}).length);
 
         this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
           id: orgId,
@@ -337,6 +349,11 @@ export class FmbStorage implements IStorage {
           user_id: sanitizedUserId,
           parameterCount: 4
         });
+
+        const insertQuery = `
+          INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
+        `;
 
         // DEBUG: Log SQL parameter binding details
         console.log(`🔍 [CREATE_ORG-SQL] Parameter Binding Debug:`, {
@@ -355,12 +372,21 @@ export class FmbStorage implements IStorage {
           }
         });
 
-        const insertQuery = `
-          INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
-        `;
+        // DEBUG: Log final parameter values right before execution
+        console.log(`🔍 [CREATE_ORG-SQL] Final Parameter Values:`, {
+          requestInputs: {
+            id: request.parameters.id ? { value: request.parameters.id.value, type: request.parameters.id.type } : 'MISSING',
+            name: request.parameters.name ? { value: request.parameters.name.value, type: request.parameters.name.type } : 'MISSING',
+            description: request.parameters.description ? { value: request.parameters.description.value, type: request.parameters.description.type } : 'MISSING',
+            user_id: request.parameters.user_id ? { value: request.parameters.user_id.value, type: request.parameters.user_id.type } : 'MISSING'
+          },
+          sqlQuery: insertQuery,
+          parameterKeys: Object.keys(request.parameters || {}),
+          hasParameters: !!(request.parameters && Object.keys(request.parameters).length > 0)
+        });
 
-        await request.query(insertQuery);
+        // Execute the query
+        const result = await request.query(insertQuery);
 
         this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
           id: orgId
