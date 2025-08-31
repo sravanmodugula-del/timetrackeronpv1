@@ -160,7 +160,7 @@ export class FmbStorage implements IStorage {
           if (param.trim() === '') {
             console.log(`⚠️ [EXECUTE-${executeId}-PARAM-${index}] WARNING: Binding empty string for ${paramName}`);
           }
-          
+
           const sqlType = param.length > 255 ? sql.NVarChar(sql.MAX) : sql.NVarChar(255);
           console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding string ${paramName}:`, {
             sqlType: sqlType.name || 'NVarChar',
@@ -192,10 +192,10 @@ export class FmbStorage implements IStorage {
         }
       });
 
-      this.storageLog('EXECUTE', `Running query with ${params.length} parameters`, { 
+      this.storageLog('EXECUTE', `Running query with ${params.length} parameters`, {
         executeId,
         query: query.substring(0, 100) + '...',
-        paramCount: params.length 
+        paramCount: params.length
       });
 
       // Final verification of bound parameters
@@ -210,18 +210,18 @@ export class FmbStorage implements IStorage {
       });
 
       const result = await request.query(query);
-      
+
       console.log(`✅ [EXECUTE-${executeId}] Query completed successfully:`, {
         recordCount: result.recordset?.length || 0,
         rowsAffected: result.rowsAffected,
         hasRecordset: !!result.recordset
       });
 
-      this.storageLog('EXECUTE', `Query completed successfully`, { 
+      this.storageLog('EXECUTE', `Query completed successfully`, {
         executeId,
-        recordCount: result.recordset?.length || 0 
+        recordCount: result.recordset?.length || 0
       });
-      
+
       return result.recordset || result.recordsets;
     } catch (error: any) {
       console.error(`❌ [EXECUTE-${executeId}] Query execution failed:`, {
@@ -237,13 +237,13 @@ export class FmbStorage implements IStorage {
         paramValues: params
       });
 
-      this.storageLog('EXECUTE', `Query execution failed`, { 
+      this.storageLog('EXECUTE', `Query execution failed`, {
         executeId,
         error: error.message,
         code: error.code,
         query: query.substring(0, 100) + '...'
       });
-      
+
       throw error;
     }
   }
@@ -260,9 +260,9 @@ export class FmbStorage implements IStorage {
     if (existingUser) {
       // Update existing user
       await this.execute(`
-        UPDATE users 
-        SET first_name = @param0, last_name = @param1, profile_image_url = @param2, 
-            role = @param3, organization_id = @param4, department = @param5, 
+        UPDATE users
+        SET first_name = @param0, last_name = @param1, profile_image_url = @param2,
+            role = @param3, organization_id = @param4, department = @param5,
             last_login_at = GETDATE(), updated_at = GETDATE()
         WHERE email = @param6
       `, [
@@ -307,9 +307,9 @@ export class FmbStorage implements IStorage {
 
       // Get all organizations with basic department count for performance
       const result = await this.execute(`
-        SELECT o.*, 
+        SELECT o.*,
                (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count
-        FROM organizations o 
+        FROM organizations o
         ORDER BY o.created_at DESC
       `);
 
@@ -335,12 +335,12 @@ export class FmbStorage implements IStorage {
       request.input('userId', sql.NVarChar(255), userId);
 
       const result = await request.query(`
-        SELECT o.*, 
-          (SELECT d.id, d.name, d.description, d.manager_id 
-           FROM departments d 
-           WHERE d.organization_id = o.id 
+        SELECT o.*,
+          (SELECT d.id, d.name, d.description, d.manager_id
+           FROM departments d
+           WHERE d.organization_id = o.id
            FOR JSON PATH) as departments
-        FROM organizations o 
+        FROM organizations o
         WHERE o.user_id = @userId
         ORDER BY o.created_at DESC
       `);
@@ -350,16 +350,16 @@ export class FmbStorage implements IStorage {
         departments: org.departments ? JSON.parse(org.departments) : []
       }));
 
-      this.storageLog('GET_USER_ORGS', 'User organizations fetched successfully', { 
-        userId, 
-        count: organizations.length 
+      this.storageLog('GET_USER_ORGS', 'User organizations fetched successfully', {
+        userId,
+        count: organizations.length
       });
 
       return organizations;
     } catch (error) {
-      this.storageLog('GET_USER_ORGS', 'Failed to fetch user organizations', { 
-        userId, 
-        error: error.message 
+      this.storageLog('GET_USER_ORGS', 'Failed to fetch user organizations', {
+        userId,
+        error: error.message
       });
       throw new Error(`Failed to fetch organizations for user: ${error.message}`);
     }
@@ -407,47 +407,81 @@ export class FmbStorage implements IStorage {
 
       console.log(`✅ [CREATE_ORG-${requestId}] Validation passed, proceeding with database insertion`);
 
-      // Enhanced parameter logging
-      const insertParams = {
-        id: id,
-        name: orgData.name.trim(),
-        description: orgData.description?.trim() || null,
-        user_id: orgData.user_id.trim()
-      };
+      // Prepare sanitized data
+      const sanitizedName = orgData.name.trim();
+      const sanitizedDescription = orgData.description?.trim() || null;
+      const sanitizedUserId = orgData.user_id.trim();
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Insert parameters prepared:`, {
-        id: insertParams.id,
-        name: insertParams.name,
-        description: insertParams.description,
-        user_id: insertParams.user_id,
-        parameterTypes: {
-          id: typeof insertParams.id,
-          name: typeof insertParams.name,
-          description: typeof insertParams.description,
-          user_id: typeof insertParams.user_id
-        }
+      console.log(`🔍 [CREATE_ORG-${requestId}] Sanitized data:`, {
+        id: id,
+        name: sanitizedName,
+        description: sanitizedDescription,
+        user_id: sanitizedUserId,
+        userIdIsNull: sanitizedUserId === null,
+        userIdIsUndefined: sanitizedUserId === undefined,
+        userIdIsEmpty: sanitizedUserId === '',
+        userIdLength: sanitizedUserId?.length || 0
       });
 
-      // Use direct SQL request with proper parameter binding instead of execute method
+      // Final validation before SQL execution
+      if (!sanitizedUserId || sanitizedUserId === '') {
+        console.log(`❌ [CREATE_ORG-${requestId}] CRITICAL: sanitized user_id is null or empty`, {
+          sanitizedUserId: sanitizedUserId,
+          originalUserId: orgData.user_id
+        });
+        throw new Error('Sanitized user_id cannot be null or empty for organization creation');
+      }
+
+      // Use direct SQL request with explicit parameter binding - simplified approach
       const request = this.pool!.request();
-      request.input('orgId', sql.NVarChar(255), insertParams.id);
-      request.input('orgName', sql.NVarChar(255), insertParams.name);
-      request.input('orgDescription', sql.NVarChar(sql.MAX), insertParams.description);
-      request.input('orgUserId', sql.NVarChar(255), insertParams.user_id);
+
+      // Bind parameters with explicit logging
+      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgId: "${id}"`);
+      request.input('orgId', sql.NVarChar(255), id);
+
+      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgName: "${sanitizedName}"`);
+      request.input('orgName', sql.NVarChar(255), sanitizedName);
+
+      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgDescription: "${sanitizedDescription}"`);
+      request.input('orgDescription', sql.NVarChar(sql.MAX), sanitizedDescription);
+
+      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgUserId: "${sanitizedUserId}"`);
+      request.input('orgUserId', sql.NVarChar(255), sanitizedUserId);
+
+      // Log all bound parameters for verification
+      console.log(`🔍 [CREATE_ORG-${requestId}] All parameters bound, verifying:`, {
+        totalParams: Object.keys(request.parameters || {}).length,
+        parameterNames: Object.keys(request.parameters || {}),
+        parameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
+          name,
+          type: param?.type?.name || 'unknown',
+          value: param?.value,
+          valueType: typeof param?.value,
+          isNull: param?.value === null,
+          isUndefined: param?.value === undefined
+        }))
+      });
+
+      // Verify the critical user_id parameter one more time
+      const userIdParam = request.parameters['orgUserId'];
+      if (!userIdParam || userIdParam.value === null || userIdParam.value === undefined || userIdParam.value === '') {
+        console.log(`❌ [CREATE_ORG-${requestId}] CRITICAL: orgUserId parameter validation failed`, {
+          userIdParam: userIdParam,
+          paramValue: userIdParam?.value,
+          paramType: typeof userIdParam?.value,
+          allParams: Object.keys(request.parameters || {})
+        });
+        throw new Error('orgUserId parameter validation failed at execution time');
+      }
 
       const insertQuery = `
         INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
         VALUES (@orgId, @orgName, @orgDescription, @orgUserId, GETDATE(), GETDATE())
       `;
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Executing insert with proper parameter binding:`, {
+      console.log(`🔍 [CREATE_ORG-${requestId}] Executing insert query:`, {
         query: insertQuery,
-        parameters: {
-          '@orgId': insertParams.id,
-          '@orgName': insertParams.name,
-          '@orgDescription': insertParams.description,
-          '@orgUserId': insertParams.user_id
-        }
+        boundParameterCount: Object.keys(request.parameters || {}).length
       });
 
       await request.query(insertQuery);
@@ -456,7 +490,7 @@ export class FmbStorage implements IStorage {
         organizationId: id
       });
 
-      // Fetch the created organization using direct request to avoid parameter issues
+      // Fetch the created organization using a fresh request to avoid any parameter conflicts
       const fetchRequest = this.pool!.request();
       fetchRequest.input('orgId', sql.NVarChar(255), id);
       const fetchResult = await fetchRequest.query('SELECT * FROM organizations WHERE id = @orgId');
@@ -508,21 +542,10 @@ export class FmbStorage implements IStorage {
       });
 
       throw insertError;
-    } catch (error) {
-      this.storageLog('CREATE_ORG', 'Organization creation failed', { 
-        orgData: { 
-          name: orgData?.name || '[MISSING]',
-          user_id: orgData?.user_id ? `[PRESENT: ${orgData.user_id.substring(0, 10)}...]` : '[MISSING]',
-          dataType: typeof orgData
-        }, 
-        error: error.message,
-        errorType: error.constructor.name
-      });
-      throw new Error(`Failed to create organization: ${error.message}`);
     }
   }
 
-  // Project Methods  
+  // Project Methods
   async getProjects(userId?: string): Promise<Project[]> {
     if (userId) {
       const result = await this.getProjectsByUserId(userId);
@@ -541,12 +564,12 @@ export class FmbStorage implements IStorage {
 
   async getProjectsByUserId(userId: string): Promise<ProjectWithEmployees[]> {
     const result = await this.execute(`
-      SELECT p.*, 
-        (SELECT pe.*, e.first_name, e.last_name, e.employee_id 
-         FROM project_employees pe 
-         JOIN employees e ON pe.employee_id = e.id 
+      SELECT p.*,
+        (SELECT pe.*, e.first_name, e.last_name, e.employee_id
+         FROM project_employees pe
+         JOIN employees e ON pe.employee_id = e.id
          WHERE pe.project_id = p.id FOR JSON PATH) as employees
-      FROM projects p 
+      FROM projects p
       WHERE p.user_id = @param0
     `, [userId]);
 
@@ -588,13 +611,13 @@ export class FmbStorage implements IStorage {
     request.input('enableBilling', sql.Bit, projectData.enable_billing || false);
 
     await request.query(`
-      INSERT INTO projects (id, name, description, status, organization_id, department_id, 
+      INSERT INTO projects (id, name, description, status, organization_id, department_id,
                            manager_id, user_id, start_date, end_date, budget, project_number,
-                           is_enterprise_wide, is_template, allow_time_tracking, 
+                           is_enterprise_wide, is_template, allow_time_tracking,
                            require_task_selection, enable_budget_tracking, enable_billing,
                            created_at, updated_at)
-      VALUES (@id, @name, @description, @status, @organizationId, @departmentId, @managerId, @userId, 
-              @startDate, @endDate, @budget, @projectNumber, @isEnterpriseWide, @isTemplate, 
+      VALUES (@id, @name, @description, @status, @organizationId, @departmentId, @managerId, @userId,
+              @startDate, @endDate, @budget, @projectNumber, @isEnterpriseWide, @isTemplate,
               @allowTimeTracking, @requireTaskSelection, @enableBudgetTracking, @enableBilling,
               GETDATE(), GETDATE())
     `);
@@ -623,8 +646,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE projects 
-        SET ${fields.join(', ')} 
+        UPDATE projects
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -646,8 +669,8 @@ export class FmbStorage implements IStorage {
   // Task Methods
   async getTasks(): Promise<Task[]> {
     const result = await this.execute(`
-      SELECT t.*, p.name as project_name 
-      FROM tasks t 
+      SELECT t.*, p.name as project_name
+      FROM tasks t
       JOIN projects p ON t.project_id = p.id
     `);
     return result;
@@ -655,9 +678,9 @@ export class FmbStorage implements IStorage {
 
   async getTasksByUserId(userId: string): Promise<Task[]> {
     const result = await this.execute(`
-      SELECT t.*, p.name as project_name 
-      FROM tasks t 
-      JOIN projects p ON t.project_id = p.id 
+      SELECT t.*, p.name as project_name
+      FROM tasks t
+      JOIN projects p ON t.project_id = p.id
       WHERE p.user_id = @param0
     `, [userId]);
     return result;
@@ -683,10 +706,10 @@ export class FmbStorage implements IStorage {
       estimated_hours: taskData.estimated_hours,
     };
     await this.execute(`
-      INSERT INTO tasks (id, project_id, title, name, description, status, priority, 
-                        assigned_to, created_by, due_date, estimated_hours, 
+      INSERT INTO tasks (id, project_id, title, name, description, status, priority,
+                        assigned_to, created_by, due_date, estimated_hours,
                         created_at, updated_at)
-      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, 
+      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6,
               @param7, @param8, @param9, @param10, GETDATE(), GETDATE())
     `, [
       insertData.id, insertData.project_id, insertData.title, insertData.name, insertData.description,
@@ -717,8 +740,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE tasks 
-        SET ${fields.join(', ')} 
+        UPDATE tasks
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -740,10 +763,10 @@ export class FmbStorage implements IStorage {
   // Time Entry Methods
   async getTimeEntries(): Promise<TimeEntry[]> {
     const result = await this.execute(`
-      SELECT te.*, p.name as project_name, t.title as task_name 
-      FROM time_entries te 
-      LEFT JOIN projects p ON te.project_id = p.id 
-      LEFT JOIN tasks t ON te.task_id = t.id 
+      SELECT te.*, p.name as project_name, t.title as task_name
+      FROM time_entries te
+      LEFT JOIN projects p ON te.project_id = p.id
+      LEFT JOIN tasks t ON te.task_id = t.id
       ORDER BY te.date DESC, te.created_at DESC
     `);
     return result;
@@ -751,11 +774,11 @@ export class FmbStorage implements IStorage {
 
   async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
     const result = await this.execute(`
-      SELECT te.*, p.name as project_name, t.title as task_name 
-      FROM time_entries te 
-      LEFT JOIN projects p ON te.project_id = p.id 
-      LEFT JOIN tasks t ON te.task_id = t.id 
-      WHERE te.user_id = @param0 
+      SELECT te.*, p.name as project_name, t.title as task_name
+      FROM time_entries te
+      LEFT JOIN projects p ON te.project_id = p.id
+      LEFT JOIN tasks t ON te.task_id = t.id
+      WHERE te.user_id = @param0
       ORDER BY te.date DESC, te.created_at DESC
     `, [userId]);
     return result;
@@ -792,12 +815,12 @@ export class FmbStorage implements IStorage {
       is_template: timeEntryData.is_template || false
     };
     await this.execute(`
-      INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours, 
-                               duration, date, start_time, end_time, status, billable, 
-                               is_billable, is_approved, is_manual_entry, is_timer_entry, 
+      INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours,
+                               duration, date, start_time, end_time, status, billable,
+                               is_billable, is_approved, is_manual_entry, is_timer_entry,
                                is_template, created_at, updated_at)
-      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, @param7, 
-              @param8, @param9, @param10, @param11, @param12, @param13, @param14, 
+      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6, @param7,
+              @param8, @param9, @param10, @param11, @param12, @param13, @param14,
               @param15, @param16, GETDATE(), GETDATE())
     `, [
       insertData.id, insertData.user_id, insertData.project_id, insertData.task_id,
@@ -832,8 +855,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE time_entries 
-        SET ${fields.join(', ')} 
+        UPDATE time_entries
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -884,7 +907,7 @@ export class FmbStorage implements IStorage {
       INSERT INTO employees (id, employee_id, first_name, last_name, department, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, GETDATE(), GETDATE())
     `, [
-      insertData.id, insertData.employee_id, insertData.first_name, 
+      insertData.id, insertData.employee_id, insertData.first_name,
       insertData.last_name, insertData.department, insertData.user_id
     ]);
 
@@ -911,8 +934,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE employees 
-        SET ${fields.join(', ')} 
+        UPDATE employees
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -934,8 +957,8 @@ export class FmbStorage implements IStorage {
   // Department Methods
   async getDepartments(): Promise<Department[]> {
     const result = await this.execute(`
-      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
-      FROM departments d 
+      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name
+      FROM departments d
       LEFT JOIN employees e ON d.manager_id = e.id
     `);
     return result;
@@ -943,9 +966,9 @@ export class FmbStorage implements IStorage {
 
   async getDepartmentsByUserId(userId: string): Promise<Department[]> {
     const result = await this.execute(`
-      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name 
-      FROM departments d 
-      LEFT JOIN employees e ON d.manager_id = e.id 
+      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name
+      FROM departments d
+      LEFT JOIN employees e ON d.manager_id = e.id
       WHERE d.user_id = @param0
     `, [userId]);
     return result;
@@ -969,7 +992,7 @@ export class FmbStorage implements IStorage {
       INSERT INTO departments (id, name, organization_id, manager_id, description, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, GETDATE(), GETDATE())
     `, [
-      insertData.id, insertData.name, insertData.organization_id, insertData.manager_id, 
+      insertData.id, insertData.name, insertData.organization_id, insertData.manager_id,
       insertData.description, insertData.user_id
     ]);
 
@@ -996,8 +1019,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE departments 
-        SET ${fields.join(', ')} 
+        UPDATE departments
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -1049,8 +1072,8 @@ export class FmbStorage implements IStorage {
       params.push(id);
 
       await this.execute(`
-        UPDATE users 
-        SET ${fields.join(', ')} 
+        UPDATE users
+        SET ${fields.join(', ')}
         WHERE id = @param${paramIndex}
       `, params);
     }
@@ -1082,25 +1105,25 @@ export class FmbStorage implements IStorage {
       request.input('id', sql.NVarChar(255), id);
 
       const result = await request.query(`
-        SELECT o.*, 
+        SELECT o.*,
                (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count,
                (SELECT COUNT(*) FROM projects p WHERE p.organization_id = o.id) as project_count
-        FROM organizations o 
+        FROM organizations o
         WHERE o.id = @id
       `);
 
       const organization = result.recordset[0] || null;
 
-      this.storageLog('GET_ORG_BY_ID', 'Organization fetch completed', { 
-        id, 
-        found: !!organization 
+      this.storageLog('GET_ORG_BY_ID', 'Organization fetch completed', {
+        id,
+        found: !!organization
       });
 
       return organization;
     } catch (error) {
-      this.storageLog('GET_ORG_BY_ID', 'Failed to fetch organization by ID', { 
-        id, 
-        error: error.message 
+      this.storageLog('GET_ORG_BY_ID', 'Failed to fetch organization by ID', {
+        id,
+        error: error.message
       });
       throw new Error(`Failed to fetch organization: ${error.message}`);
     }
@@ -1139,7 +1162,7 @@ export class FmbStorage implements IStorage {
 
             // Check for duplicate names (excluding current organization)
             const duplicateCheck = await this.execute(`
-              SELECT id FROM organizations 
+              SELECT id FROM organizations
               WHERE name = @param0 AND id != @param1 AND user_id = @param2
             `, [value.trim(), id, existingOrg.user_id]);
 
@@ -1183,8 +1206,8 @@ export class FmbStorage implements IStorage {
         transactionRequest.input('id', sql.NVarChar(255), id);
 
         await transactionRequest.query(`
-          UPDATE organizations 
-          SET ${fields.join(', ')} 
+          UPDATE organizations
+          SET ${fields.join(', ')}
           WHERE id = @id
         `);
 
@@ -1192,9 +1215,9 @@ export class FmbStorage implements IStorage {
 
         const updatedOrg = await this.getOrganizationById(id);
 
-        this.storageLog('UPDATE_ORG', 'Organization updated successfully', { 
-          id, 
-          updatedFields: Object.keys(orgData) 
+        this.storageLog('UPDATE_ORG', 'Organization updated successfully', {
+          id,
+          updatedFields: Object.keys(orgData)
         });
 
         return updatedOrg as Organization;
@@ -1203,9 +1226,9 @@ export class FmbStorage implements IStorage {
         throw transactionError;
       }
     } catch (error) {
-      this.storageLog('UPDATE_ORG', 'Failed to update organization', { 
-        id, 
-        error: error.message 
+      this.storageLog('UPDATE_ORG', 'Failed to update organization', {
+        id,
+        error: error.message
       });
       throw new Error(`Failed to update organization: ${error.message}`);
     }
@@ -1258,18 +1281,18 @@ export class FmbStorage implements IStorage {
 
         await transaction.commit();
 
-        this.storageLog('DELETE_ORG', 'Organization deleted successfully', { 
-          id, 
-          name: existingOrg.name 
+        this.storageLog('DELETE_ORG', 'Organization deleted successfully', {
+          id,
+          name: existingOrg.name
         });
       } catch (transactionError) {
         await transaction.rollback();
         throw transactionError;
       }
     } catch (error) {
-      this.storageLog('DELETE_ORG', 'Failed to delete organization', { 
-        id, 
-        error: error.message 
+      this.storageLog('DELETE_ORG', 'Failed to delete organization', {
+        id,
+        error: error.message
       });
       throw new Error(`Failed to delete organization: ${error.message}`);
     }
@@ -1303,8 +1326,8 @@ export class FmbStorage implements IStorage {
 
     const [hoursResult, projectsResult, employeesResult] = await Promise.all([
       this.execute(`
-        SELECT COALESCE(SUM(hours), 0) as total_hours 
-        FROM time_entries 
+        SELECT COALESCE(SUM(hours), 0) as total_hours
+        FROM time_entries
         WHERE user_id = @param0 ${dateFilter}
       `, params),
       this.execute('SELECT COUNT(*) as total_projects FROM projects WHERE user_id = @param0', [userId]),
@@ -1503,7 +1526,7 @@ export class FmbStorage implements IStorage {
       request.input('userId', sql.NVarChar(255), userId);
 
       const result = await request.query(`
-        SELECT 
+        SELECT
           p.id,
           p.name,
           '#1976D2' as color,
@@ -1539,7 +1562,7 @@ export class FmbStorage implements IStorage {
       }
 
       const result = await request.query(`
-        SELECT 
+        SELECT
           COALESCE(d.name, 'No Department') as department_name,
           COALESCE(SUM(te.hours), 0) as total_hours,
           COUNT(DISTINCT te.user_id) as employee_count,
@@ -1567,7 +1590,7 @@ export class FmbStorage implements IStorage {
       request.input('role', sql.NVarChar(50), newRole);
 
       const result = await request.query(`
-        UPDATE users 
+        UPDATE users
         SET role = @role, updated_at = GETDATE()
         WHERE id = @userId
       `);
