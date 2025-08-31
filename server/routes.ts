@@ -1095,23 +1095,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/organizations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
+      console.log('🔍 [ORG-CREATE] Extracted userId:', userId);
+      console.log('🔍 [ORG-CREATE] Request user object:', JSON.stringify(req.user, null, 2));
+      console.log('🔍 [ORG-CREATE] Request body:', JSON.stringify(req.body, null, 2));
+      
       const activeStorage = getStorage();
       const user = await activeStorage.getUser(userId);
       const userRole = user?.role || 'employee';
+
+      console.log('🔍 [ORG-CREATE] User from DB:', JSON.stringify(user, null, 2));
+      console.log('🔍 [ORG-CREATE] User role:', userRole);
 
       // Only system administrators can create organizations
       if (userRole !== 'admin') {
         return res.status(403).json({ message: "Insufficient permissions to create organizations" });
       }
 
-      // Ensure user_id is properly set
+      // Ensure user_id is properly set and not null
+      if (!userId) {
+        console.error('❌ [ORG-CREATE] User ID is null or undefined');
+        return res.status(400).json({ message: "Invalid user session - user ID not found" });
+      }
+
       const organizationData = { ...req.body, user_id: userId };
-      console.log('🏢 Creating organization with data:', organizationData);
+      console.log('🏢 [ORG-CREATE] Final organization data:', JSON.stringify(organizationData, null, 2));
       
       const organization = await activeStorage.createOrganization(organizationData);
+      console.log('✅ [ORG-CREATE] Organization created successfully:', organization.id);
       res.status(201).json(organization);
     } catch (error) {
-      console.error("Error creating organization:", error);
+      console.error("❌ [ORG-CREATE] Error creating organization:", error);
       res.status(500).json({ message: "Failed to create organization" });
     }
   });
