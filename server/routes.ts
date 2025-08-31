@@ -126,22 +126,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // FMB SAML user object structure
-      const userData = {
-        id: userId,
-        email: email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: null
-      };
-
       res.json({
         id: dbUser.id,
         email: dbUser.email,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
+        firstName: dbUser.first_name,
+        lastName: dbUser.last_name,
         role: dbUser.role,
-        profileImageUrl: dbUser.profileImageUrl
+        profileImageUrl: dbUser.profile_image_url
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -155,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract user ID using consistent helper function
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const projects = await activeStorage.getProjects(userId);
+      const projects = await activeStorage.getProjectsByUserId(userId);
       res.json(projects);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -1072,7 +1063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const organizations = await activeStorage.getOrganizations(userId);
+      const organizations = await activeStorage.getOrganizationsByUserId(userId);
       res.json(organizations);
     } catch (error) {
       console.error("Error fetching organizations:", error);
