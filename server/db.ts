@@ -14,8 +14,11 @@ function getFmbDatabaseConfig() {
     port: config.database.port,
     options: {
       encrypt: config.database.options.encrypt,
-      trustServerCertificate: config.database.options.trustServerCertificate,
+      trustServerCertificate: true, // Trust all certificates
       enableArithAbort: true,
+      cryptoCredentialsDetails: {
+        rejectUnauthorized: false // Allow self-signed certificates
+      }
     },
     pool: {
       max: 20,

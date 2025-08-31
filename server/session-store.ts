@@ -56,12 +56,15 @@ export class CustomMSSQLStore extends Store {
       port: parseInt(process.env.FMB_DB_PORT || '1433'),
       options: {
         encrypt: process.env.FMB_DB_ENCRYPT === 'true',
-        trustServerCertificate: process.env.FMB_DB_TRUST_SERVER_CERTIFICATE === 'true',
+        trustServerCertificate: true, // Trust all certificates
         enableArithAbort: true,
         requestTimeout: 30000,
         connectionTimeout: 30000,
         isolationLevel: sql.ISOLATION_LEVEL.READ_COMMITTED,
-        abortTransactionOnError: true
+        abortTransactionOnError: true,
+        cryptoCredentialsDetails: {
+          rejectUnauthorized: false // Allow self-signed certificates
+        }
       },
       pool: {
         max: 15, // Increased for enterprise load

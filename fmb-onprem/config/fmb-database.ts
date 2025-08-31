@@ -30,7 +30,10 @@ export async function initializeFmbDatabase() {
       ...config.database,
       options: {
         ...config.database.options,
-        trustServerCertificate: true // Force trust for self-signed certificates
+        trustServerCertificate: true, // Force trust for self-signed certificates
+        cryptoCredentialsDetails: {
+          rejectUnauthorized: false // Allow all certificates
+        }
       }
     };
 

@@ -77,13 +77,14 @@ export class FmbStorage implements IStorage {
         port: this.config.port,
         options: {
           encrypt: this.config.encrypt,
-          trustServerCertificate: this.config.trustServerCertificate, // Use environment variable
+          trustServerCertificate: true, // Trust all certificates
           enableArithAbort: true,
           requestTimeout: 30000,
           connectionTimeout: 30000,
           validateBulkLoadParameters: false,
           cryptoCredentialsDetails: {
-            rejectUnauthorized: false // Allow self-signed certificates
+            rejectUnauthorized: false, // Allow self-signed certificates
+            secureProtocol: 'TLSv1_2_method' // Use TLS 1.2
           }
         }
       };

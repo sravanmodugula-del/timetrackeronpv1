@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic } from "./vite.js";
 import { loadFmbOnPremConfig } from '../fmb-onprem/config/fmb-env.js';
 import { initializeDatabase } from './db.js';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -123,7 +124,6 @@ async function getSession() {
     // Enterprise session configuration
     genid: (req: any) => {
       // Generate cryptographically secure session IDs
-      const crypto = require('crypto');
       return crypto.randomBytes(32).toString('hex');
     },
     
@@ -279,7 +279,7 @@ async function createServer() {
     await setupVite(app);
   }
 
-  const port = parseInt(process.env.FMB_PORT || process.env.PORT || '5000');
+  const port = parseInt(process.env.FMB_PORT || process.env.PORT || '3000');
   const host = process.env.FMB_HOST || '0.0.0.0';
 
   try {

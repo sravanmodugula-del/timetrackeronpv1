@@ -2,24 +2,20 @@ module.exports = {
   apps: [{
     name: 'fmb-timetracker',
     script: 'dist/index.js',
+    instances: 1,
+    exec_mode: 'fork',
     env: {
       NODE_ENV: 'production',
       PORT: 3000,
-      HOST: '0.0.0.0',
-      FMB_DEPLOYMENT: 'onprem'
+      HOST: '0.0.0.0'
     },
-    instances: 1,
-    exec_mode: 'cluster',
-    watch: false,
-    max_memory_restart: '2G',
-    log_file: 'logs/combined.log',
+    error_file: 'logs/err.log',
     out_file: 'logs/out.log',
-    error_file: 'logs/error.log',
+    log_file: 'logs/combined.log',
     time: true,
-    merge_logs: true,
-    windows_hide: true,
-    restart_delay: 5000,
+    autorestart: true,
     max_restarts: 10,
-    min_uptime: '10s'
+    min_uptime: '10s',
+    restart_delay: 3000
   }]
 };
