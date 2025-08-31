@@ -25,18 +25,27 @@ export async function initializeFmbDatabase() {
 
     console.log(`🔗 Attempting connection to ${config.database.server}:${config.database.port}/${config.database.database}`);
 
-    fmbStorageInstance = new FmbStorage({
-      server: config.database.server,
-      database: config.database.database,
-      user: config.database.user,
-      password: config.database.password,
+    // Ensure SSL certificate trust for on-premises deployment
+    const dbConfig = {
+      ...config.database,
       options: {
-        port: parseInt(config.database.port.toString()),
+        ...config.database.options,
+        trustServerCertificate: true // Force trust for self-signed certificates
+      }
+    };
+
+    fmbStorageInstance = new FmbStorage({
+      server: dbConfig.server,
+      database: dbConfig.database,
+      user: dbConfig.user,
+      password: dbConfig.password,
+      options: {
+        port: parseInt(dbConfig.port.toString()),
         enableArithAbort: true,
         connectTimeout: 30000,
         requestTimeout: 30000,
-        encrypt: config.database.options.encrypt,
-        trustServerCertificate: config.database.options.trustServerCertificate
+        encrypt: dbConfig.options.encrypt,
+        trustServerCertificate: dbConfig.options.trustServerCertificate
       },
     });
 

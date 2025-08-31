@@ -88,7 +88,16 @@ export class FmbStorage implements IStorage {
         }
       };
 
-      this.pool = new sql.ConnectionPool(poolConfig);
+      // Ensure proper SSL certificate trust configuration
+      const connectionConfig = {
+        ...this.config,
+        options: {
+          ...this.config.options,
+          trustServerCertificate: this.config.trustServerCertificate || true // Force trust for on-premises
+        }
+      };
+
+      this.pool = new sql.ConnectionPool(connectionConfig);
 
       await this.pool.connect();
       this.storageLog('CONNECT', 'Successfully connected to MS SQL Server');
