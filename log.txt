@@ -91,7 +91,7 @@ Write-Host "📋 Commands: npx pm2 status | npx pm2 logs" -ForegroundColor Cyan
 ”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 📦 Installing dependencies...
 
-up to date, audited 804 packages in 2s
+up to date, audited 804 packages in 3s
 
 111 packages are looking for funding
   run `npm fund` for details
@@ -129,18 +129,9 @@ At line:1 char:1
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32mâœ“ built in 7.74s[39m
-â–² [WARNING] Duplicate key "cert" in object literal [duplicate-object-key]
-    fmb-onprem/auth/fmb-saml-auth.ts:50:6:
-      50 â”‚       cert: [fmbConfig.saml.cert], // Ensure cert is in array format
-         â•µ       ~~~~
-  The original key "cert" is here:
-    fmb-onprem/auth/fmb-saml-auth.ts:37:6:
-      37 â”‚       cert: fmbConfig.saml.cert, // IDP certificate for signature ...
-         â•µ       ~~~~
-1 warning
-  dist\index.js  151.4kb
-Done in 29ms
+[32mâœ“ built in 8.17s[39m
+  dist\index.js  152.6kb
+Done in 26ms
 ▶️ Starting application...
 [PM2][WARN] Applications fmb-timetracker not running, starting...
 [PM2] App [fmb-timetracker] launched (1 instances)
@@ -151,7 +142,7 @@ Done in 29ms
 â”œâ”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â
 ”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”
 €â”€â”€â”€â”€â”€â”€â”¤
-â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ fork    â”‚ 20152    â”‚ 0s     â”‚ 0    â”‚ online    â”‚ 23.4%    â”‚ 61.6mb   â”‚ ADM91381 â”‚ disabled â”‚
+â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ fork    â”‚ 15304    â”‚ 0s     â”‚ 0    â”‚ online    â”‚ 0%       â”‚ 63.2mb   â”‚ ADM91381 â”‚ disabled â”‚
 â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â
 ”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”
 €â”€â”€â”€â”€â”€â”€â”˜
@@ -179,65 +170,71 @@ C:\fmb-timetracker\logs\err-0.log last 10 lines:
 C:\fmb-timetracker\logs\out-0.log last 10 lines:
 0|fmb-time | l\\lib\\saml.js:53:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-sa
 ml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/d
-ist/index.js:1265:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2748:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4001:3)",
-0|fmb-time | 2025-08-30T22:54:15:   "errorType": "object",
-0|fmb-time | 2025-08-30T22:54:15:   "errorConstructor": "TypeError",
-0|fmb-time | 2025-08-30T22:54:15:   "serializedError": "{\"stack\":\"TypeError: idpCert is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utili
+ist/index.js:1291:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2771:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4024:3)",
+0|fmb-time | 2025-08-30T23:00:47:   "errorType": "object",
+0|fmb-time | 2025-08-30T23:00:47:   "errorConstructor": "TypeError",
+0|fmb-time | 2025-08-30T23:00:47:   "serializedError": "{\"stack\":\"TypeError: idpCert is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utili
 ty.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:53:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\no
 de-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracke
-r\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1265:24)\\n    at registerRoutes (file:///C:/fmb-timetracke
-r/dist/index.js:2748:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4001:3)\",\"message\":\"idpCert is required\"}"
-0|fmb-time | 2025-08-30T22:54:15: }
-0|fmb-time | 2025-08-30T22:54:15: 2025-08-31T05:54:15.393Z ðŸ—„ï¸ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
-0|fmb-time | 2025-08-30T22:54:15: ðŸŸ¢ [FMB-SESSION] Session table structure verified
-0|fmb-time | 2025-08-30T22:54:15: 2025-08-31T05:54:15.789Z ðŸ”´ [SERVER] Exiting due to startup failure
-0|fmb-time | 2025-08-30T22:54:15: ðŸŸ¡ [FMB-SESSION] Initiating graceful shutdown...
+r\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1291:24)\\n    at registerRoutes (file:///C:/fmb-timetracke
+r/dist/index.js:2771:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4024:3)\",\"message\":\"idpCert is required\"}"
+0|fmb-time | 2025-08-30T23:00:47: }
+0|fmb-time | 2025-08-30T23:00:47: 2025-08-31T06:00:47.692Z ðŸ—„ï¸ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
+0|fmb-time | 2025-08-30T23:00:47: ðŸŸ¢ [FMB-SESSION] Session table structure verified
+0|fmb-time | 2025-08-30T23:00:48: 2025-08-31T06:00:48.085Z ðŸ”´ [SERVER] Exiting due to startup failure
+0|fmb-time | 2025-08-30T23:00:48: ðŸŸ¡ [FMB-SESSION] Initiating graceful shutdown...
 
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.201Z ðŸŸ¢ [SERVER] Starting FMB TimeTracker On-Premises Application...
-0|fmb-timetracker  | 2025-08-30T22:54:20: [dotenv@17.2.1] injecting env (24) from fmb-onprem\.env.fmb-onprem -- tip: âš™ï¸  write to custom object with { processEnv: myObject }
-0|fmb-timetracker  | 2025-08-30T22:54:20: [dotenv@17.2.1] injecting env (11) from .env -- tip: ðŸ“¡ observe env with Radar: https://dotenvx.com/radar
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸ¢ FMB On-Premises configuration loaded
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.207Z ðŸŸ¢ [FMB-ONPREM] FMB On-premises environment initialized
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.207Z ðŸŸ¢ [CONFIG] FMB session secret validated successfully
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸ”— Connecting to FMB MS SQL database...
-0|fmb-timetracker  | 2025-08-30T22:54:20: âœ… FMB Database connection established successfully
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.400Z ðŸŸ¢ [DATABASE] FMB Database initialization completed successfully
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.404Z ðŸŸ¢ [SESSION] FMB Enterprise Session configured for production mode
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.405Z ðŸŸ¢ [SESSION] Initializing MS SQL session store for production
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.406Z ðŸŸ¢ [SESSION] Custom MS SQL session store initialized successfully
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.406Z ðŸŸ¢ [SESSION] Session store initialization completed
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.406Z ðŸŸ¢ [SERVER] FMB Session middleware configured successfully
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.409Z ðŸŸ¢ [SECURITY] Enterprise session security middleware activated
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸš€ Setting up FMB SAML Authentication for On-Premises environment...
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.412Z ðŸ”µ [FMB-SAML] Initializing FMB SAML Authentication
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸ”§ [FMB-DATABASE] Creating new FMB storage instance...
-0|fmb-timetracker  | 2025-08-30T22:54:20: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: âš™ï¸  write to custom object with { processEnv: myObject }
-0|fmb-timetracker  | 2025-08-30T22:54:20: [dotenv@17.2.1] injecting env (0) from .env -- tip: ðŸ” prevent committing .env to code: https://dotenvx.com/precommit
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸ¢ FMB On-Premises configuration loaded
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸ”— [FMB-STORAGE] Connecting to FMB MS SQL Server...
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.414Z ðŸŸ¢ [FMB-SAML] SAML Certificate validation {
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "certLength": 0,
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "hasBeginMarker": false,
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "hasEndMarker": false
-0|fmb-timetracker  | 2025-08-30T22:54:20: }
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.415Z ðŸ”´ [SERVER] Critical server startup failure: {
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "message": "idpCert is required",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "name": "TypeError",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "code": "NO_CODE",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "stack": "TypeError: idpCert is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.in
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.592Z ðŸŸ¢ [SERVER] Starting FMB TimeTracker On-Premises Application...
+0|fmb-timetracker  | 2025-08-30T23:00:52: [dotenv@17.2.1] injecting env (26) from fmb-onprem\.env.fmb-onprem -- tip: ðŸ“¡ observe env with Radar: https://dotenvx.com/radar
+0|fmb-timetracker  | 2025-08-30T23:00:52: [dotenv@17.2.1] injecting env (11) from .env -- tip: âš™ï¸  suppress all logs with { quiet: true }
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ¢ FMB On-Premises configuration loaded
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ” [FMB-CONFIG] Looking for certificate at: C:/fmb-timetracker/saml_cert.pem
+0|fmb-timetracker  | 2025-08-30T23:00:52: âœ… [FMB-CONFIG] Certificate loaded successfully from: C:/fmb-timetracker/saml_cert.pem
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ” [FMB-CONFIG] Certificate length: 1004 characters
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.599Z ðŸŸ¢ [FMB-ONPREM] FMB On-premises environment initialized
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.599Z ðŸŸ¢ [CONFIG] FMB session secret validated successfully
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ”— Connecting to FMB MS SQL database...
+0|fmb-timetracker  | 2025-08-30T23:00:52: âœ… FMB Database connection established successfully
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.796Z ðŸŸ¢ [DATABASE] FMB Database initialization completed successfully
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.800Z ðŸŸ¢ [SESSION] FMB Enterprise Session configured for production mode
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.800Z ðŸŸ¢ [SESSION] Initializing MS SQL session store for production
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.802Z ðŸŸ¢ [SESSION] Custom MS SQL session store initialized successfully
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.802Z ðŸŸ¢ [SESSION] Session store initialization completed
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.802Z ðŸŸ¢ [SERVER] FMB Session middleware configured successfully
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.804Z ðŸŸ¢ [SECURITY] Enterprise session security middleware activated
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸš€ Setting up FMB SAML Authentication for On-Premises environment...
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.807Z ðŸ”µ [FMB-SAML] Initializing FMB SAML Authentication
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ”§ [FMB-DATABASE] Creating new FMB storage instance...
+0|fmb-timetracker  | 2025-08-30T23:00:52: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: âš™ï¸  enable debug logging with { debug: true }
+0|fmb-timetracker  | 2025-08-30T23:00:52: [dotenv@17.2.1] injecting env (0) from .env -- tip: ðŸ› ï¸  run anywhere with `dotenvx run -- yourcommand`
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ¢ FMB On-Premises configuration loaded
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ” [FMB-CONFIG] Looking for certificate at: C:/fmb-timetracker/saml_cert.pem
+0|fmb-timetracker  | 2025-08-30T23:00:52: âœ… [FMB-CONFIG] Certificate loaded successfully from: C:/fmb-timetracker/saml_cert.pem
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ” [FMB-CONFIG] Certificate length: 1004 characters
+0|fmb-timetracker  | 2025-08-30T23:00:52: ðŸ”— [FMB-STORAGE] Connecting to FMB MS SQL Server...
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.809Z ðŸŸ¢ [FMB-SAML] SAML Certificate validation {
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "certLength": 1004,
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "hasBeginMarker": true,
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "hasEndMarker": true
+0|fmb-timetracker  | 2025-08-30T23:00:52: }
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.810Z ðŸ”´ [SERVER] Critical server startup failure: {
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "message": "idpCert is required",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "name": "TypeError",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "code": "NO_CODE",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "stack": "TypeError: idpCert is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.in
 itialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:53:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractS
 trategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n 
-   at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1265:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2748:9)\n    at async createServer2 (file:///C:/fmb-timetracker/di
-st/index.js:4001:3)",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "errorType": "object",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "errorConstructor": "TypeError",
-0|fmb-timetracker  | 2025-08-30T22:54:20:   "serializedError": "{\"stack\":\"TypeError: idpCert is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\
+   at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1291:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2771:9)\n    at async createServer2 (file:///C:/fmb-timetracker/di
+st/index.js:4024:3)",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "errorType": "object",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "errorConstructor": "TypeError",
+0|fmb-timetracker  | 2025-08-30T23:00:52:   "serializedError": "{\"stack\":\"TypeError: idpCert is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\
 \\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:53:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-sa
 ml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-ti
-metracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1265:24)\\n    at registerRoutes (file:///C:/fmb-ti
-metracker/dist/index.js:2748:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4001:3)\",\"message\":\"idpCert is required\"}"
-0|fmb-timetracker  | 2025-08-30T22:54:20: }
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.518Z ðŸ—„ï¸ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸŸ¢ [FMB-SESSION] Session table structure verified
-0|fmb-timetracker  | 2025-08-30T22:54:20: 2025-08-31T05:54:20.917Z ðŸ”´ [SERVER] Exiting due to startup failure
-0|fmb-timetracker  | 2025-08-30T22:54:20: ðŸŸ¡ [FMB-SESSION] Initiating graceful shutdown...
+metracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1291:24)\\n    at registerRoutes (file:///C:/fmb-ti
+metracker/dist/index.js:2771:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:4024:3)\",\"message\":\"idpCert is required\"}"
+0|fmb-timetracker  | 2025-08-30T23:00:52: }
+0|fmb-timetracker  | 2025-08-30T23:00:52: 2025-08-31T06:00:52.924Z ðŸ—„ï¸ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
+0|fmb-timetracker  | 2025-08-30T23:00:53: ðŸŸ¢ [FMB-SESSION] Session table structure verified
+0|fmb-timetracker  | 2025-08-30T23:00:53: 2025-08-31T06:00:53.311Z ðŸ”´ [SERVER] Exiting due to startup failure
+0|fmb-timetracker  | 2025-08-30T23:00:53: ðŸŸ¡ [FMB-SESSION] Initiating graceful shutdown...
