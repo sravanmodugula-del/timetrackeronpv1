@@ -84,17 +84,17 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
   // Remove duplicate tasks based on task name to show only distinct task names
   const uniqueTasks = tasks?.reduce<TaskWithProject[]>((acc, task) => {
     const taskName = task.name.trim().toUpperCase();
-    
+
     // Check if this exact task name already exists in our unique list
     const isDuplicateName = acc.some(existing => {
       const existingName = existing.name.trim().toUpperCase();
       return existingName === taskName;
     });
-    
+
     if (!isDuplicateName) {
       acc.push(task);
     }
-    
+
     return acc;
   }, []) || [];
 
@@ -103,10 +103,10 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.project.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const isDuplicate = existingTaskNames.has(task.name.toLowerCase());
-    const isFromTargetProject = task.projectId === targetProject;
-    
+    const isFromTargetProject = task.project_id === targetProject;
+
     return matchesSearch && !isDuplicate && !isFromTargetProject;
   });
 
@@ -115,10 +115,10 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.project.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const isDuplicate = existingTaskNames.has(task.name.toLowerCase());
-    const isFromTargetProject = task.projectId === targetProject;
-    
+    const isFromTargetProject = task.project_id === targetProject;
+
     return matchesSearch && (isDuplicate || isFromTargetProject);
   }).length;
 

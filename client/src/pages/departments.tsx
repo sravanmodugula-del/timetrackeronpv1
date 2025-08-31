@@ -47,7 +47,7 @@ export default function Departments() {
       }, 500);
       return;
     }
-    
+
     // Check for department access permissions (admin or manager with department data access)
     if (!isLoading && isAuthenticated && !(canManageSystem || canViewDepartmentData)) {
       toast({
@@ -235,8 +235,8 @@ export default function Departments() {
     form.reset({
       name: department.name,
       description: department.description || "",
-      organizationId: department.organizationId,
-      managerId: department.managerId || undefined,
+      organizationId: department.organization_id,
+      managerId: department.manager_id || undefined,
     });
     setIsModalOpen(true);
   };
@@ -254,7 +254,7 @@ export default function Departments() {
   const filteredDepartments = departments.filter(department =>
     department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (department.description && department.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (department.manager && `${department.manager.firstName} ${department.manager.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()))
+    (department.manager && `${department.manager.first_name} ${department.manager.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isLoading) return null;
@@ -382,7 +382,7 @@ export default function Departments() {
                               <SelectItem value="none">No manager assigned</SelectItem>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.firstName} {employee.lastName} - {employee.employeeId}
+                                  {employee.first_name} {employee.last_name} - {employee.employee_id}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -519,7 +519,7 @@ export default function Departments() {
                       {department.description}
                     </CardDescription>
                   )}
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Manager:</span>
@@ -527,7 +527,7 @@ export default function Departments() {
                         <div className="flex items-center space-x-2">
                           <Badge variant="secondary" className="text-xs">
                             <UserCheck className="w-3 h-3 mr-1" />
-                            {department.manager.firstName} {department.manager.lastName}
+                            {department.manager.first_name} {department.manager.last_name}
                           </Badge>
                         </div>
                       ) : (
@@ -540,7 +540,7 @@ export default function Departments() {
 
                     <div className="pt-2">
                       <Select
-                        value={department.managerId || "none"}
+                        value={department.manager_id || "none"}
                         onValueChange={(value) => handleAssignManager(department.id, value === "none" ? null : value)}
                         disabled={assignManager.isPending}
                       >
@@ -551,7 +551,7 @@ export default function Departments() {
                           <SelectItem value="none">No manager</SelectItem>
                           {employees.map((employee) => (
                             <SelectItem key={employee.id} value={employee.id}>
-                              {employee.firstName} {employee.lastName} - {employee.employeeId}
+                              {employee.first_name} {employee.last_name} - {employee.employee_id}
                             </SelectItem>
                           ))}
                         </SelectContent>

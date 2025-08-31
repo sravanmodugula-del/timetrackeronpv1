@@ -30,7 +30,7 @@ export default function Reports() {
   const { isAuthenticated, isLoading } = useAuth();
   const { canViewReports } = usePermissions();
   const [selectedProject, setSelectedProject] = useState<string>("");
-  
+
   // Check if user can view reports
   const canAccessReports = canViewReports;
 
@@ -47,7 +47,7 @@ export default function Reports() {
       }, 500);
       return;
     }
-    
+
     if (!isLoading && isAuthenticated && !canAccessReports) {
       toast({
         title: "Access Denied",
@@ -97,7 +97,7 @@ export default function Reports() {
     }
 
     const selectedProjectName = projects.find(p => p.id === selectedProject)?.name || "Unknown Project";
-    
+
     // CSV headers
     const headers = [
       "Date",
@@ -116,13 +116,13 @@ export default function Reports() {
       const selectedProjectData = projects.find(p => p.id === selectedProject);
       return [
         entry.date ? format(new Date(entry.date), "MM/dd/yyyy") : "Unknown Date",
-        selectedProjectData?.projectNumber || "",
+        selectedProjectData?.project_number || "",
         selectedProjectData?.name || "Unknown Project",
-        entry.employee ? `${entry.employee.firstName} ${entry.employee.lastName}` : "Unknown Employee",
+        entry.employee ? `${entry.employee.first_name} ${entry.employee.last_name}` : "Unknown Employee",
         entry.task ? entry.task.name : "No Task",
         entry.description || "",
         duration.toFixed(2),
-        entry.createdAt ? format(new Date(entry.createdAt), "MM/dd/yyyy HH:mm:ss") : "Unknown"
+        entry.created_at ? format(new Date(entry.created_at), "MM/dd/yyyy HH:mm:ss") : "Unknown"
       ];
     });
 
@@ -180,7 +180,7 @@ export default function Reports() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Reports</h2>
@@ -209,11 +209,11 @@ export default function Reports() {
                         <div className="flex items-center gap-2">
                           <div 
                             className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: project.color || "#1976D2" }}
+                            style={{ backgroundColor: "#1976D2" }}
                           ></div>
                           {project.name}
-                          {project.projectNumber && (
-                            <span className="text-xs text-gray-500">#{project.projectNumber}</span>
+                          {project.project_number && (
+                            <span className="text-xs text-gray-500">#{project.project_number}</span>
                           )}
                         </div>
                       </SelectItem>
@@ -270,7 +270,7 @@ export default function Reports() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
@@ -282,7 +282,7 @@ export default function Reports() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center">
@@ -328,9 +328,9 @@ export default function Reports() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {selectedProjectData?.projectNumber ? (
+                              {selectedProjectData?.project_number ? (
                                 <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                  {selectedProjectData.projectNumber}
+                                  {selectedProjectData.project_number}
                                 </Badge>
                               ) : (
                                 <span className="text-gray-400 text-sm">—</span>
@@ -338,7 +338,7 @@ export default function Reports() {
                             </TableCell>
                             <TableCell>
                               {entry.employee 
-                                ? `${entry.employee.firstName} ${entry.employee.lastName}`
+                                ? `${entry.employee.first_name} ${entry.employee.last_name}`
                                 : "Unknown Employee"
                               }
                             </TableCell>
@@ -362,7 +362,7 @@ export default function Reports() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">
-                              {entry.createdAt ? format(new Date(entry.createdAt), "MMM dd, HH:mm") : "Unknown"}
+                              {entry.created_at ? format(new Date(entry.created_at), "MMM dd, HH:mm") : "Unknown"}
                             </TableCell>
                           </TableRow>
                         );

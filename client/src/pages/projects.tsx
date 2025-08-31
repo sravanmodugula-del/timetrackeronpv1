@@ -44,11 +44,15 @@ import { Plus, Edit2, Trash2, FolderOpen, Users, Globe, Calendar, Settings } fro
 import { getProjectStatus } from "@/lib/projectUtils";
 import Header from "@/components/layout/header";
 
-const projectFormSchema = insertProjectSchema.omit({ userId: true }).extend({
-  assignedEmployeeIds: z.array(z.string()).optional(),
+const projectFormSchema = z.object({
+  name: z.string().min(1, "Project name is required"),
+  description: z.string().optional(),
+  color: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   projectNumber: z.string().optional(),
+  isEnterpriseWide: z.boolean().default(false),
+  assignedEmployeeIds: z.array(z.string()).optional(),
 });
 type ProjectFormData = z.infer<typeof projectFormSchema>;
 
@@ -62,25 +66,26 @@ const projectColors = [
 ];
 
 export default function Projects() {
-  const { isAuthenticated, isLoading: authLoading, role } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const role = user?.authContext?.role || user?.role || 'employee';
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectWithEmployees | null>(null);
   const [activeTab, setActiveTab] = useState("details");
-  
+
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       name: "",
-      projectNumber: "",
       description: "",
       color: "#1976D2",
-      isEnterpriseWide: true,
-      assignedEmployeeIds: [],
+      projectNumber: "",
       startDate: "",
       endDate: "",
+      isEnterpriseWide: false,
+      assignedEmployeeIds: [],
     },
   });
 
@@ -107,21 +112,22 @@ export default function Projects() {
   const createProject = useMutation({
     mutationFn: async (data: ProjectFormData) => {
       const { assignedEmployeeIds, startDate, endDate, ...projectData } = data;
-      
+
       // Send date strings directly - backend will handle conversion
       const formattedData = {
         ...projectData,
-        ...(startDate && startDate.trim() && { startDate }),
-        ...(endDate && endDate.trim() && { endDate }),
+        ...(startDate && startDate.trim() && { start_date: startDate }),
+        ...(endDate && endDate.trim() && { end_date: endDate }),
+        is_enterprise_wide: data.isEnterpriseWide,
       };
-      
+
       const project = await apiRequest("/api/projects", "POST", formattedData);
-      
+
       // If project is restricted and has assigned employees, assign them
       if (!data.isEnterpriseWide && assignedEmployeeIds && assignedEmployeeIds.length > 0) {
         await apiRequest(`/api/projects/${project.id}/employees`, "POST", { employeeIds: assignedEmployeeIds });
       }
-      
+
       return project;
     },
     onSuccess: () => {
@@ -129,7 +135,16 @@ export default function Projects() {
       setIsDialogOpen(false);
       setEditingProject(null);
       setActiveTab("details");
-      form.reset();
+      form.reset({
+        name: "",
+        projectNumber: "",
+        description: "",
+        color: "#1976D2",
+        startDate: "",
+        endDate: "",
+        isEnterpriseWide: false,
+        assignedEmployeeIds: [],
+      });
       toast({
         title: "Success",
         description: "Project created successfully.",
@@ -159,24 +174,25 @@ export default function Projects() {
   const updateProject = useMutation({
     mutationFn: async (data: ProjectFormData) => {
       if (!editingProject) throw new Error("No project selected for editing");
-      
+
       const { assignedEmployeeIds, startDate, endDate, ...projectData } = data;
-      
+
       // Send date strings directly - backend will handle conversion
       const formattedData = {
         ...projectData,
-        ...(startDate && startDate.trim() && { startDate }),
-        ...(endDate && endDate.trim() && { endDate }),
+        ...(startDate && startDate.trim() && { start_date: startDate }),
+        ...(endDate && endDate.trim() && { end_date: endDate }),
+        is_enterprise_wide: data.isEnterpriseWide,
       };
-      
+
       const project = await apiRequest(`/api/projects/${editingProject.id}`, "PUT", formattedData);
-      
+
       // Update employee assignments for restricted projects
       if (!data.isEnterpriseWide) {
         console.log("Attempting to assign employees:", assignedEmployeeIds);
         try {
-          const employeeResponse = await apiRequest(`/api/projects/${editingProject.id}/employees`, "POST", { 
-            employeeIds: assignedEmployeeIds || [] 
+          const employeeResponse = await apiRequest(`/api/projects/${editingProject.id}/employees`, "POST", {
+            employeeIds: assignedEmployeeIds || []
           });
           console.log("Employee assignment successful:", employeeResponse);
         } catch (employeeError) {
@@ -189,7 +205,7 @@ export default function Projects() {
           });
         }
       }
-      
+
       return project;
     },
     onSuccess: () => {
@@ -197,7 +213,16 @@ export default function Projects() {
       setIsDialogOpen(false);
       setEditingProject(null);
       setActiveTab("details");
-      form.reset();
+      form.reset({
+        name: "",
+        projectNumber: "",
+        description: "",
+        color: "#1976D2",
+        startDate: "",
+        endDate: "",
+        isEnterpriseWide: false,
+        assignedEmployeeIds: [],
+      });
       toast({
         title: "Success",
         description: "Project updated successfully.",
@@ -278,8 +303,8 @@ export default function Projects() {
 
   const handleEdit = async (project: Project) => {
     // Fetch project with employee assignments if it's restricted
-    let projectWithEmployees: ProjectWithEmployees = project;
-    if (!project.isEnterpriseWide) {
+    let projectWithEmployees: ProjectWithEmployees = project as ProjectWithEmployees; // Cast to ProjectWithEmployees
+    if (!project.is_enterprise_wide) {
       try {
         const assignedEmployees = await apiRequest(`/api/projects/${project.id}/employees`, "GET");
         projectWithEmployees = { ...project, assignedEmployees };
@@ -288,17 +313,16 @@ export default function Projects() {
         projectWithEmployees = { ...project, assignedEmployees: [] };
       }
     }
-    
-    setEditingProject(projectWithEmployees);
+
     form.reset({
       name: project.name,
-      projectNumber: project.projectNumber || "",
+      projectNumber: project.project_number || "",
       description: project.description || "",
-      color: project.color || "#1976D2",
-      startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
-      endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
-      isEnterpriseWide: project.isEnterpriseWide,
-      assignedEmployeeIds: projectWithEmployees.assignedEmployees?.map(emp => emp.id) || [],
+      color: "#1976D2",
+      startDate: project.start_date ? new Date(project.start_date).toISOString().split('T')[0] : "",
+      endDate: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : "",
+      isEnterpriseWide: project.is_enterprise_wide,
+      assignedEmployeeIds: [],
     });
     setActiveTab("details");
     setIsDialogOpen(true);
@@ -317,10 +341,10 @@ export default function Projects() {
       projectNumber: "",
       description: "",
       color: "#1976D2",
-      isEnterpriseWide: true,
-      assignedEmployeeIds: [],
       startDate: "",
       endDate: "",
+      isEnterpriseWide: false,
+      assignedEmployeeIds: [],
     });
     setActiveTab("details");
     setIsDialogOpen(true);
@@ -335,10 +359,10 @@ export default function Projects() {
       projectNumber: "",
       description: "",
       color: "#1976D2",
-      isEnterpriseWide: true,
-      assignedEmployeeIds: [],
       startDate: "",
       endDate: "",
+      isEnterpriseWide: false,
+      assignedEmployeeIds: [],
     });
   };
 
@@ -355,7 +379,7 @@ export default function Projects() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Header />
-      
+
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -392,9 +416,9 @@ export default function Projects() {
                           <Settings className="w-4 h-4" />
                           Project Details
                         </TabsTrigger>
-                        <TabsTrigger 
-                          value="employees" 
-                          className="flex items-center gap-2" 
+                        <TabsTrigger
+                          value="employees"
+                          className="flex items-center gap-2"
                           disabled={form.watch("isEnterpriseWide")}
                           data-testid="tab-employees"
                         >
@@ -430,8 +454,8 @@ export default function Projects() {
                             <FormItem>
                               <FormLabel>Project Number (optional)</FormLabel>
                               <FormControl>
-                                <Input 
-                                  placeholder="e.g., PRJ-001, 2024-001, etc." 
+                                <Input
+                                  placeholder="e.g., PRJ-001, 2024-001, etc."
                                   {...field}
                                   value={field.value || ""}
                                 />
@@ -495,8 +519,8 @@ export default function Projects() {
                               <FormItem>
                                 <FormLabel>Start Date (optional)</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="date" 
+                                  <Input
+                                    type="date"
                                     {...field}
                                     value={field.value || ""}
                                   />
@@ -513,8 +537,8 @@ export default function Projects() {
                               <FormItem>
                                 <FormLabel>End Date (optional)</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="date" 
+                                  <Input
+                                    type="date"
                                     {...field}
                                     value={field.value || ""}
                                     min={form.watch("startDate") || undefined}
@@ -591,9 +615,9 @@ export default function Projects() {
                                                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                                               >
                                                 <div className="flex items-center justify-between">
-                                                  <span>{employee.firstName} {employee.lastName}</span>
-                                                  <span className="text-xs text-muted-foreground">
-                                                    {employee.department} • {employee.employeeId}
+                                                  <span>{employee.first_name} {employee.last_name}</span>
+                                                  <span className="text-sm text-gray-500">
+                                                    {employee.department} • {employee.employee_id}
                                                   </span>
                                                 </div>
                                               </label>
@@ -616,7 +640,7 @@ export default function Projects() {
                             <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
                             <h3 className="font-medium mb-2">Enterprise-wide Project</h3>
                             <p className="text-sm">
-                              This project is available to all employees. To assign specific employees, 
+                              This project is available to all employees. To assign specific employees,
                               disable the "Enterprise-wide Project" option in the Project Details tab.
                             </p>
                           </div>
@@ -698,8 +722,8 @@ export default function Projects() {
                       ></div>
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-                        {project.projectNumber && (
-                          <p className="text-sm text-gray-500 mt-1">#{project.projectNumber}</p>
+                        {project.project_number && (
+                          <p className="text-sm text-gray-500 mt-1">#{project.project_number}</p>
                         )}
                       </div>
                     </div>
@@ -736,20 +760,20 @@ export default function Projects() {
                     )}
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <div className="flex items-center space-x-4">
-                        {project.startDate && (
+                        {project.start_date && (
                           <div className="flex items-center space-x-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{new Date(project.startDate).toLocaleDateString()}</span>
+                            <Calendar className="w-4 h-4 mr-1" />
+                            <span>{new Date(project.start_date).toLocaleDateString()}</span>
                           </div>
                         )}
-                        {getProjectStatus(project) && (
-                          <Badge variant="outline" className="text-xs">
-                            {getProjectStatus(project)}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        {project.isEnterpriseWide ? (
+
+                        <div className="flex items-center text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${getProjectStatus(project)}`}>
+                            {getProjectStatus(project).charAt(0).toUpperCase() + getProjectStatus(project).slice(1)}
+                          </span>
+                        </div>
+
+                        {project.is_enterprise_wide ? (
                           <Badge variant="secondary" className="text-xs">
                             <Globe className="w-3 h-3 mr-1" />
                             All Employees

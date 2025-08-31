@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -13,6 +13,7 @@ import { Link } from "wouter";
 import type { TimeEntryWithProject, Project } from "@shared/schema";
 import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
 import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
 
 export default function TimeLog() {
   const { toast } = useToast();
@@ -47,7 +48,7 @@ export default function TimeLog() {
     const now = new Date();
     const todayPST = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
     const today = new Date(todayPST + 'T00:00:00');
-    
+
     switch (dateRange) {
       case "today":
         return {
@@ -132,31 +133,29 @@ export default function TimeLog() {
     }
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+  // Helper function to format time
+  const formatTime = (time: string | Date) => {
+    try {
+      const date = time instanceof Date ? time : new Date(time);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return 'Invalid time';
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+  const formatDate = (dateString: string | number | Date) => {
+    const date = new Date(dateString);
+    return format(date, 'MMM dd, yyyy');
   };
 
-  const getProjectColor = (project: Project) => {
+  const getProjectColor = (color: string) => {
     const colors = {
       '#1976D2': 'bg-primary/10 text-primary',
       '#388E3C': 'bg-green-100 text-green-700',
       '#F57C00': 'bg-orange-100 text-orange-700',
       '#D32F2F': 'bg-red-100 text-red-700',
     };
-    return colors[project.color as keyof typeof colors] || 'bg-gray-100 text-gray-700';
+    return colors[color as keyof typeof colors] || 'bg-gray-100 text-gray-700';
   };
 
   if (isLoading || !isAuthenticated) {
@@ -173,7 +172,7 @@ export default function TimeLog() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Time Log</h2>
@@ -273,14 +272,14 @@ export default function TimeLog() {
                           {formatDate(entry.date)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={getProjectColor(entry.project)}>
+                          <Badge className={getProjectColor(entry.project.color)}>
                             {entry.project.name}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {entry.project.projectNumber ? (
+                          {entry.project.project_number ? (
                             <Badge variant="outline" className="bg-gray-50 text-gray-700">
-                              {entry.project.projectNumber}
+                              {entry.project.project_number}
                             </Badge>
                           ) : (
                             <span className="text-gray-400 text-xs">—</span>
@@ -293,10 +292,10 @@ export default function TimeLog() {
                           {entry.description || "No description"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatTime(entry.startTime)}
+                          {formatTime(entry.start_time)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatTime(entry.endTime)}
+                          {formatTime(entry.end_time)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {entry.duration}h

@@ -77,7 +77,7 @@ export default function Employees() {
 
   // Filter departments by the first organization (assuming single organization setup)
   const availableDepartments = organizations.length > 0 
-    ? departments.filter(dept => dept.organizationId === organizations[0].id)
+    ? departments.filter(dept => dept.organization_id === organizations[0].id)
     : departments;
 
 
@@ -186,9 +186,9 @@ export default function Employees() {
 
   // Filter employees by search term
   const filteredEmployees = employees.filter(employee =>
-    employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.department.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -214,16 +214,16 @@ export default function Employees() {
   const openEditModal = (employee: Employee) => {
     setEditingEmployee(employee);
     form.reset({
-      employeeId: employee.employeeId,
-      firstName: employee.firstName,
-      lastName: employee.lastName,
+      employeeId: employee.employee_id,
+      firstName: employee.first_name,
+      lastName: employee.last_name,
       department: employee.department,
     });
     setIsModalOpen(true);
   };
 
   const handleDelete = (employee: Employee) => {
-    if (window.confirm(`Are you sure you want to delete ${employee.firstName} ${employee.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to delete ${employee.first_name} ${employee.last_name}?`)) {
       deleteEmployee.mutate(employee.id);
     }
   };
@@ -309,13 +309,13 @@ export default function Employees() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">
-                      {employee.firstName} {employee.lastName}
+                      {employee.first_name} {employee.last_name}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-4 mt-1">
-                      <span>ID: {employee.employeeId}</span>
+                    <div className="space-y-1">
+                      <span>ID: {employee.employee_id}</span>
                       <span>•</span>
                       <span>{employee.department}</span>
-                    </CardDescription>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {canManageEmployees && (
@@ -362,7 +362,7 @@ export default function Employees() {
               }
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               {/* Employee ID */}

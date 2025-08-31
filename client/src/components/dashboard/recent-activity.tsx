@@ -10,6 +10,9 @@ interface RecentActivityProps {
   };
 }
 
+// The local TimeEntryWithProject type declaration has been removed as it conflicts with the imported type.
+
+
 export default function RecentActivity({ dateRange }: RecentActivityProps) {
   const { data: activities, isLoading } = useQuery<TimeEntryWithProject[]>({
     queryKey: ["/api/dashboard/recent-activity", dateRange],
@@ -28,13 +31,14 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
   });
 
   const getProjectColor = (project: { color?: string | null }) => {
-    const colors = {
+    const colors: { [key: string]: string } = {
       '#1976D2': 'bg-primary',
       '#388E3C': 'bg-green-500',
       '#F57C00': 'bg-orange-500',
       '#D32F2F': 'bg-red-500',
     };
-    return colors[(project.color || '#1976D2') as keyof typeof colors] || 'bg-gray-500';
+    // Access color from the project object, provide default if null/undefined
+    return colors[project.color || '#1976D2'] || 'bg-gray-500';
   };
 
   const formatDate = (dateString: string) => {
@@ -119,7 +123,7 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
                   {activity.description || "No description"}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatDate(activity.date)} • {activity.duration} hours
+                  {formatDate(typeof activity.date === 'string' ? activity.date : activity.date.toString())} • {activity.duration} hours
                 </p>
               </div>
             </div>

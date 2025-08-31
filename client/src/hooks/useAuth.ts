@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from '@/lib/queryClient';
 
 export interface AuthContext {
   role: string;
@@ -20,39 +22,52 @@ export interface AuthenticatedUser {
 }
 
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<AuthenticatedUser>({
+  const { data: user, isLoading, error } = useQuery<AuthenticatedUser>({
     queryKey: ["/api/auth/user"],
     retry: false,
   });
 
+  const logout = useMutation({
+    mutationFn: async () => {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Redirect to login page after logout
+      window.location.href = '/login';
+    }
+  });
+
   return {
     user,
+    isAuthenticated: !!user && !error,
     isLoading,
-    isAuthenticated: !!user,
-    // Auth context helpers
-    role: user?.authContext?.role || 'employee',
-    permissions: user?.authContext?.permissions || [],
-    departmentId: user?.authContext?.departmentId,
-    organizationId: user?.authContext?.organizationId,
+    error,
+    logout: logout.mutate
   };
 }
 
 // Permission checking hooks
 export function usePermissions() {
-  const { permissions } = useAuth();
-  
+  const { user } = useAuth();
+
+  const permissions = user?.authContext?.permissions || [];
+
   const hasPermission = (permission: string) => {
     return permissions.includes(permission) || permissions.includes('system_admin');
   };
-  
+
   const hasAnyPermission = (requiredPermissions: string[]) => {
     return requiredPermissions.some(permission => hasPermission(permission));
   };
-  
+
   const hasAllPermissions = (requiredPermissions: string[]) => {
     return requiredPermissions.every(permission => hasPermission(permission));
   };
-  
+
   return {
     permissions,
     hasPermission,
@@ -63,16 +78,17 @@ export function usePermissions() {
 
 // Role checking hook
 export function useRole() {
-  const { role } = useAuth();
-  
+  const { user } = useAuth();
+  const role = user?.authContext?.role || 'employee';
+
   const isAdmin = () => role === 'admin';
   const isManager = () => role === 'manager';
   const isEmployee = () => role === 'employee';
   const isViewer = () => role === 'viewer';
-  
+
   const hasRole = (requiredRole: string) => role === requiredRole;
   const hasAnyRole = (requiredRoles: string[]) => requiredRoles.includes(role);
-  
+
   return {
     role,
     isAdmin,

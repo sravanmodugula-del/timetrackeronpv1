@@ -98,7 +98,7 @@ export default function TimeEntryForm() {
   const { data: allProjects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-  
+
   const projects = allProjects ? getActiveProjects(allProjects) : [];
 
   // Watch project selection for task loading (properly watching both forms)
@@ -114,7 +114,7 @@ export default function TimeEntryForm() {
 
   // Filter only active tasks
   const activeTasks = tasks?.filter(task => task.status === "active") || [];
-  
+
   // Debug logging
   React.useEffect(() => {
     if (selectedProjectId && tasks) {
@@ -140,7 +140,7 @@ export default function TimeEntryForm() {
 
     const start = new Date(`2000-01-01T${startTime}:00`);
     const end = new Date(`2000-01-01T${endTime}:00`);
-    
+
     if (end <= start) {
       setCalculatedDuration("Invalid time range");
       return;
@@ -202,7 +202,7 @@ export default function TimeEntryForm() {
         title: "Success",
         description: "Time entry created successfully",
       });
-      
+
       // Reset both forms
       timeRangeForm.reset({
         projectId: "",
@@ -212,7 +212,7 @@ export default function TimeEntryForm() {
         startTime: "",
         endTime: "",
       });
-      
+
       manualDurationForm.reset({
         projectId: "",
         taskId: "",
@@ -220,7 +220,7 @@ export default function TimeEntryForm() {
         date: getCurrentLocalDate(),
         duration: "",
       });
-      
+
       setCalculatedDuration("");
       queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -260,7 +260,7 @@ export default function TimeEntryForm() {
           e.target.setAttribute('placeholder', defaultTime);
         }
       });
-      
+
       // Ensure proper validation
       input.addEventListener('blur', (e: any) => {
         if (e.target.value && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(e.target.value)) {
@@ -275,7 +275,7 @@ export default function TimeEntryForm() {
   const onSubmitTimeRange = (data: TimeRangeFormData) => {
     const start = new Date(`2000-01-01T${data.startTime}:00`);
     const end = new Date(`2000-01-01T${data.endTime}:00`);
-    
+
     if (end <= start) {
       toast({
         title: "Invalid Time Range",
@@ -318,7 +318,7 @@ export default function TimeEntryForm() {
     if (inputMode === "timeRange") {
       const now = new Date();
       const startTime = new Date(now.getTime() - minutes * 60 * 1000);
-      
+
       timeRangeForm.setValue("startTime", startTime.toTimeString().slice(0, 5));
       timeRangeForm.setValue("endTime", now.toTimeString().slice(0, 5));
     } else {
@@ -330,11 +330,11 @@ export default function TimeEntryForm() {
   const handleModeSwitch = (newMode: InputMode) => {
     setInputMode(newMode);
     setCalculatedDuration("");
-    
+
     // Copy common fields between forms
     const currentForm = inputMode === "timeRange" ? timeRangeForm : manualDurationForm;
     const currentData = currentForm.getValues();
-    
+
     if (newMode === "timeRange") {
       timeRangeForm.setValue("projectId", currentData.projectId || "");
       timeRangeForm.setValue("taskId", currentData.taskId || "");
@@ -423,7 +423,7 @@ export default function TimeEntryForm() {
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className={`w-3 h-3 rounded-full`} 
-                                    style={{ backgroundColor: project.color || "#1976D2" }}
+                                    style={{ backgroundColor: "#1976D2" }}
                                   />
                                   {project.name}
                                 </div>
@@ -633,7 +633,7 @@ export default function TimeEntryForm() {
                                   <div className="flex items-center gap-2">
                                     <div 
                                       className={`w-3 h-3 rounded-full`} 
-                                      style={{ backgroundColor: project.color || "#1976D2" }}
+                                      style={{ backgroundColor: "#1976D2" }}
                                     />
                                     {project.name}
                                   </div>

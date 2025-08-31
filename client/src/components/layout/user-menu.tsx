@@ -13,7 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Settings, LogOut, Shield } from "lucide-react";
 
 export default function UserMenu() {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const role = user?.authContext?.role || user?.role || 'employee';
 
   if (!user) return null;
 

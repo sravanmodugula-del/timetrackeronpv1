@@ -3,10 +3,13 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
-import { insertTimeEntrySchema, type Project, type Task, type TimeEntryWithProject } from "@shared/schema";
+import { format } from "date-fns";
+import type { Project, Task, TimeEntry } from "@shared/schema";
+import { insertTimeEntrySchema, type TimeEntryWithProject } from "@shared/schema";
 import { getActiveProjects } from "@/lib/projectUtils";
 import { z } from "zod";
 import {
@@ -27,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const timeEntryFormSchema = insertTimeEntrySchema.extend({
   date: z.string().min(1, "Date is required"),
@@ -51,12 +55,12 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
   const form = useForm<TimeEntryFormData>({
     resolver: zodResolver(timeEntryFormSchema),
     defaultValues: {
-      projectId: entry.projectId,
-      taskId: entry.taskId || undefined,
-      description: entry.description || undefined,
-      date: entry.date,
-      startTime: entry.startTime,
-      endTime: entry.endTime,
+      projectId: entry.project_id,
+      taskId: entry.task_id || undefined,
+      description: entry.description,
+      date: entry.date.toString().split('T')[0],
+      startTime: entry.start_time ? entry.start_time.toString() : "",
+      endTime: entry.end_time ? entry.end_time.toString() : "",
     },
   });
 
@@ -64,7 +68,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
   const { data: allProjects } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-  
+
   const projects = allProjects ? getActiveProjects(allProjects) : [];
 
   // Watch project selection for task loading
@@ -85,7 +89,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
 
     const start = new Date(`2000-01-01T${startTime}:00`);
     const end = new Date(`2000-01-01T${endTime}:00`);
-    
+
     if (end <= start) {
       setCalculatedDuration("Invalid time range");
       return;
@@ -149,7 +153,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
   const onSubmit = (data: TimeEntryFormData) => {
     const start = new Date(`2000-01-01T${data.startTime}:00`);
     const end = new Date(`2000-01-01T${data.endTime}:00`);
-    
+
     if (end <= start) {
       toast({
         title: "Invalid Time Range",
@@ -192,8 +196,8 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
                         projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             <div className="flex items-center gap-2">
-                              <div 
-                                className={`w-3 h-3 rounded-full`} 
+                              <div
+                                className={`w-3 h-3 rounded-full`}
                                 style={{ backgroundColor: project.color || "#1976D2" }}
                               />
                               {project.name}
@@ -214,8 +218,8 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Task *</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
+                  <Select
+                    onValueChange={field.onChange}
                     value={field.value || ""}
                     disabled={!selectedProjectId}
                   >
@@ -259,9 +263,9 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
                   <FormItem>
                     <FormLabel>Start Time</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="time" 
-                        {...field} 
+                      <Input
+                        type="time"
+                        {...field}
                         placeholder="09:00"
                         step="300"
                         className="time-input"
@@ -279,9 +283,9 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
                   <FormItem>
                     <FormLabel>End Time</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="time" 
-                        {...field} 
+                      <Input
+                        type="time"
+                        {...field}
                         placeholder="17:00"
                         step="300"
                         className="time-input"

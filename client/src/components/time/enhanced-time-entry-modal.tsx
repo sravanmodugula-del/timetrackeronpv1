@@ -60,23 +60,23 @@ function getCurrentLocalDate(): string {
 export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: EnhancedTimeEntryModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // State for input mode switching
   const [inputMode, setInputMode] = useState<"timeRange" | "manualDuration">(
-    entry.startTime && entry.endTime ? "timeRange" : "manualDuration"
+    entry.start_time && entry.end_time ? "timeRange" : "manualDuration"
   );
   const [calculatedDuration, setCalculatedDuration] = useState<string>("");
 
   const form = useForm<EnhancedTimeEntryFormData>({
     resolver: zodResolver(enhancedTimeEntrySchema),
     defaultValues: {
-      projectId: entry.projectId,
-      taskId: entry.taskId || "",
-      description: entry.description || "",
-      date: entry.date,
-      startTime: entry.startTime || "",
-      endTime: entry.endTime || "",
-      duration: entry.duration || "",
+      projectId: entry.project_id,
+      taskId: entry.task_id || "",
+      description: entry.description,
+      date: entry.date.toString().split('T')[0],
+      startTime: entry.start_time ? new Date(entry.start_time).toTimeString().slice(0, 5) : "",
+      endTime: entry.end_time ? new Date(entry.end_time).toTimeString().slice(0, 5) : "",
+      duration: entry.duration?.toString() || "",
     },
   });
 
@@ -84,7 +84,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
   const { data: allProjects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-  
+
   const projects = allProjects ? getActiveProjects(allProjects) : [];
 
   // Watch project selection for task loading
@@ -107,7 +107,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
 
     const start = new Date(`2000-01-01T${startTime}:00`);
     const end = new Date(`2000-01-01T${endTime}:00`);
-    
+
     if (end <= start) {
       setCalculatedDuration("Invalid time range");
       return;
@@ -154,7 +154,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         }, 500);
         return;
       }
-      
+
       console.error("Update time entry error:", error);
       toast({
         title: "Error",
@@ -174,10 +174,10 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         });
         return;
       }
-      
+
       const start = new Date(`2000-01-01T${data.startTime}:00`);
       const end = new Date(`2000-01-01T${data.endTime}:00`);
-      
+
       if (end <= start) {
         toast({
           title: "Error",
@@ -186,20 +186,20 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         });
         return;
       }
-      
+
       const diffMs = end.getTime() - start.getTime();
       const hours = diffMs / (1000 * 60 * 60);
-      
+
       const submissionData = {
-        projectId: data.projectId,
-        taskId: data.taskId,
+        project_id: data.projectId,
+        task_id: data.taskId,
         description: data.description || "",
         date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        start_time: `${data.startTime}:00`,
+        end_time: `${data.endTime}:00`,
         duration: hours.toFixed(2),
       };
-      
+
       updateTimeEntry.mutate(submissionData);
     } else {
       if (!data.duration) {
@@ -210,7 +210,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         });
         return;
       }
-      
+
       const durationNum = parseFloat(data.duration);
       if (isNaN(durationNum) || durationNum <= 0 || durationNum > 24) {
         toast({
@@ -220,15 +220,15 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         });
         return;
       }
-      
+
       const submissionData = {
-        projectId: data.projectId,
-        taskId: data.taskId,
+        project_id: data.projectId,
+        task_id: data.taskId,
         description: data.description || "",
         date: data.date,
         duration: data.duration,
       };
-      
+
       updateTimeEntry.mutate(submissionData);
     }
   };
