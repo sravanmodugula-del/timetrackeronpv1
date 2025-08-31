@@ -126,11 +126,41 @@ export class FmbStorage implements IStorage {
 
     try {
       const request = this.pool.request(); // Use this.pool.request() directly
+      
+      // Add parameters with explicit types to prevent NULL insertion
       params.forEach((param, index) => {
-        request.input(`param${index}`, param);
+        const paramName = `param${index}`;
+        
+        // Determine appropriate SQL type based on the parameter value
+        if (param === null || param === undefined) {
+          request.input(paramName, sql.NVarChar(255), null);
+        } else if (typeof param === 'string') {
+          request.input(paramName, sql.NVarChar(param.length > 255 ? sql.MAX : 255), param);
+        } else if (typeof param === 'number') {
+          if (Number.isInteger(param)) {
+            request.input(paramName, sql.Int, param);
+          } else {
+            request.input(paramName, sql.Decimal(18, 2), param);
+          }
+        } else if (typeof param === 'boolean') {
+          request.input(paramName, sql.Bit, param);
+        } else if (param instanceof Date) {
+          request.input(paramName, sql.DateTime2, param);
+        } else {
+          // Default to string for other types
+          request.input(paramName, sql.NVarChar(sql.MAX), String(param));
+        }
       });
 
       this.storageLog('EXECUTE', `Running query: ${query.substring(0, 100)}...`, { paramCount: params.length });
+      
+      // Debug log to show actual parameter values being passed
+      console.log(`🔍 [EXECUTE-DEBUG] Parameter values:`, params.map((param, index) => ({
+        [`@param${index}`]: param,
+        type: typeof param,
+        isNull: param === null || param === undefined
+      })));
+      
       const result = await request.query(query);
       this.storageLog('EXECUTE', `Query completed successfully`, { recordCount: result.recordset?.length || 0 });
       return result.recordset || result.recordsets;
