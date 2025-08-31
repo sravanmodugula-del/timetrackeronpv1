@@ -120,12 +120,11 @@ export class FmbStorage implements IStorage {
   }
 
   async execute(query: string, params: any[] = []): Promise<any> {
-    // IMMEDIATE DETECTION - Show every execute call
-    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Execute method called at ${new Date().toISOString()}`);
-    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Query:`, query.substring(0, 100));
-    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Params:`, params);
-    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Param types:`, params.map(p => typeof p));
-    
+    // Minimal execution logging
+    if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
+      console.log(`🔄 [SQL] ${query.split(' ')[0]} operation on ${query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i)?.[1] || 'table'}`);
+    }
+
     if (!this.pool) {
       throw new Error('Database not connected. Call connect() first.');
     }
@@ -133,95 +132,44 @@ export class FmbStorage implements IStorage {
     const executeId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
     try {
-      console.log(`🔍 [EXECUTE-${executeId}] Starting query execution:`, {
-        query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
-        paramCount: params.length,
-        paramTypes: params.map(p => typeof p),
-        paramValues: params.map((p, i) => ({ [`param${i}`]: p }))
-      });
+      // Minimal execution logging
+      if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
+        console.log(`🔄 [SQL] ${query.split(' ')[0]} operation on ${query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i)?.[1] || 'table'}`);
+      }
 
       const request = this.pool.request();
 
-      // Enhanced parameter binding with detailed logging
+      // Bind parameters efficiently
       params.forEach((param, index) => {
-        const paramName = `param${index}`;
-
-        // CRITICAL DEBUG: Log each parameter as it's being bound
-        console.log(`🔍 [EXECUTE-${executeId}-PARAM-${index}] Binding parameter ${paramName}:`, {
-          originalValue: param,
-          type: typeof param,
-          isNull: param === null || param === undefined,
-          stringLength: typeof param === 'string' ? param.length : 'N/A',
-          stringContent: typeof param === 'string' ? `"${param}"` : 'N/A',
-          isEmptyString: param === '',
-          isTrimmedEmpty: typeof param === 'string' && param.trim() === ''
-        });
-
-        // Determine appropriate SQL type based on the parameter value
-        if (param === null || param === undefined) {
-          console.log(`⚠️ [EXECUTE-${executeId}-PARAM-${index}] WARNING: Binding NULL value for ${paramName}`);
-          request.input(paramName, sql.NVarChar(255), null);
-        } else if (typeof param === 'string') {
-          // Enhanced string handling
-          if (param.trim() === '') {
-            console.log(`⚠️ [EXECUTE-${executeId}-PARAM-${index}] WARNING: Binding empty string for ${paramName}`);
-          }
-
-          const sqlType = param.length > 255 ? sql.NVarChar(sql.MAX) : sql.NVarChar(255);
-          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding string ${paramName}:`, {
-            sqlType: sqlType.name || 'NVarChar',
-            maxLength: param.length > 255 ? 'MAX' : '255',
-            actualLength: param.length,
-            value: `"${param}"`,
-            trimmedValue: `"${param.trim()}"`
-          });
-          request.input(paramName, sqlType, param);
-        } else if (typeof param === 'number') {
-          if (Number.isInteger(param)) {
-            console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding integer ${paramName}: ${param}`);
-            request.input(paramName, sql.Int, param);
-          } else {
-            console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding decimal ${paramName}: ${param}`);
-            request.input(paramName, sql.Decimal(18, 2), param);
-          }
-        } else if (typeof param === 'boolean') {
-          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding boolean ${paramName}: ${param}`);
-          request.input(paramName, sql.Bit, param);
-        } else if (param instanceof Date) {
-          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding date ${paramName}: ${param.toISOString()}`);
-          request.input(paramName, sql.DateTime2, param);
-        } else {
-          // Default to string for other types
-          const stringValue = String(param);
-          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding converted string ${paramName}: "${stringValue}"`);
-          request.input(paramName, sql.NVarChar(sql.MAX), stringValue);
-        }
+        request.input(`param${index}`, param);
       });
 
-      this.storageLog('EXECUTE', `Running query with ${params.length} parameters`, {
-        executeId,
-        query: query.substring(0, 100) + '...',
-        paramCount: params.length
+      // Minimal execution logging
+      if (params.length > 0) {
+        console.log(`🗄️ [SQL] Executing with ${params.length} parameters`);
+      }
+
+      // Minimal execution logging
+      if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
+        console.log(`🔄 [SQL] ${query.split(' ')[0]} operation on ${query.match(/(?:FROM|INTO|UPDATE)\s+(\w+)/i)?.[1] || 'table'}`);
+      }
+
+      // Bind parameters efficiently
+      params.forEach((param, index) => {
+        request.input(`param${index}`, param);
       });
 
-      // Final verification of bound parameters
-      console.log(`🔍 [EXECUTE-${executeId}] Final parameter verification:`, {
-        boundParams: Object.keys(request.parameters || {}),
-        parameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
-          name,
-          type: param?.type?.name || 'unknown',
-          value: param?.value,
-          valueType: typeof param?.value
-        }))
-      });
+      // Minimal execution logging
+      if (params.length > 0) {
+        console.log(`🗄️ [SQL] Executing with ${params.length} parameters`);
+      }
 
       const result = await request.query(query);
 
-      console.log(`✅ [EXECUTE-${executeId}] Query completed successfully:`, {
-        recordCount: result.recordset?.length || 0,
-        rowsAffected: result.rowsAffected,
-        hasRecordset: !!result.recordset
-      });
+      // Success logging only for important operations
+      if (query.includes('INSERT') || query.includes('UPDATE') || query.includes('DELETE')) {
+        console.log(`✅ [SQL] Operation completed: ${result.rowsAffected?.[0] || 0} rows affected`);
+      }
 
       this.storageLog('EXECUTE', `Query completed successfully`, {
         executeId,
@@ -378,7 +326,7 @@ export class FmbStorage implements IStorage {
     console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] Data type:`, typeof orgData);
     console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] User ID value:`, orgData.user_id);
     console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] User ID type:`, typeof orgData.user_id);
-    
+
     const requestId = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const id = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
@@ -398,7 +346,7 @@ export class FmbStorage implements IStorage {
     try {
       // CHECKPOINT 2: Field validation
       console.log(`🎯 [CHECKPOINT-2-${requestId}] Validating required fields...`);
-      
+
       if (!orgData.name || orgData.name.trim().length === 0) {
         console.log(`❌ [CHECKPOINT-2-${requestId}] FAILED: Name validation failed`);
         throw new Error('Organization name is required and cannot be empty');
@@ -433,7 +381,7 @@ export class FmbStorage implements IStorage {
         console.log(`❌ [CHECKPOINT-4-${requestId}] FAILED: No database pool available`);
         throw new Error('Database not connected');
       }
-      
+
       if (!this.pool.connected) {
         console.log(`❌ [CHECKPOINT-4-${requestId}] FAILED: Database pool not connected`);
         throw new Error('Database connection lost');
@@ -498,7 +446,7 @@ export class FmbStorage implements IStorage {
 
       // CHECKPOINT 9: Manual parameter preparation (bypassing execute method temporarily)
       console.log(`🎯 [CHECKPOINT-9-${requestId}] Preparing manual SQL execution...`);
-      
+
       const insertSql = `
         INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
         VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
@@ -514,9 +462,9 @@ export class FmbStorage implements IStorage {
 
       // CHECKPOINT 10: Manual SQL execution with direct parameter binding
       console.log(`🎯 [CHECKPOINT-10-${requestId}] Creating request and binding parameters manually...`);
-      
+
       const request = this.pool.request();
-      
+
       // Bind each parameter individually with detailed logging
       console.log(`🔗 [CHECKPOINT-10-${requestId}] Binding parameter 'id'...`);
       request.input('id', sql.NVarChar(255), id);
@@ -549,7 +497,7 @@ export class FmbStorage implements IStorage {
 
       // CHECKPOINT 12: Execute the query
       console.log(`🎯 [CHECKPOINT-12-${requestId}] Executing INSERT query...`);
-      
+
       try {
         const insertResult = await request.query(insertSql);
         console.log(`✅ [CHECKPOINT-12-${requestId}] INSERT query executed successfully:`, {
@@ -577,10 +525,10 @@ export class FmbStorage implements IStorage {
 
       // CHECKPOINT 13: Verify insertion by fetching the record
       console.log(`🎯 [CHECKPOINT-13-${requestId}] Verifying insertion by fetching created record...`);
-      
+
       try {
         const fetchResult = await this.execute('SELECT * FROM organizations WHERE id = @param0', [id]);
-        
+
         if (!fetchResult || fetchResult.length === 0) {
           console.log(`❌ [CHECKPOINT-13-${requestId}] FAILED: Record not found after insertion`);
           throw new Error('Organization was inserted but cannot be retrieved');
@@ -1651,14 +1599,14 @@ export class FmbStorage implements IStorage {
       const userIdConstraint = foreignKeys.find(fk => fk.PARENT_COLUMN === 'user_id');
       if (userIdConstraint) {
         console.log('🔍 [SCHEMA-VERIFY] Found user_id foreign key constraint:', userIdConstraint);
-        
+
         // Test if the constraint is causing issues
         try {
           const testUserExists = await this.execute(`
             SELECT COUNT(*) as count FROM ${userIdConstraint.REFERENCED_TABLE} 
             WHERE ${userIdConstraint.REFERENCED_COLUMN} = @param0
           `, ['admin-001']);
-          
+
           console.log('🔍 [SCHEMA-VERIFY] Test user constraint validation:', {
             testUserId: 'admin-001',
             existsInReferencedTable: testUserExists[0]?.count > 0
