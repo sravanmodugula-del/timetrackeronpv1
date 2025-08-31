@@ -1104,22 +1104,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userAgent: req.get('User-Agent')?.substring(0, 100)
       });
 
-      // DEBUG: Log exact POST parameters being received
-      console.log(`🔍 [ORG-CREATE-${requestId}] POST Parameters Debug:`, {
+      // COMPREHENSIVE DEBUG: Log ALL request data
+      console.log(`🔍 [ORG-CREATE-${requestId}] COMPLETE REQUEST DEBUG:`, {
+        // Request body analysis
         rawBody: req.body,
         bodyType: typeof req.body,
         bodyStringified: JSON.stringify(req.body, null, 2),
+        bodyIsNull: req.body === null,
+        bodyIsUndefined: req.body === undefined,
+        bodyKeys: req.body ? Object.keys(req.body) : 'N/A',
+        
+        // Request headers
         headers: {
           contentType: req.get('Content-Type'),
           contentLength: req.get('Content-Length'),
-          authorization: req.get('Authorization') ? '[PRESENT]' : '[MISSING]'
+          authorization: req.get('Authorization') ? '[PRESENT]' : '[MISSING]',
+          userAgent: req.get('User-Agent'),
+          accept: req.get('Accept'),
+          origin: req.get('Origin')
         },
+        
+        // User object analysis
         user: {
+          fullUserObject: req.user,
+          userType: typeof req.user,
+          userIsNull: req.user === null,
+          userIsUndefined: req.user === undefined,
+          userKeys: req.user ? Object.keys(req.user) : 'null',
           id: req.user?.id || '[MISSING]',
           email: req.user?.email || '[MISSING]',
+          userId: req.user?.userId || '[MISSING]',
           extractedUserId: userId,
-          userKeys: req.user ? Object.keys(req.user) : 'null'
+          extractedUserIdType: typeof userId,
+          extractedUserIdLength: userId?.length || 0
+        },
+        
+        // Session data
+        session: {
+          sessionId: req.sessionID || '[MISSING]',
+          sessionKeys: req.session ? Object.keys(req.session) : 'null',
+          sessionExists: !!req.session
+        },
+        
+        // Request metadata
+        request: {
+          method: req.method,
+          url: req.url,
+          ip: req.ip,
+          ips: req.ips,
+          protocol: req.protocol,
+          secure: req.secure
         }
+      });
+
+      // CRITICAL: Log the exact values being used for organization creation
+      console.log(`🔍 [ORG-CREATE-${requestId}] EXACT VALUES FOR CREATION:`, {
+        name: req.body?.name,
+        nameType: typeof req.body?.name,
+        nameValue: `"${req.body?.name}"`,
+        nameLength: req.body?.name?.length || 0,
+        
+        description: req.body?.description,
+        descriptionType: typeof req.body?.description,
+        descriptionValue: `"${req.body?.description}"`,
+        descriptionLength: req.body?.description?.length || 0,
+        
+        extractedUserId: userId,
+        extractedUserIdType: typeof userId,
+        extractedUserIdValue: `"${userId}"`,
+        extractedUserIdLength: userId?.length || 0,
+        extractedUserIdIsEmpty: userId === '' || userId === null || userId === undefined
       });
 
       // Comprehensive input validation
@@ -1208,34 +1262,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🏢 [ORG-CREATE-${requestId}] Creating organization`, {
         name: organizationData.name,
         hasDescription: !!organizationData.description,
-        descriptionLength: organizationData.description?.length || 0
+        descriptionLength: organizationData.description?.length || 0,
+        user_id: organizationData.user_id,
+        user_id_type: typeof organizationData.user_id,
+        user_id_length: organizationData.user_id?.length || 0
       });
 
-      // DEBUG: Log exact data being passed to createOrganization
-      console.log(`🔍 [ORG-CREATE-${requestId}] Database Call Parameters:`, {
+      // CRITICAL DEBUG: Log exact data being passed to createOrganization
+      console.log(`🔍 [ORG-CREATE-${requestId}] DATABASE CALL PARAMETERS:`, {
         organizationData: JSON.stringify(organizationData, null, 2),
-        name: organizationData.name,
-        description: organizationData.description,
-        user_id: organizationData.user_id,
-        dataTypes: {
-          name: typeof organizationData.name,
-          description: typeof organizationData.description,
-          user_id: typeof organizationData.user_id
+        
+        // Individual field analysis
+        name: {
+          value: organizationData.name,
+          type: typeof organizationData.name,
+          stringValue: `"${organizationData.name}"`,
+          length: organizationData.name?.length || 0,
+          isEmpty: !organizationData.name || organizationData.name.trim() === '',
+          hasWhitespace: organizationData.name !== organizationData.name?.trim()
         },
-        lengths: {
-          name: organizationData.name?.length,
-          description: organizationData.description?.length,
-          user_id: organizationData.user_id?.length
+        
+        description: {
+          value: organizationData.description,
+          type: typeof organizationData.description,
+          stringValue: `"${organizationData.description}"`,
+          length: organizationData.description?.length || 0,
+          isEmpty: !organizationData.description || organizationData.description.trim() === '',
+          isUndefined: organizationData.description === undefined,
+          isNull: organizationData.description === null
+        },
+        
+        user_id: {
+          value: organizationData.user_id,
+          type: typeof organizationData.user_id,
+          stringValue: `"${organizationData.user_id}"`,
+          length: organizationData.user_id?.length || 0,
+          isEmpty: !organizationData.user_id || organizationData.user_id.trim() === '',
+          isUndefined: organizationData.user_id === undefined,
+          isNull: organizationData.user_id === null,
+          hasWhitespace: organizationData.user_id !== organizationData.user_id?.trim()
+        },
+        
+        // Complete validation check
+        validation: {
+          allFieldsPresent: !!(organizationData.name && organizationData.user_id),
+          nameValid: !!(organizationData.name && organizationData.name.trim()),
+          userIdValid: !!(organizationData.user_id && organizationData.user_id.trim()),
+          readyForDatabase: !!(organizationData.name && organizationData.name.trim() && organizationData.user_id && organizationData.user_id.trim())
         }
       });
 
-      // Create organization with enhanced error handling
-      const organization = await activeStorage.createOrganization(organizationData);
-
-      console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully`, {
-        organizationId: organization.id,
-        name: organization.name
+      // ADDITIONAL DEBUG: Verify the exact function call
+      console.log(`🔍 [ORG-CREATE-${requestId}] CALLING activeStorage.createOrganization() WITH:`, {
+        functionCall: 'activeStorage.createOrganization(organizationData)',
+        parameterCount: 1,
+        parameterType: typeof organizationData,
+        parameterStringified: JSON.stringify(organizationData),
+        storageType: typeof activeStorage,
+        storageHasMethod: typeof activeStorage.createOrganization === 'function'
       });
+
+      // Create organization with enhanced error handling
+      let organization;
+      
+      try {
+        organization = await activeStorage.createOrganization(organizationData);
+        
+        console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully`, {
+          organizationId: organization.id,
+          name: organization.name
+        });
+
+      } catch (storageError) {
+        console.log(`🔍 [ORG-CREATE-${requestId}] Storage creation failed, trying hardcoded fallback`, {
+          originalError: storageError.message,
+          originalData: organizationData
+        });
+
+        // DEBUGGING FALLBACK: Try with completely hardcoded data
+        const hardcodedOrgData = {
+          name: "HARDCODED_DEBUG_ORG",
+          description: "This is a hardcoded organization for debugging purposes",
+          user_id: "admin-001" // Known existing user from setup.sql
+        };
+
+        console.log(`🔍 [ORG-CREATE-${requestId}] Attempting hardcoded fallback:`, hardcodedOrgData);
+
+        try {
+          organization = await activeStorage.createOrganization(hardcodedOrgData);
+          
+          console.log(`✅ [ORG-CREATE-${requestId}] HARDCODED FALLBACK SUCCESS!`, {
+            diagnosis: 'INPUT_DATA_ISSUE_CONFIRMED',
+            originalInputProblem: 'Data from request body has issues',
+            hardcodedSuccess: true,
+            fallbackOrgId: organization.id,
+            conclusion: 'Issue is with request data parsing/validation, not database'
+          });
+
+        } catch (hardcodedError) {
+          console.log(`❌ [ORG-CREATE-${requestId}] HARDCODED FALLBACK ALSO FAILED!`, {
+            diagnosis: 'DEEP_SYSTEM_ISSUE',
+            originalError: storageError.message,
+            hardcodedError: hardcodedError.message,
+            conclusion: 'Problem is at storage/database level, not input data'
+          });
+          
+          // Re-throw the original storage error
+          throw storageError;
+        }
+      }
 
       res.status(201).json({
         ...organization,
@@ -1344,54 +1479,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { projectId } = req.params;
       const userId = extractUserId(req.user);
-      colet organization;
-      
-      try {
-        organization = await activeStorage.createOrganization(organizationData);
-        
-        console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully`, {
-          organizationId: organization.id,
-          name: organization.name
-        });
+      const activeStorage = getStorage();
 
-      } catch (storageError) {
-        console.log(`🔍 [ORG-CREATE-${requestId}] Storage creation failed, trying hardcoded fallback`, {
-          originalError: storageError.message,
-          originalData: organizationData
-        });
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
 
-        // DEBUGGING FALLBACK: Try with completely hardcoded data
-        const hardcodedOrgData = {
-          name: "HARDCODED_DEBUG_ORG",
-          description: "This is a hardcoded organization for debugging purposes",
-          user_id: "admin-001" // Known existing user from setup.sql
-        };
+      const currentUser = await activeStorage.getUser(userId);
 
-        console.log(`🔍 [ORG-CREATE-${requestId}] Attempting hardcoded fallback:`, hardcodedOrgData);
-
-        try {
-          organization = await activeStorage.createOrganization(hardcodedOrgData);
-          
-          console.log(`✅ [ORG-CREATE-${requestId}] HARDCODED FALLBACK SUCCESS!`, {
-            diagnosis: 'INPUT_DATA_ISSUE_CONFIRMED',
-            originalInputProblem: 'Data from request body has issues',
-            hardcodedSuccess: true,
-            fallbackOrgId: organization.id,
-            conclusion: 'Issue is with request data parsing/validation, not database'
-          });
-
-        } catch (hardcodedError) {
-          console.log(`❌ [ORG-CREATE-${requestId}] HARDCODED FALLBACK ALSO FAILED!`, {
-            diagnosis: 'DEEP_SYSTEM_ISSUE',
-            originalError: storageError.message,
-            hardcodedError: hardcodedError.message,
-            conclusion: 'Problem is at storage/database level, not input data'
-          });
-          
-          // Re-throw the original storage error
-          throw storageError;
-        }
-      }iew reports
+      // Check if user has permission to view reports
       const allowedRoles = ['project_manager', 'admin', 'manager'];
       if (!currentUser || !allowedRoles.includes(currentUser.role || 'employee')) {
         return res.status(403).json({ message: "Insufficient permissions to view reports" });
