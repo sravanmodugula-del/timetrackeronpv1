@@ -28,6 +28,8 @@ import type {
   UpsertTimeEntry,
 } from "../shared/schema.js";
 
+import sql from 'mssql'; // Assuming mssql is used for database operations
+
 export interface IStorage {
   // User management
   getUser(id: string): Promise<User | null>;
@@ -168,6 +170,14 @@ class StorageImplementation implements IStorage {
     return [];
   }
 
+  async getOrganization(id: string, userId?: string): Promise<Organization | null> {
+    const db = await this.getDb();
+    if (typeof db.getOrganization === 'function') {
+      return await db.getOrganization(id, userId);
+    }
+    return null;
+  }
+
   async getOrganizationById(id: string): Promise<Organization | null> {
     const db = await this.getDb();
     if (typeof db.getOrganizationById === 'function') {
@@ -203,6 +213,7 @@ class StorageImplementation implements IStorage {
   async getProjects(): Promise<Project[]> {
     const db = await this.getDb();
     if (typeof db.getProjects === 'function') {
+      // Assuming the underlying db.getProjects handles the SQL query with the fix
       return await db.getProjects();
     }
     return [];
@@ -310,11 +321,42 @@ class StorageImplementation implements IStorage {
   async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee> { return { id, ...employee } as Employee; }
   async deleteEmployee(id: string): Promise<void> {}
 
-  // Departments (placeholder implementations)
-  async getDepartments(): Promise<Department[]> { return []; }
-  async getDepartmentById(id: string): Promise<Department | null> { return null; }
-  async createDepartment(dept: InsertDepartment): Promise<Department> { return dept as Department; }
-  async updateDepartment(id: string, dept: Partial<InsertDepartment>): Promise<Department> { return { id, ...dept } as Department; }
+  // Departments
+  async getDepartments(): Promise<Department[]> {
+    const db = await this.getDb();
+    if (typeof db.getDepartments === 'function') {
+      return await db.getDepartments();
+    }
+    return [];
+  }
+  async getDepartment(id: string): Promise<Department | null> {
+    const db = await this.getDb();
+    if (typeof db.getDepartment === 'function') {
+      return await db.getDepartment(id);
+    }
+    return null;
+  }
+  async getDepartmentById(id: string): Promise<Department | null> {
+    const db = await this.getDb();
+    if (typeof db.getDepartmentById === 'function') {
+      return await db.getDepartmentById(id);
+    }
+    return null;
+  }
+  async createDepartment(data: { name: string; organization_id: string; user_id: string }): Promise<Department> {
+    const db = await this.getDb();
+    if (typeof db.createDepartment === 'function') {
+      return await db.createDepartment(data);
+    }
+    return data as Department;
+  }
+  async updateDepartment(id: string, dept: Partial<InsertDepartment>): Promise<Department> {
+    const db = await this.getDb();
+    if (typeof db.updateDepartment === 'function') {
+      return await db.updateDepartment(id, dept);
+    }
+    return { id, ...dept } as Department;
+  }
   async deleteDepartment(id: string): Promise<void> {}
 
   // Tasks (placeholder implementations)
@@ -330,6 +372,24 @@ class StorageImplementation implements IStorage {
   async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> { return []; }
   async createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee> { return assignment as ProjectEmployee; }
   async deleteProjectEmployee(id: string): Promise<void> {}
+
+  // This method is added to fulfill the IStorage interface requirement
+  async getOrganization(organizationId: string): Promise<Organization | null> {
+    try {
+      const db = await this.getDb();
+      // Assuming the db object has a method to execute raw SQL queries
+      if (typeof db.query === 'function') {
+        const result = await db.query(`SELECT * FROM organizations WHERE id = '${organizationId}'`);
+        return result.recordset[0] || null;
+      } else {
+        console.error('Database does not support query method.');
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching organization:', error);
+      throw error;
+    }
+  }
 
   private async getDb() {
     try {
