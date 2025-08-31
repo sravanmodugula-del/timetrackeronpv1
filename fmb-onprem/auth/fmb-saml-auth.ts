@@ -46,8 +46,6 @@ export async function setupFmbSamlAuth(app: Express) {
       validateInResponseTo: false,
       disableRequestedAuthnContext: true,
       skipRequestCompression: true,
-      // Certificate validation
-      cert: [fmbConfig.saml.cert], // Ensure cert is in array format
       // Audience should match your SP entity ID, not IDP
       audience: false, // Disable audience validation for now
       // Additional debugging

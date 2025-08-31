@@ -105,13 +105,12 @@ export function loadAndExportFmbConfig() {
         trustServerCertificate: process.env.FMB_DB_TRUST_SERVER_CERTIFICATE === 'true'
       }
     },
-    // SAML Configuration
+    // SAML Configuration - Load certificate from file
     saml: {
-      issuer: process.env.FMB_SAML_ISSUER || 'fmb-timetracker',
+      issuer: process.env.FMB_SAML_ISSUER || '',
       entryPoint: process.env.FMB_SAML_SSO_URL || '',
       callbackUrl: process.env.FMB_SAML_ACS_URL || '',
-      certPath: process.env.FMB_SAML_CERT || './saml_cert.pem',
-      cert: '',
+      cert: readCertificateFile(process.env.FMB_SAML_CERT || './saml_cert.pem'), // Certificate content loaded from file
       nameIdFormat: process.env.FMB_SAML_NAME_ID_FORMAT || 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
       binding: process.env.FMB_SAML_BINDING || 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
     },
