@@ -87,15 +87,43 @@ CREATE TABLE users (
     updated_at DATETIME2 NOT NULL DEFAULT GETDATE()
 );
 
--- Organizations (depends on users)
+-- Organizations table - Central organizational units that contain departments
+-- Each organization is owned by a user (typically an admin) and can contain multiple departments
 CREATE TABLE organizations (
+    -- Unique identifier for the organization (format: org-timestamp-random)
     id NVARCHAR(255) PRIMARY KEY,
+    
+    -- Organization name - must be unique per user to prevent duplicates
     name NVARCHAR(255) NOT NULL,
-    description NVARCHAR(MAX),
+    
+    -- Optional description of the organization's purpose or structure
+    description NVARCHAR(MAX) NULL,
+    
+    -- Foreign key to users table - identifies the owner/administrator of this organization
     user_id NVARCHAR(255) NOT NULL,
+    
+    -- Audit timestamps for tracking creation and modifications
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-    updated_at DATETIME2 NOT NULL DEFAULT GETDATE()
+    updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
+    
+    -- Ensure organization names are unique per user
+    CONSTRAINT UQ_organizations_name_user UNIQUE (name, user_id),
+    
+    -- Ensure organization name is not empty or whitespace only
+    CONSTRAINT CK_organizations_name_not_empty CHECK (LEN(TRIM(name)) > 0),
+    
+    -- Ensure description doesn't exceed reasonable length
+    CONSTRAINT CK_organizations_description_length CHECK (LEN(description) <= 1000 OR description IS NULL),
+    
+    -- Foreign key constraint to users table (will be added after users table is created)
+    -- CONSTRAINT FK_organizations_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Create index for faster lookups by user_id
+CREATE NONCLUSTERED INDEX IX_organizations_user_id ON organizations (user_id);
+
+-- Create index for faster name searches
+CREATE NONCLUSTERED INDEX IX_organizations_name ON organizations (name);
 
 -- Employees (depends on users)
 CREATE TABLE employees (
