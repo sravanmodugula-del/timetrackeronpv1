@@ -1,549 +1,378 @@
-PS C:\Users\ADM91381> cd..
-
-PS C:\Users> cd..
-
-PS C:\> cd .\fmb-timetracker
-
-PS C:\fmb-timetracker> # FMB TimeTracker On-Premises Deployment Script for Windows
-# Updates the application with new version
-
-param(
-    [string]$InstallPath = "C:\fmb-timetracker",
-    [string]$ServiceName = "FMBTimeTracker"
-)
-
-Write-Host "🚀 FMB TimeTracker Deployment (Windows)" -ForegroundColor Green
-Write-Host "======================================" -ForegroundColor Green
-
-# Check if running as Administrator
-if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "❌ This script must be run as Administrator" -ForegroundColor Red
-    exit 1
+2025-08-30T17:20:13: 2025-08-31T00:20:13.201Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:13: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  write to custom object with { processEnv: myObject }
+2025-08-30T17:20:13: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T17:20:13: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:13: 2025-08-31T00:20:13.206Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:13: 2025-08-31T00:20:13.206Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:13: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:13: ✅ FMB Database connection established successfully
+2025-08-30T17:20:13: 2025-08-31T00:20:13.393Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:13: 2025-08-31T00:20:13.397Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:13: 2025-08-31T00:20:13.398Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:13: 2025-08-31T00:20:13.399Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:13: 2025-08-31T00:20:13.400Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:13: 2025-08-31T00:20:13.400Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:13: 2025-08-31T00:20:13.402Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:13: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:13: 2025-08-31T00:20:13.405Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:13: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:13: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:13: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+2025-08-30T17:20:13: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:13: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:13: 2025-08-31T00:20:13.408Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
 }
-
-# Ensure required directories exist
-Write-Host "📁 Creating required directories..." -ForegroundColor Yellow
-if (-not (Test-Path "$InstallPath\logs")) {
-    New-Item -ItemType Directory -Path "$InstallPath\logs" -Force | Out-Null
+2025-08-30T17:20:13: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
+    }
+  }
 }
-Write-Host "✅ Directories created" -ForegroundColor Green
-
-# Check for .env file
-Write-Host "🔍 Validating environment configuration..." -ForegroundColor Yellow
-if (-not (Test-Path ".env")) {
-    Write-Host "⚠️ .env file not found. Checking for .env.fmb-onprem..." -ForegroundColor Yellow
-    if (Test-Path "fmb-onprem/.env.fmb-onprem") {
-        Copy-Item "fmb-onprem/.env.fmb-onprem" ".env"
-        Write-Host "✅ Copied .env.fmb-onprem to .env" -ForegroundColor Green
-    } else {
-        Write-Host "❌ No environment file found. Please create .env with required configuration." -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "✅ Environment file found" -ForegroundColor Green
+2025-08-30T17:20:20: 2025-08-31T00:20:20.009Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:20: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T17:20:20: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T17:20:20: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:20: 2025-08-31T00:20:20.014Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:20: 2025-08-31T00:20:20.014Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:20: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:20: ✅ FMB Database connection established successfully
+2025-08-30T17:20:20: 2025-08-31T00:20:20.194Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:20: 2025-08-31T00:20:20.198Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:20: 2025-08-31T00:20:20.199Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:20: 2025-08-31T00:20:20.200Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:20: 2025-08-31T00:20:20.200Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:20: 2025-08-31T00:20:20.201Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:20: 2025-08-31T00:20:20.203Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:20: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:20: 2025-08-31T00:20:20.205Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:20: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:20: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+2025-08-30T17:20:20: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
+2025-08-30T17:20:20: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:20: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:20: 2025-08-31T00:20:20.208Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
 }
-
-# Stop PM2 processes
-Write-Host "⏹️ Stopping application..." -ForegroundColor Yellow
-try {
-    Set-Location $InstallPath
-    npx pm2 stop ecosystem.config.cjs
-    Write-Host "✅ Application stopped" -ForegroundColor Green
-} catch {
-    Write-Host "⚠️ Could not stop PM2 processes gracefully" -ForegroundColor Yellow
+2025-08-30T17:20:20: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
+    }
+  }
 }
-
-# Update application
-Write-Host "📦 Installing all dependencies..." -ForegroundColor Yellow
-try {
-    # Clean install to ensure all dependencies are properly installed
-    Remove-Item -Path "node_modules" -Recurse -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "package-lock.json" -Force -ErrorAction SilentlyContinue
-    npm install --production=false --legacy-peer-deps
-    npm audit fix --force --legacy-peer-deps
-    Write-Host "✅ All dependencies installed" -ForegroundColor Green
-} catch {
-    Write-Host "❌ Failed to install dependencies" -ForegroundColor Red
-    exit 1
+2025-08-30T17:20:26: 2025-08-31T00:20:26.812Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:26: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+2025-08-30T17:20:26: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+2025-08-30T17:20:26: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:26: 2025-08-31T00:20:26.817Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:26: 2025-08-31T00:20:26.818Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:26: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:27: ✅ FMB Database connection established successfully
+2025-08-30T17:20:27: 2025-08-31T00:20:27.004Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:27: 2025-08-31T00:20:27.009Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:27: 2025-08-31T00:20:27.009Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:27: 2025-08-31T00:20:27.011Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:27: 2025-08-31T00:20:27.011Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:27: 2025-08-31T00:20:27.011Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:27: 2025-08-31T00:20:27.014Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:27: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:27: 2025-08-31T00:20:27.016Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:27: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:27: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T17:20:27: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T17:20:27: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:27: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:27: 2025-08-31T00:20:27.019Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
 }
-
-# Build application
-Write-Host "🔨 Building application..." -ForegroundColor Yellow
-try {
-    npm run build
-
-    # Copy FMB on-premises configuration files to dist
-    Write-Host "📋 Copying FMB configuration files..." -ForegroundColor Yellow
-    if (-not (Test-Path "dist/fmb-onprem")) {
-        New-Item -ItemType Directory -Path "dist/fmb-onprem" -Force | Out-Null
-        New-Item -ItemType Directory -Path "dist/fmb-onprem/config" -Force | Out-Null
+2025-08-30T17:20:27: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
     }
-
-    # Build the TypeScript files for on-prem configs
-    npx tsc fmb-onprem/config/fmb-env.ts --outDir dist --target es2020 --module es2020 --moduleResolution node --allowSyntheticDefaultImports --esModuleInterop
-    npx tsc fmb-onprem/config/fmb-database.ts --outDir dist --target es2020 --module es2020 --moduleResolution node --allowSyntheticDefaultImports --esModuleInterop
-
-    # Verify build artifacts exist
-    if (-not (Test-Path "dist")) {
-        Write-Host "❌ Build directory not found" -ForegroundColor Red
-        exit 1
-    }
-
-    if (-not (Test-Path "dist/index.js")) {
-        Write-Host "❌ Server build not found" -ForegroundColor Red
-        exit 1
-    }
-
-    Write-Host "✅ Application built successfully" -ForegroundColor Green
-
-    Write-Host "Installing production dependencies..." -ForegroundColor Yellow
-    # Ensure production dependencies are available for the built application
-    npm install --only=production --legacy-peer-deps
-    Write-Host "✅ Production dependencies installed" -ForegroundColor Green
-} catch {
-    Write-Host "❌ Build failed" -ForegroundColor Red
-    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+  }
 }
-
-# Skip cleaning dev dependencies to avoid missing Vite plugin errors
-Write-Host "📦 Keeping all dependencies for Vite compatibility..." -ForegroundColor Yellow
-Write-Host "✅ Dependencies preserved for production build" -ForegroundColor Green
-
-# Health check
-Write-Host "🔍 Running configuration health check..." -ForegroundColor Yellow
-try {
-    # Only validate FMB environment if actually deploying on-premises
-    # For Replit deployment, skip FMB-specific validation
-    $isFmbOnPrem = $env:FMB_DEPLOYMENT -eq "onprem" -and $env:NODE_ENV -eq "production"
-    if ($isFmbOnPrem) {
-        $env:NODE_ENV = "production"
-
-        # Check if built config exists, otherwise use ts-node for health check
-        if (Test-Path "dist/fmb-onprem/config/fmb-env.js") {
-            $nodeScript = @"
-import('./dist/fmb-onprem/config/fmb-env.js').then(config => {
-  config.loadFmbOnPremConfig();
-  console.log('✅ Configuration valid');
-}).catch(err => {
-  console.error('❌ Config error:', err.message);
-  process.exit(1);
-});
-"@
-            node -e $nodeScript --input-type=module
-        } else {
-            # Basic FMB environment variable check
-            $requiredVars = @('FMB_SESSION_SECRET', 'FMB_DB_SERVER', 'FMB_DB_NAME')
-            $missing = @()
-            foreach ($var in $requiredVars) {
-                if (-not (Get-ChildItem Env: | Where-Object { $_.Name -eq $var })) {
-                    $missing += $var
-                }
-            }
-
-            if ($missing.Count -gt 0) {
-                Write-Host "❌ Missing required FMB environment variables: $($missing -join ', ')" -ForegroundColor Red
-                exit 1
-            }
-
-            Write-Host "✅ FMB environment validation passed" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "☁️ Replit deployment detected - skipping FMB on-prem validation" -ForegroundColor Yellow
-
-        # Load environment variables from .env file for validation
-        if (Test-Path ".env") {
-            Write-Host "📋 Loading environment variables from .env file..." -ForegroundColor Yellow
-            Get-Content ".env" | ForEach-Object {
-                if ($_ -match "^([^#=]+)=(.*)$") {
-                    $name = $matches[1].Trim()
-                    $value = $matches[2].Trim()
-                    [Environment]::SetEnvironmentVariable($name, $value, "Process")
-                }
-            }
-        }
-
-        # Basic validation for environment
-        $basicVars = @('NODE_ENV')
-        $missing = @()
-        foreach ($var in $basicVars) {
-            if (-not (Get-ChildItem Env: | Where-Object { $_.Name -eq $var })) {
-                $missing += $var
-            }
-        }
-
-        if ($missing.Count -gt 0) {
-            Write-Host "❌ Missing basic environment variables: $($missing -join ', ')" -ForegroundColor Red
-            Write-Host "💡 Tip: Ensure .env file contains NODE_ENV=production" -ForegroundColor Yellow
-            exit 1
-        }
-
-        Write-Host "✅ Basic environment validation passed" -ForegroundColor Green
-    }
-
-    Write-Host "✅ Configuration validation completed" -ForegroundColor Green
-} catch {
-    Write-Host "❌ Configuration validation failed" -ForegroundColor Red
-    Write-Host "Please check your .env file and configuration" -ForegroundColor Yellow
-    exit 1
+2025-08-30T17:20:33: 2025-08-31T00:20:33.705Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:33: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  enable debug logging with { debug: true }
+2025-08-30T17:20:33: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+2025-08-30T17:20:33: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:33: 2025-08-31T00:20:33.710Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:33: 2025-08-31T00:20:33.711Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:33: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:33: ✅ FMB Database connection established successfully
+2025-08-30T17:20:33: 2025-08-31T00:20:33.904Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:33: 2025-08-31T00:20:33.908Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:33: 2025-08-31T00:20:33.909Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:33: 2025-08-31T00:20:33.910Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:33: 2025-08-31T00:20:33.910Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:33: 2025-08-31T00:20:33.911Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:33: 2025-08-31T00:20:33.913Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:33: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:33: 2025-08-31T00:20:33.916Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:33: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:33: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:33: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T17:20:33: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:33: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:33: 2025-08-31T00:20:33.919Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
 }
-
-# Start application
-Write-Host "▶️ Starting application..." -ForegroundColor Yellow
-try {
-    # Check if PM2 is available
-    $pm2Version = npx pm2 --version 2>$null
-    if (-not $pm2Version) {
-        Write-Host "❌ PM2 is not available" -ForegroundColor Red
-        Write-Host "Installing PM2 globally..." -ForegroundColor Yellow
-        npm install -g pm2
+2025-08-30T17:20:33: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
     }
-
-    # Stop any existing processes first
-    Write-Host "🛑 Stopping any existing processes..." -ForegroundColor Yellow
-    npx pm2 delete fmb-timetracker 2>$null
-
-    # Start the application with explicit production environment
-    Write-Host "🚀 Starting application with PM2..." -ForegroundColor Yellow
-    npx pm2 start ecosystem.config.cjs --env production --no-daemon
-
-    # Wait for the process to initialize
-    Start-Sleep -Seconds 5
-
-    # Check process status multiple times with retries
-    $maxRetries = 6
-    $retryCount = 0
-    $processOnline = $false
-
-    while ($retryCount -lt $maxRetries -and -not $processOnline) {
-        $retryCount++
-        Write-Host "🔍 Checking process status (attempt $retryCount/$maxRetries)..." -ForegroundColor Yellow
-
-        try {
-            $processStatus = npx pm2 jlist | ConvertFrom-Json
-            $appProcess = $processStatus | Where-Object { $_.name -eq "fmb-timetracker" }
-
-            if ($appProcess) {
-                $status = $appProcess.pm2_env.status
-                Write-Host "📊 Process status: $status" -ForegroundColor Cyan
-
-                if ($status -eq "online") {
-                    $processOnline = $true
-                    Write-Host "✅ Application started successfully" -ForegroundColor Green
-                } elseif ($status -eq "errored" -or $status -eq "stopped") {
-                    Write-Host "❌ Application process failed with status: $status" -ForegroundColor Red
-                    Write-Host "📝 Recent error logs:" -ForegroundColor Yellow
-                    npx pm2 logs fmb-timetracker --lines 20 --err
-                    exit 1
-                } else {
-                    Write-Host "⏳ Application still starting (status: $status)..." -ForegroundColor Yellow
-                    Start-Sleep -Seconds 5
-                }
-            } else {
-                Write-Host "❌ No process found with name 'fmb-timetracker'" -ForegroundColor Red
-                npx pm2 status
-                exit 1
-            }
-        } catch {
-            Write-Host "⚠️ Error checking process status: $($_.Exception.Message)" -ForegroundColor Yellow
-            Start-Sleep -Seconds 5
-        }
-    }
-
-    if (-not $processOnline) {
-        Write-Host "❌ Application failed to start within expected time" -ForegroundColor Red
-        Write-Host "📝 PM2 Status:" -ForegroundColor Yellow
-        npx pm2 status
-        Write-Host "📝 Recent logs:" -ForegroundColor Yellow
-        npx pm2 logs fmb-timetracker --lines 20
-        exit 1
-    }
-
-} catch {
-    Write-Host "❌ Failed to start application" -ForegroundColor Red
-    Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "📝 PM2 Status:" -ForegroundColor Yellow
-    npx pm2 status
-    Write-Host "📝 Recent logs:" -ForegroundColor Yellow
-    npx pm2 logs fmb-timetracker --lines 20
-    exit 1
+  }
 }
-
-# Wait for service to be ready
-Write-Host "⏳ Waiting for service to be ready..." -ForegroundColor Yellow
-Start-Sleep -Seconds 15
-
-# Verify deployment
-Write-Host "🔍 Verifying deployment..." -ForegroundColor Yellow
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000/api/health" -TimeoutSec 30
-    if ($response.StatusCode -eq 200) {
-        Write-Host "✅ Deployment successful!" -ForegroundColor Green
-        Write-Host "🌐 Application is running on port 3000" -ForegroundColor Green
-    } else {
-        Write-Host "❌ Health check failed - HTTP Status: $($response.StatusCode)" -ForegroundColor Red
-        exit 1
-    }
-} catch {
-    Write-Host "❌ Deployment verification failed" -ForegroundColor Red
-    Write-Host "📝 Check application logs: pm2 logs" -ForegroundColor Yellow
-    exit 1
+2025-08-30T17:20:40: 2025-08-31T00:20:40.596Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:40: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  enable debug logging with { debug: true }
+2025-08-30T17:20:40: [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:40: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:40: 2025-08-31T00:20:40.602Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:40: 2025-08-31T00:20:40.602Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:40: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:40: ✅ FMB Database connection established successfully
+2025-08-30T17:20:40: 2025-08-31T00:20:40.780Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:40: 2025-08-31T00:20:40.784Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:40: 2025-08-31T00:20:40.784Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:40: 2025-08-31T00:20:40.786Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:40: 2025-08-31T00:20:40.786Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:40: 2025-08-31T00:20:40.786Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:40: 2025-08-31T00:20:40.788Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:40: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:40: 2025-08-31T00:20:40.791Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:40: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:40: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:40: [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:40: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:40: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:40: 2025-08-31T00:20:40.794Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
 }
-
-Write-Host ""
-Write-Host "📋 Post-deployment commands:" -ForegroundColor Cyan
-Write-Host "View status: npx pm2 status" -ForegroundColor White
-Write-Host "View logs: npx pm2 logs" -ForegroundColor White
-Write-Host "Restart if needed: npx pm2 restart ecosystem.config.cjs" -ForegroundColor White
-🚀 FMB TimeTracker Deployment (Windows)
-======================================
-📁 Creating required directories...
-✅ Directories created
-🔍 Validating environment configuration...
-✅ Environment file found
-⏹️ Stopping application...
-[PM2] [fmb-timetracker](0) âœ“
-â”Œâ”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”
-â”‚ id â”‚ name               â”‚ namespace   â”‚ version â”‚ mode    â”‚ pid      â”‚ uptime â”‚ â†º    â”‚ status    â”‚ cpu      â”‚ mem      â”‚ user     â”‚ watching â”‚
-â”œâ”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”¤
-â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ cluster â”‚ 0        â”‚ 0      â”‚ 9    â”‚ stopped   â”‚ 0%       â”‚ 0b       â”‚ ADM91381 â”‚ disabled â”‚
-â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”˜
-✅ Application stopped
-📦 Installing all dependencies...
-node.exe : npm warn config production Use `--omit=dev` instead.
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm warn config...t=dev` instead.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-npm warn deprecated @xmldom/xmldom@0.7.13: this version is no longer supported, please update to at least 0.8.*
-npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See 
-https://v8.dev/blog/math-random for details.
-npm warn deprecated adal-node@0.2.4: This package is no longer supported. Please migrate to @azure/msal-node.
-npm warn deprecated passport-saml@3.2.4: For versions >= 4, please use scopped package @node-saml/passport-saml
-
-added 810 packages, and audited 811 packages in 3m
-
-111 packages are looking for funding
-  run `npm fund` for details
-
-8 vulnerabilities (1 low, 1 moderate, 5 high, 1 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-Some issues need review, and may require choosing
-a different dependency.
-
-Run `npm audit` for details.
-node.exe : npm warn using --force Recommended protections disabled.
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm warn using ...tions disabled.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-npm warn audit No fix available for passport-saml@*
-npm warn audit No fix available for pm2@*
-
-up to date, audited 811 packages in 3s
-
-111 packages are looking for funding
-  run `npm fund` for details
-
-# npm audit report
-
-axios  <=0.29.0
-Severity: high
-Axios Cross-Site Request Forgery Vulnerability - https://github.com/advisories/GHSA-wf5p-g6vw-rhxx
-axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL - https://github.com/advisories/GHSA-jr5f-v2jv-69x6
-fix available via `npm audit fix`
-node_modules/axios
-  adal-node  0.2.2-beta.0 - 0.2.4
-  Depends on vulnerable versions of axios
-  node_modules/adal-node
-    @azure/ms-rest-nodeauth  >=3.0.10
-    Depends on vulnerable versions of adal-node
-    node_modules/@azure/ms-rest-nodeauth
-      tedious  6.7.1 || 12.3.0-alpha.1 - 12.3.0
-      Depends on vulnerable versions of @azure/ms-rest-nodeauth
-      node_modules/connect-mssql-v2/node_modules/tedious
-        mssql  6.4.0 - 6.4.1
-        Depends on vulnerable versions of tedious
-        node_modules/connect-mssql-v2/node_modules/mssql
-
-passport-saml  *
-Severity: critical
-Node-SAML SAML Signature Verification Vulnerability - https://github.com/advisories/GHSA-4mxg-3p6v-xgq3
-Depends on vulnerable versions of xml2js
-No fix available
-node_modules/passport-saml
-
-pm2  *
-pm2 Regular Expression Denial of Service vulnerability - https://github.com/advisories/GHSA-x5gf-qvw8-r2rm
-No fix available
-node_modules/pm2
-
-xml2js  <0.5.0
-Severity: moderate
-xml2js is vulnerable to prototype pollution - https://github.com/advisories/GHSA-776f-qx25-q3cc
-No fix available
-node_modules/passport-saml/node_modules/xml2js
-
-8 vulnerabilities (1 low, 1 moderate, 5 high, 1 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-Some issues need review, and may require choosing
-a different dependency.
-✅ All dependencies installed
-🔨 Building application...
-
-> rest-express@1.0.0 build
-> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
-
-[36mvite v7.1.3 [32mbuilding for production...[36m[39m
-transforming...
-[32mâœ“[39m 2077 modules transformed.
-rendering chunks...
-computing gzip size...
-[2m../dist/public/[22m[32mindex.html                 [39m[1m[2m  0.86 kB[22m[1m[22m[2m â”‚ gzip:   0.44 kB[22m
-[2m../dist/public/[22m[35massets/index-81F4Kgy-.css  [39m[1m[2m 70.03 kB[22m[1m[22m[2m â”‚ gzip:  12.48 kB[22m
-[2m../dist/public/[22m[36massets/index-DcguImM-.js   [39m[1m[33m635.18 kB[39m[22m[2m â”‚ gzip: 179.38 kB[22m
-node.exe : [33m
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([33m:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-(!) Some chunks are larger than 500 kB after minification. Consider:
-- Using dynamic import() to code-split the application
-- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
-- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[32mâœ“ built in 11.50s[39m
-â–² [WARNING] Duplicate member "getTimeEntriesByUserId" in class body [duplicate-class-member]
-    fmb-onprem/storage/fmb-storage.ts:443:8:
-      443 â”‚   async getTimeEntriesByUserId(userId: string): Promise<TimeEntry...
-          â•µ         ~~~~~~~~~~~~~~~~~~~~~~
-  The original member "getTimeEntriesByUserId" is here:
-    fmb-onprem/storage/fmb-storage.ts:426:8:
-      426 â”‚   async getTimeEntriesByUserId(userId: string): Promise<TimeEntry...
-          â•µ         ~~~~~~~~~~~~~~~~~~~~~~
-1 warning
-  dist\index.js  150.9kb
-Done in 39ms
-📋 Copying FMB configuration files...
-node_modules/tedious/lib/connection.d.ts(755,29): error TS2304: Cannot find name 'AggregateError'.
-node_modules/tedious/lib/errors.d.ts(4,59): error TS2304: Cannot find name 'ErrorOptions'.
-node_modules/tedious/lib/errors.d.ts(14,59): error TS2304: Cannot find name 'ErrorOptions'.
-fmb-onprem/storage/fmb-storage.ts(28,14): error TS2420: Class 'FmbStorage' incorrectly implements interface 'IStorage'.
-  Type 'FmbStorage' is missing the following properties from type 'IStorage': getTasksByProjectId, getProjectEmployees, getProjectEmployeesByProjectId, createProjectEmployee, deleteProjectEmployee
-fmb-onprem/storage/fmb-storage.ts(348,51): error TS2551: Property 'projectId' does not exist on type 'InsertTask'. Did you mean 'project_id'?
-fmb-onprem/storage/fmb-storage.ts(354,53): error TS2551: Property 'assignedTo' does not exist on type 'InsertTask'. Did you mean 'assigned_to'?
-fmb-onprem/storage/fmb-storage.ts(355,51): error TS2551: Property 'createdBy' does not exist on type 'InsertTask'. Did you mean 'created_by'?
-fmb-onprem/storage/fmb-storage.ts(356,47): error TS2551: Property 'dueDate' does not exist on type 'InsertTask'. Did you mean 'due_date'?
-fmb-onprem/storage/fmb-storage.ts(357,61): error TS2551: Property 'estimatedHours' does not exist on type 'InsertTask'. Did you mean 'estimated_hours'?
-fmb-onprem/storage/fmb-storage.ts(426,9): error TS2393: Duplicate function implementation.
-fmb-onprem/storage/fmb-storage.ts(443,9): error TS2393: Duplicate function implementation.
-fmb-onprem/storage/fmb-storage.ts(456,55): error TS2551: Property 'userId' does not exist on type 'InsertTimeEntry'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(457,61): error TS2551: Property 'projectId' does not exist on type 'InsertTimeEntry'. Did you mean 'project_id'?
-fmb-onprem/storage/fmb-storage.ts(458,55): error TS2551: Property 'taskId' does not exist on type 'InsertTimeEntry'. Did you mean 'task_id'?
-fmb-onprem/storage/fmb-storage.ts(463,61): error TS2551: Property 'startTime' does not exist on type 'InsertTimeEntry'. Did you mean 'start_time'?
-fmb-onprem/storage/fmb-storage.ts(464,57): error TS2551: Property 'endTime' does not exist on type 'InsertTimeEntry'. Did you mean 'end_time'?
-fmb-onprem/storage/fmb-storage.ts(467,63): error TS2551: Property 'isBillable' does not exist on type 'InsertTimeEntry'. Did you mean 'is_billable'?
-fmb-onprem/storage/fmb-storage.ts(468,63): error TS2551: Property 'isApproved' does not exist on type 'InsertTimeEntry'. Did you mean 'is_approved'?
-fmb-onprem/storage/fmb-storage.ts(469,81): error TS2551: Property 'isManualEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_manual_entry'?
-fmb-onprem/storage/fmb-storage.ts(470,69): error TS2551: Property 'isTimerEntry' does not exist on type 'InsertTimeEntry'. Did you mean 'is_timer_entry'?
-fmb-onprem/storage/fmb-storage.ts(471,63): error TS2551: Property 'isTemplate' does not exist on type 'InsertTimeEntry'. Did you mean 'is_template'?
-fmb-onprem/storage/fmb-storage.ts(553,61): error TS2551: Property 'employeeId' does not exist on type 'InsertEmployee'. Did you mean 'employee_id'?
-fmb-onprem/storage/fmb-storage.ts(554,59): error TS2551: Property 'firstName' does not exist on type 'InsertEmployee'. Did you mean 'first_name'?
-fmb-onprem/storage/fmb-storage.ts(555,57): error TS2551: Property 'lastName' does not exist on type 'InsertEmployee'. Did you mean 'last_name'?
-fmb-onprem/storage/fmb-storage.ts(557,53): error TS2551: Property 'userId' does not exist on type 'InsertEmployee'. Did you mean 'user_id'?
-fmb-onprem/storage/fmb-storage.ts(640,61): error TS2551: Property 'organizationId' does not exist on type 'InsertDepartment'. Did you mean 'organization_id'?
-fmb-onprem/storage/fmb-storage.ts(641,51): error TS2551: Property 'managerId' does not exist on type 'InsertDepartment'. Did you mean 'manager_id'?
-fmb-onprem/storage/fmb-storage.ts(642,45): error TS2551: Property 'userId' does not exist on type 'InsertDepartment'. Did you mean 'user_id'?
-node_modules/tedious/lib/connection.d.ts(755,29): error TS2304: Cannot find name 'AggregateError'.
-node_modules/tedious/lib/errors.d.ts(4,59): error TS2304: Cannot find name 'ErrorOptions'.
-node_modules/tedious/lib/errors.d.ts(14,59): error TS2304: Cannot find name 'ErrorOptions'.
-server/storage.ts(317,23): error TS2339: Property 'db' does not exist on type 'typeof import("C:/fmb-timetracker/server/db")'.
-server/storage.ts(317,38): error TS2339: Property 'default' does not exist on type 'typeof import("C:/fmb-timetracker/server/db")'.
-✅ Application built successfully
-Installing production dependencies...
-node.exe : npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
-At line:1 char:1
-+ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (npm warn config...om the install.:String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-
-up to date, audited 581 packages in 5s
-
-83 packages are looking for funding
-  run `npm fund` for details
-
-7 vulnerabilities (1 moderate, 5 high, 1 critical)
-
-To address issues that do not require attention, run:
-  npm audit fix
-
-Some issues need review, and may require choosing
-a different dependency.
-
-Run `npm audit` for details.
-✅ Production dependencies installed
-📦 Keeping all dependencies for Vite compatibility...
-✅ Dependencies preserved for production build
-🔍 Running configuration health check...
-☁️ Replit deployment detected - skipping FMB on-prem validation
-📋 Loading environment variables from .env file...
-✅ Basic environment validation passed
-✅ Configuration validation completed
-▶️ Starting application...
-🛑 Stopping any existing processes...
-[PM2] Applying action deleteProcessId on app [fmb-timetracker](ids: [ 0 ])
-[PM2] [fmb-timetracker](0) âœ“
-â”Œâ”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â
-”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ id â”‚ name      â”‚ namespace   â”‚ version â”‚ mode    â”‚ pid      â”‚ uptime â”‚ â†º    â”‚ status    â”‚ cpu      â”‚ mem      â”‚ user     â”‚ watching â”‚
-â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â
-”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-🚀 Starting application with PM2...
-pm2 launched in no-daemon mode (you can add DEBUG="*" env variable to get more messages)
-[PM2][WARN] Applications fmb-timetracker not running, starting...
-[PM2][WARN] Environment [production] is not defined in process file
-[PM2] App [fmb-timetracker] launched (1 instances)
-â”Œâ”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”
-â”‚ id â”‚ name               â”‚ namespace   â”‚ version â”‚ mode    â”‚ pid      â”‚ uptime â”‚ â†º    â”‚ status    â”‚ cpu      â”‚ mem      â”‚ user     â”‚ watching â”‚
-â”œâ”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”¤
-â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ cluster â”‚ 18972    â”‚ 0      â”‚ 0    â”‚ waiting â€¦ â”‚ 0%       â”‚ 0b       â”‚ ADM91381 â”‚ disabled â”‚
-â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â
-”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”
-€â”€â”€â”€â”€â”€â”€â”˜
-[--no-daemon] Continue to stream logs
-[--no-daemon] Exit on target PM2 exit pid=13964
-16:33:08 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
-16:33:09 PM2      | App [fmb-timetracker:0] online
-16:33:09 PM2      | App name:fmb-timetracker id:0 disconnected
-16:33:09 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
-16:33:14 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
-16:33:14 PM2      | App [fmb-timetracker:0] online
-16:33:14 PM2      | App name:fmb-timetracker id:0 disconnected
-16:33:14 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
-16:33:19 PM2      | App [fmb-timetracker:0] starting in -cluster mode-
-16:33:19 PM2      | App [fmb-timetracker:0] online
-16:33:19 PM2      | App name:fmb-timetracker id:0 disconnected
-16:33:19 PM2      | App [fmb-timetracker:0] exited with code [1] via signal [SIGINT]
+2025-08-30T17:20:40: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
+    }
+  }
+}
+2025-08-30T17:20:47: 2025-08-31T00:20:47.368Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:47: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:47: [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:47: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:47: 2025-08-31T00:20:47.373Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:47: 2025-08-31T00:20:47.373Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:47: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:47: ✅ FMB Database connection established successfully
+2025-08-30T17:20:47: 2025-08-31T00:20:47.572Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:47: 2025-08-31T00:20:47.576Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:47: 2025-08-31T00:20:47.576Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:47: 2025-08-31T00:20:47.578Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:47: 2025-08-31T00:20:47.578Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:47: 2025-08-31T00:20:47.578Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:47: 2025-08-31T00:20:47.581Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:47: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:47: 2025-08-31T00:20:47.584Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:47: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:47: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+2025-08-30T17:20:47: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T17:20:47: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:47: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:47: 2025-08-31T00:20:47.587Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
+}
+2025-08-30T17:20:47: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
+    }
+  }
+}
+2025-08-30T17:20:54: 2025-08-31T00:20:54.231Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T17:20:54: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+2025-08-30T17:20:54: [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+2025-08-30T17:20:54: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:54: 2025-08-31T00:20:54.236Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T17:20:54: 2025-08-31T00:20:54.237Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T17:20:54: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T17:20:54: ✅ FMB Database connection established successfully
+2025-08-30T17:20:54: 2025-08-31T00:20:54.452Z 🟢 [DATABASE] FMB Database initialization completed successfully
+2025-08-30T17:20:54: 2025-08-31T00:20:54.456Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
+2025-08-30T17:20:54: 2025-08-31T00:20:54.457Z 🟢 [SESSION] Initializing MS SQL session store for production
+2025-08-30T17:20:54: 2025-08-31T00:20:54.458Z 🟢 [SESSION] Custom MS SQL session store initialized successfully
+2025-08-30T17:20:54: 2025-08-31T00:20:54.458Z 🟢 [SESSION] Session store initialization completed
+2025-08-30T17:20:54: 2025-08-31T00:20:54.459Z 🟢 [SERVER] FMB Session middleware configured successfully
+2025-08-30T17:20:54: 2025-08-31T00:20:54.461Z 🟢 [SECURITY] Enterprise session security middleware activated
+2025-08-30T17:20:54: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
+2025-08-30T17:20:54: 2025-08-31T00:20:54.464Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
+2025-08-30T17:20:54: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
+2025-08-30T17:20:54: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  suppress all logs with { quiet: true }
+2025-08-30T17:20:54: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T17:20:54: 🏢 FMB On-Premises configuration loaded
+2025-08-30T17:20:54: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
+2025-08-30T17:20:54: 2025-08-31T00:20:54.467Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "issuer is required",
+  "name": "TypeError",
+  "code": "NO_CODE",
+  "stack": "TypeError: issuer is required\n    at assertRequired (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\utility.js:10:15)\n    at SAML.initialize (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:52:38)\n    at new SAML (C:\\fmb-timetracker\\node_modules\\@node-saml\\node-saml\\lib\\saml.js:43:29)\n    at new AbstractStrategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:28:26)\n    at new Strategy (C:\\fmb-timetracker\\node_modules\\@node-saml\\passport-saml\\lib\\strategy.js:215:1)\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)",
+  "errorType": "object",
+  "errorConstructor": "TypeError",
+  "serializedError": "{\"stack\":\"TypeError: issuer is required\\n    at assertRequired (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\utility.js:10:15)\\n    at SAML.initialize (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:52:38)\\n    at new SAML (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\node-saml\\\\lib\\\\saml.js:43:29)\\n    at new AbstractStrategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:28:26)\\n    at new Strategy (C:\\\\fmb-timetracker\\\\node_modules\\\\@node-saml\\\\passport-saml\\\\lib\\\\strategy.js:215:1)\\n    at setupFmbSamlAuth (file:///C:/fmb-timetracker/dist/index.js:1201:24)\\n    at registerRoutes (file:///C:/fmb-timetracker/dist/index.js:2642:9)\\n    at async createServer2 (file:///C:/fmb-timetracker/dist/index.js:3895:3)\",\"message\":\"issuer is required\"}"
+}
+2025-08-30T17:20:54: 🔴 [FMB-SESSION] Failed to connect to MS SQL session store: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to localhost:1433 - Could not connect (sequence)
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1146:14
+      at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+    code: 'ESOCKET',
+    [cause]: AggregateError: Could not connect (sequence)
+        at connectInSequence (C:\fmb-timetracker\node_modules\tedious\lib\connector.js:114:9)
+        at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+        at async C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1129:20 {
+      [errors]: [Array]
+    }
+  }
+}
