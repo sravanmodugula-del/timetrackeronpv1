@@ -34,7 +34,7 @@ export async function setupFmbSamlAuth(app: Express) {
   const samlStrategy = new SamlStrategy(
     {
       issuer: fmbConfig.saml.issuer,
-      cert: fmbConfig.saml.cert, // IDP certificate for signature validation
+      idpCert: fmbConfig.saml.cert, // IDP certificate for signature validation - correct property name
       entryPoint: fmbConfig.saml.entryPoint,
       callbackUrl: fmbConfig.saml.callbackUrl,
       acceptedClockSkewMs: 10000, // Increase clock skew tolerance
