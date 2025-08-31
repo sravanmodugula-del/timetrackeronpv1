@@ -30,25 +30,36 @@ export async function setupFmbSamlAuth(app: Express) {
     hasEndMarker: fmbConfig.saml.cert.includes('-----END CERTIFICATE-----')
   });
 
-  // Configure SAML strategy with proper certificate handling
+  // Configure SAML strategy optimized for IdP-initiated flow
   const samlStrategy = new SamlStrategy(
     {
+      // SP Configuration
       issuer: fmbConfig.saml.issuer,
-      idpCert: fmbConfig.saml.cert, // IDP certificate for signature validation - correct property name
-      entryPoint: fmbConfig.saml.entryPoint,
       callbackUrl: fmbConfig.saml.callbackUrl,
-      acceptedClockSkewMs: 10000, // Increase clock skew tolerance
+      
+      // IDP Configuration
+      idpCert: fmbConfig.saml.cert,
+      entryPoint: fmbConfig.saml.entryPoint,
+      
+      // NameID Configuration
       identifierFormat: fmbConfig.saml.nameIdFormat,
-      // Signature validation settings - match your IDP metadata
+      
+      // Security Settings for IdP-initiated flow
       wantAssertionsSigned: true,
-      wantAuthnResponseSigned: false, // Based on your IDP metadata
+      wantAuthnResponseSigned: false,
       signatureAlgorithm: 'sha256',
-      validateInResponseTo: 'never',
+      
+      // Validation Settings
+      validateInResponseTo: false, // Critical for IdP-initiated flow
+      audience: false, // Disable for flexibility
+      acceptedClockSkewMs: 10000,
+      
+      // Flow Optimization
       disableRequestedAuthnContext: true,
       skipRequestCompression: true,
-      // Audience should match your SP entity ID, not IDP
-      audience: false, // Disable audience validation for now
-      // Additional debugging
+      forceAuthn: false,
+      
+      // Additional params
       additionalParams: {},
       additionalAuthorizeParams: {}
     },
@@ -155,10 +166,16 @@ export async function setupFmbSamlAuth(app: Express) {
   });
 
   app.post('/saml/acs', (req, res, next) => {
-    authLog('INFO', 'SAML ACS callback received', {
+    authLog('INFO', 'SAML ACS callback received - IdP-initiated flow', {
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : [],
+      headers: {
+        'content-type': req.get('Content-Type'),
+        'content-length': req.get('Content-Length')
+      }
     });
 
     passport.authenticate('saml', (err, user, info) => {
