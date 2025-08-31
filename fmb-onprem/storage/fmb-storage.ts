@@ -991,7 +991,7 @@ export class FmbStorage implements IStorage {
       request.input('limit', sql.Int, limit);
 
       const result = await request.query(`
-        SELECT TOP (@limit) 'time_entry' as type, description, date as created_at, hours,
+        SELECT TOP (@limit) 'time_entry' as type, te.description, te.date as created_at, te.hours,
                p.name as project_name
         FROM time_entries te
         LEFT JOIN projects p ON te.project_id = p.id
@@ -1015,7 +1015,7 @@ export class FmbStorage implements IStorage {
         SELECT 
           p.id,
           p.name,
-          p.color,
+          '#1976D2' as color,
           COALESCE(SUM(te.hours), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
@@ -1023,13 +1023,47 @@ export class FmbStorage implements IStorage {
         WHERE p.user_id = @userId OR p.id IN (
           SELECT DISTINCT project_id FROM time_entries WHERE user_id = @userId
         )
-        GROUP BY p.id, p.name, p.color
+        GROUP BY p.id, p.name
         ORDER BY total_hours DESC
       `);
 
       return result.recordset;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting project breakdown:', error);
+      throw error;
+    }
+  }
+
+  // Department Hours Summary for Dashboard
+  async getDepartmentHoursSummary(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
+    try {
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+      
+      let dateFilter = '';
+      if (startDate && endDate) {
+        request.input('startDate', sql.Date, startDate);
+        request.input('endDate', sql.Date, endDate);
+        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+      }
+
+      const result = await request.query(`
+        SELECT 
+          COALESCE(d.name, 'No Department') as department_name,
+          COALESCE(SUM(te.hours), 0) as total_hours,
+          COUNT(DISTINCT te.user_id) as employee_count,
+          COUNT(te.id) as entry_count
+        FROM time_entries te
+        LEFT JOIN users u ON te.user_id = u.id
+        LEFT JOIN departments d ON u.department = d.name
+        WHERE te.user_id = @userId ${dateFilter}
+        GROUP BY d.name
+        ORDER BY total_hours DESC
+      `);
+
+      return result.recordset;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error getting department hours summary:', error);
       throw error;
     }
   }
