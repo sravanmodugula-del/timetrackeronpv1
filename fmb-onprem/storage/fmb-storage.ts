@@ -190,9 +190,12 @@ export class FmbStorage implements IStorage {
   }
 
   // Organization Methods
-  async getOrganizations(): Promise<Organization[]> {
-    // For compatibility, return empty array - full implementation will require userId parameter
-    return [];
+  async getOrganizations(userId?: string): Promise<Organization[]> {
+    if (userId) {
+      return await this.getOrganizationsByUserId(userId);
+    }
+    const result = await this.execute('SELECT * FROM organizations ORDER BY created_at DESC');
+    return result;
   }
 
   async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
@@ -221,9 +224,13 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Methods  
-  async getProjects(): Promise<Project[]> {
-    // For compatibility, return empty array - full implementation will require userId parameter
-    return [];
+  async getProjects(userId?: string): Promise<Project[]> {
+    if (userId) {
+      const result = await this.getProjectsByUserId(userId);
+      return result;
+    }
+    const result = await this.execute('SELECT * FROM projects ORDER BY created_at DESC');
+    return result;
   }
 
 
@@ -538,8 +545,11 @@ export class FmbStorage implements IStorage {
   }
 
   // Employee Methods
-  async getEmployees(): Promise<Employee[]> {
-    const result = await this.execute('SELECT * FROM employees');
+  async getEmployees(userId?: string): Promise<Employee[]> {
+    if (userId) {
+      return await this.getEmployeesByUserId(userId);
+    }
+    const result = await this.execute('SELECT * FROM employees ORDER BY created_at DESC');
     return result;
   }
 
@@ -796,34 +806,31 @@ export class FmbStorage implements IStorage {
   }
 
   // Dashboard Stats
-  async getDashboardStats(userId: string): Promise<any> {
+  async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
+    let dateFilter = '';
+    const params = [userId];
+    
+    if (startDate && endDate) {
+      dateFilter = 'AND date >= @param1 AND date <= @param2';
+      params.push(startDate, endDate);
+    } else {
+      dateFilter = 'AND date >= DATEADD(month, -1, GETDATE())';
+    }
+
     const [hoursResult, projectsResult, employeesResult] = await Promise.all([
       this.execute(`
         SELECT COALESCE(SUM(hours), 0) as total_hours 
         FROM time_entries 
-        WHERE user_id = @param0 AND date >= DATEADD(month, -1, GETDATE())
-      `, [userId]),
+        WHERE user_id = @param0 ${dateFilter}
+      `, params),
       this.execute('SELECT COUNT(*) as total_projects FROM projects WHERE user_id = @param0', [userId]),
       this.execute('SELECT COUNT(*) as total_employees FROM employees WHERE user_id = @param0', [userId])
     ]);
 
-    // Get recent activity
-    const recentActivity = await this.execute(`
-      SELECT TOP 10 'time_entry' as type, description, date as created_at 
-      FROM time_entries 
-      WHERE user_id = @param0 
-      UNION ALL 
-      SELECT TOP 10 'project' as type, name as description, created_at 
-      FROM projects 
-      WHERE user_id = @param0 
-      ORDER BY created_at DESC
-    `, [userId]);
-
     return {
       totalHours: hoursResult[0]?.total_hours || 0,
       totalProjects: projectsResult[0]?.total_projects || 0,
-      totalEmployees: employeesResult[0]?.total_employees || 0,
-      recentActivity: recentActivity
+      totalEmployees: employeesResult[0]?.total_employees || 0
     };
   }
 
