@@ -77,7 +77,7 @@ export class FmbStorage implements IStorage {
         port: this.config.port,
         options: {
           encrypt: this.config.encrypt,
-          trustServerCertificate: true, // Always trust server certificate for on-premises
+          trustServerCertificate: this.config.trustServerCertificate, // Use environment variable
           enableArithAbort: true,
           requestTimeout: 30000,
           connectionTimeout: 30000,
@@ -115,7 +115,7 @@ export class FmbStorage implements IStorage {
     }
 
     try {
-      const request = this.pool.request();
+      const request = this.pool.request(); // Use this.pool.request() directly
       params.forEach((param, index) => {
         request.input(`param${index}`, param);
       });

@@ -56,7 +56,7 @@ export class CustomMSSQLStore extends Store {
       port: parseInt(process.env.FMB_DB_PORT || '1433'),
       options: {
         encrypt: process.env.FMB_DB_ENCRYPT === 'true',
-        trustServerCertificate: process.env.FMB_DB_TRUST_CERT === 'true',
+        trustServerCertificate: process.env.FMB_DB_TRUST_SERVER_CERTIFICATE === 'true',
         enableArithAbort: true,
         requestTimeout: 30000,
         connectionTimeout: 30000,

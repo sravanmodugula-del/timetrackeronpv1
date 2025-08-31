@@ -31,8 +31,8 @@ export class OptimizedSessionManager {
       password: config.database.password,
       port: config.database.port,
       options: {
-        encrypt: config.database.encrypt,
-        trustServerCertificate: config.database.trustServerCertificate,
+        encrypt: config.database.options.encrypt,
+        trustServerCertificate: config.database.options.trustServerCertificate,
         enableArithAbort: true,
         connectTimeout: 15000,
         requestTimeout: 10000
