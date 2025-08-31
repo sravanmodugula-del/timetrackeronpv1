@@ -146,8 +146,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract user ID using consistent helper function
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const projects = await activeStorage.getProjectsByUserId(userId);
-      res.json(projects);
+      try {
+        const projects = await activeStorage.getProjectsByUserId(userId);
+        res.json(projects);
+      } catch (error) {
+        console.error("Error in getProjectsByUserId:", error);
+        // Try fallback method
+        try {
+          const allProjects = await activeStorage.getProjects();
+          const userProjects = allProjects.filter(p => p.user_id === userId);
+          res.json(userProjects);
+        } catch (fallbackError) {
+          console.error("Fallback method also failed:", fallbackError);
+          res.status(500).json({ message: "Failed to fetch projects", error: error.message });
+        }
+      }
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });

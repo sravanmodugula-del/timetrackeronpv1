@@ -573,7 +573,7 @@ export class FmbStorage implements IStorage {
   async getProjectsByUserId(userId: string): Promise<ProjectWithEmployees[]> {
     const result = await this.execute(`
       SELECT p.*,
-        (SELECT pe.*, e.first_name, e.last_name, e.employee_id
+        (SELECT pe.*, e.first_name, e.last_name, e.employee_id as emp_employee_id
          FROM project_employees pe
          JOIN employees e ON pe.employee_id = e.id
          WHERE pe.project_id = p.id FOR JSON PATH) as employees
@@ -1716,6 +1716,170 @@ export class FmbStorage implements IStorage {
       console.error('🔴 [FMB-STORAGE] Error updating user role:', error);
       throw error;
     }
+  }
+
+  // Additional missing methods that need implementation
+  async getAllUsers(): Promise<User[]> {
+    console.log('🗄️ [FMB-STORAGE] GET_ALL_USERS: Fetching all users');
+
+    const request = this.pool.request();
+    const result = await request.query(`
+      SELECT id, email, first_name, last_name, role, profile_image_url, created_at, updated_at
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+
+    console.log(`✅ [FMB-STORAGE] GET_ALL_USERS: Found ${result.recordset.length} users`);
+    return result.recordset;
+  }
+
+  async getUsersWithoutEmployeeProfile(): Promise<User[]> {
+    console.log('🗄️ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Fetching users without employee profiles');
+
+    const request = this.pool.request();
+    const result = await request.query(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.profile_image_url, u.created_at, u.updated_at
+      FROM users u
+      LEFT JOIN employees e ON u.id = e.user_id
+      WHERE e.user_id IS NULL
+      ORDER BY u.created_at DESC
+    `);
+
+    console.log(`✅ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Found ${result.recordset.length} users`);
+    return result.recordset;
+  }
+
+  async linkUserToEmployee(userId: string, employeeId: string): Promise<Employee> {
+    console.log('🗄️ [FMB-STORAGE] LINK_USER_TO_EMPLOYEE:', { userId, employeeId });
+
+    const request = this.pool.request();
+
+    // Update the employee record to link it to the user
+    await request
+      .input('userId', userId)
+      .input('employeeId', employeeId)
+      .query(`
+        UPDATE employees 
+        SET user_id = @userId, updated_at = GETDATE()
+        WHERE id = @employeeId
+      `);
+
+    // Fetch and return the updated employee
+    const result = await request
+      .input('employeeId', employeeId)
+      .query(`
+        SELECT * FROM employees WHERE id = @employeeId
+      `);
+
+    console.log('✅ [FMB-STORAGE] LINK_USER_TO_EMPLOYEE: User linked successfully');
+    return result.recordset[0];
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    console.log('🗄️ [FMB-STORAGE] UPDATE_USER_ROLE:', { userId, role });
+
+    const request = this.pool.request();
+
+    await request
+      .input('userId', userId)
+      .input('role', role)
+      .query(`
+        UPDATE users 
+        SET role = @role, updated_at = GETDATE()
+        WHERE id = @userId
+      `);
+
+    // Fetch and return the updated user
+    const result = await request
+      .input('userId', userId)
+      .query(`
+        SELECT * FROM users WHERE id = @userId
+      `);
+
+    console.log('✅ [FMB-STORAGE] UPDATE_USER_ROLE: Role updated successfully');
+    return result.recordset[0];
+  }
+
+
+  async getAllUsers(): Promise<User[]> {
+    console.log('🗄️ [FMB-STORAGE] GET_ALL_USERS: Fetching all users');
+
+    const request = this.pool!.request();
+    const result = await request.query(`
+      SELECT id, email, first_name, last_name, role, profile_image_url, created_at, updated_at, is_active
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+
+    console.log(`✅ [FMB-STORAGE] GET_ALL_USERS: Found ${result.recordset.length} users`);
+    return result.recordset;
+  }
+
+  async getUsersWithoutEmployeeProfile(): Promise<User[]> {
+    console.log('🗄️ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Fetching users without employee profiles');
+
+    const request = this.pool!.request();
+    const result = await request.query(`
+      SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.profile_image_url, u.created_at, u.updated_at
+      FROM users u
+      LEFT JOIN employees e ON u.id = e.user_id
+      WHERE e.user_id IS NULL
+      ORDER BY u.created_at DESC
+    `);
+
+    console.log(`✅ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Found ${result.recordset.length} users`);
+    return result.recordset;
+  }
+
+  async linkUserToEmployee(userId: string, employeeId: string): Promise<Employee> {
+    console.log('🗄️ [FMB-STORAGE] LINK_USER_TO_EMPLOYEE:', { userId, employeeId });
+
+    const request = this.pool!.request();
+
+    // Update the employee record to link it to the user
+    await request
+      .input('userId', userId)
+      .input('employeeId', employeeId)
+      .query(`
+        UPDATE employees 
+        SET user_id = @userId, updated_at = GETDATE()
+        WHERE id = @employeeId
+      `);
+
+    // Fetch and return the updated employee
+    const result = await request
+      .input('employeeId', employeeId)
+      .query(`
+        SELECT * FROM employees WHERE id = @employeeId
+      `);
+
+    console.log('✅ [FMB-STORAGE] LINK_USER_TO_EMPLOYEE: User linked successfully');
+    return result.recordset[0];
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    console.log('🗄️ [FMB-STORAGE] UPDATE_USER_ROLE:', { userId, role });
+
+    const request = this.pool!.request();
+
+    await request
+      .input('userId', userId)
+      .input('role', role)
+      .query(`
+        UPDATE users 
+        SET role = @role, updated_at = GETDATE()
+        WHERE id = @userId
+      `);
+
+    // Fetch and return the updated user
+    const result = await request
+      .input('userId', userId)
+      .query(`
+        SELECT * FROM users WHERE id = @userId
+      `);
+
+    console.log('✅ [FMB-STORAGE] UPDATE_USER_ROLE: Role updated successfully');
+    return result.recordset[0];
   }
 
   // Add more methods as needed for FMB functionality

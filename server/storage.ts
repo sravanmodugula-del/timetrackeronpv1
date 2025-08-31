@@ -373,22 +373,62 @@ class StorageImplementation implements IStorage {
   async createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee> { return assignment as ProjectEmployee; }
   async deleteProjectEmployee(id: string): Promise<void> {}
 
-  // This method is added to fulfill the IStorage interface requirement
-  async getOrganization(organizationId: string): Promise<Organization | null> {
-    try {
-      const db = await this.getDb();
-      // Assuming the db object has a method to execute raw SQL queries
-      if (typeof db.query === 'function') {
-        const result = await db.query(`SELECT * FROM organizations WHERE id = '${organizationId}'`);
-        return result.recordset[0] || null;
-      } else {
-        console.error('Database does not support query method.');
-        return null;
-      }
-    } catch (error) {
-      console.error('Error fetching organization:', error);
-      throw error;
+  // Organization methods implementation
+  async getOrganization(id: string, userId?: string): Promise<Organization | null> {
+    const db = await this.getDb();
+    if (typeof db.getOrganizationById === 'function') {
+      return await db.getOrganizationById(id);
     }
+    return null;
+  }
+
+  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
+    const db = await this.getDb();
+    if (typeof db.getOrganizationsByUserId === 'function') {
+      return await db.getOrganizationsByUserId(userId);
+    }
+    return [];
+  }
+
+  // User management methods for admin functionality
+  async getAllUsers(): Promise<User[]> {
+    const db = await this.getDb();
+    if (typeof db.getAllUsers === 'function') {
+      return await db.getAllUsers();
+    }
+    return [];
+  }
+
+  async getUsersWithoutEmployeeProfile(): Promise<User[]> {
+    const db = await this.getDb();
+    if (typeof db.getUsersWithoutEmployeeProfile === 'function') {
+      return await db.getUsersWithoutEmployeeProfile();
+    }
+    return [];
+  }
+
+  async linkUserToEmployee(userId: string, employeeId: string): Promise<Employee> {
+    const db = await this.getDb();
+    if (typeof db.linkUserToEmployee === 'function') {
+      return await db.linkUserToEmployee(userId, employeeId);
+    }
+    throw new Error('Link user to employee not implemented');
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    const db = await this.getDb();
+    if (typeof db.updateUserRole === 'function') {
+      return await db.updateUserRole(userId, role);
+    }
+    throw new Error('Update user role not implemented');
+  }
+
+  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
+    const db = await this.getDb();
+    if (typeof db.getOrganizationsByUserId === 'function') {
+      return await db.getOrganizationsByUserId(userId);
+    }
+    return [];
   }
 
   private async getDb() {
