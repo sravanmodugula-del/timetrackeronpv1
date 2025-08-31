@@ -184,8 +184,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Insufficient permissions to create projects" });
       }
 
-      const projectData = insertProjectSchema.parse({ ...req.body, userId });
-      const project = await activeStorage.createProject(projectData, userId);
+      // Ensure user_id is properly set
+      const projectData = insertProjectSchema.parse({ ...req.body, user_id: userId });
+      console.log('📁 Creating project with data:', { ...projectData, user_id: userId });
+      
+      const project = await activeStorage.createProject(projectData);
       res.status(201).json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1101,7 +1104,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Insufficient permissions to create organizations" });
       }
 
-      const organizationData = { ...req.body, userId };
+      // Ensure user_id is properly set
+      const organizationData = { ...req.body, user_id: userId };
+      console.log('🏢 Creating organization with data:', organizationData);
+      
       const organization = await activeStorage.createOrganization(organizationData);
       res.status(201).json(organization);
     } catch (error) {
