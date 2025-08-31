@@ -982,6 +982,83 @@ export class FmbStorage implements IStorage {
       return false;
     }
   }
+
+  // Dashboard Analytics Methods
+  async getRecentActivity(userId: string, limit: number = 10): Promise<any[]> {
+    try {
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+      request.input('limit', sql.Int, limit);
+
+      const result = await request.query(`
+        SELECT TOP (@limit) 'time_entry' as type, description, date as created_at, hours,
+               p.name as project_name
+        FROM time_entries te
+        LEFT JOIN projects p ON te.project_id = p.id
+        WHERE te.user_id = @userId
+        ORDER BY te.date DESC, te.created_at DESC
+      `);
+
+      return result.recordset;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error getting recent activity:', error);
+      throw error;
+    }
+  }
+
+  async getProjectTimeBreakdown(userId: string): Promise<any[]> {
+    try {
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+
+      const result = await request.query(`
+        SELECT 
+          p.id,
+          p.name,
+          p.color,
+          COALESCE(SUM(te.hours), 0) as total_hours,
+          COUNT(te.id) as entry_count
+        FROM projects p
+        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
+        WHERE p.user_id = @userId OR p.id IN (
+          SELECT DISTINCT project_id FROM time_entries WHERE user_id = @userId
+        )
+        GROUP BY p.id, p.name, p.color
+        ORDER BY total_hours DESC
+      `);
+
+      return result.recordset;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error getting project breakdown:', error);
+      throw error;
+    }
+  }
+
+  // User Role Management
+  async updateUserRole(userId: string, newRole: string): Promise<any> {
+    try {
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+      request.input('role', sql.NVarChar(50), newRole);
+
+      const result = await request.query(`
+        UPDATE users 
+        SET role = @role, updated_at = GETDATE()
+        WHERE id = @userId
+      `);
+
+      if (result.rowsAffected[0] > 0) {
+        return await this.getUser(userId);
+      } else {
+        throw new Error('User not found or role not updated');
+      }
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error updating user role:', error);
+      throw error;
+    }
+  }
+
+  // Add more methods as needed for FMB functionality
 }
 
 interface FmbStorageConfig {
