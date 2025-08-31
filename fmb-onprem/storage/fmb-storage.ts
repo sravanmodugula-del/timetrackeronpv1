@@ -214,10 +214,20 @@ export class FmbStorage implements IStorage {
 
   async createOrganization(orgData: InsertOrganization): Promise<Organization> {
     const orgId = `org-${Date.now()}`;
-    await this.execute(`
+    
+    // Log the orgData to debug
+    this.storageLog('CREATE_ORG', 'Creating organization with data', orgData);
+    
+    const request = this.pool!.request();
+    request.input('id', sql.NVarChar(255), orgId);
+    request.input('name', sql.NVarChar(255), orgData.name);
+    request.input('description', sql.NVarChar(sql.MAX), orgData.description || null);
+    request.input('userId', sql.NVarChar(255), orgData.user_id);
+
+    await request.query(`
       INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-      VALUES (@param0, @param1, @param2, @param3, GETDATE(), GETDATE())
-    `, [orgId, orgData.name, orgData.description, orgData.user_id]);
+      VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
+    `);
 
     const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
     return result[0];
@@ -259,19 +269,28 @@ export class FmbStorage implements IStorage {
 
   async createProject(projectData: InsertProject): Promise<Project> {
     const projectId = `proj-${Date.now()}`;
+    
+    // Log the projectData to debug
+    this.storageLog('CREATE_PROJECT', 'Creating project with data', {
+      projectId,
+      name: projectData.name,
+      user_id: projectData.user_id,
+      organization_id: projectData.organization_id
+    });
+    
     const request = this.pool!.request();
     request.input('id', sql.NVarChar(255), projectId);
     request.input('name', sql.NVarChar(255), projectData.name);
-    request.input('description', sql.NVarChar(sql.MAX), projectData.description);
+    request.input('description', sql.NVarChar(sql.MAX), projectData.description || null);
     request.input('status', sql.NVarChar(50), projectData.status || 'active');
-    request.input('organizationId', sql.NVarChar(255), projectData.organization_id);
-    request.input('departmentId', sql.NVarChar(255), projectData.department_id);
-    request.input('managerId', sql.NVarChar(255), projectData.manager_id);
+    request.input('organizationId', sql.NVarChar(255), projectData.organization_id || null);
+    request.input('departmentId', sql.NVarChar(255), projectData.department_id || null);
+    request.input('managerId', sql.NVarChar(255), projectData.manager_id || null);
     request.input('userId', sql.NVarChar(255), projectData.user_id);
-    request.input('startDate', sql.Date, projectData.start_date);
-    request.input('endDate', sql.Date, projectData.end_date);
-    request.input('budget', sql.Decimal(18, 2), projectData.budget);
-    request.input('projectNumber', sql.NVarChar(50), projectData.project_number);
+    request.input('startDate', sql.Date, projectData.start_date || null);
+    request.input('endDate', sql.Date, projectData.end_date || null);
+    request.input('budget', sql.Decimal(18, 2), projectData.budget || null);
+    request.input('projectNumber', sql.NVarChar(50), projectData.project_number || null);
     request.input('isEnterpriseWide', sql.Bit, projectData.is_enterprise_wide || false);
     request.input('isTemplate', sql.Bit, projectData.is_template || false);
     request.input('allowTimeTracking', sql.Bit, projectData.allow_time_tracking !== false);
