@@ -124,60 +124,126 @@ export class FmbStorage implements IStorage {
       throw new Error('Database not connected. Call connect() first.');
     }
 
-    try {
-      const request = this.pool.request(); // Use this.pool.request() directly
+    const executeId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
 
-      // Add parameters with explicit types to prevent NULL insertion
+    try {
+      console.log(`🔍 [EXECUTE-${executeId}] Starting query execution:`, {
+        query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
+        paramCount: params.length,
+        paramTypes: params.map(p => typeof p),
+        paramValues: params.map((p, i) => ({ [`param${i}`]: p }))
+      });
+
+      const request = this.pool.request();
+
+      // Enhanced parameter binding with detailed logging
       params.forEach((param, index) => {
         const paramName = `param${index}`;
 
         // CRITICAL DEBUG: Log each parameter as it's being bound
-        console.log(`🔍 [EXECUTE-PARAM-BINDING] Binding parameter ${paramName}:`, {
+        console.log(`🔍 [EXECUTE-${executeId}-PARAM-${index}] Binding parameter ${paramName}:`, {
           originalValue: param,
           type: typeof param,
           isNull: param === null || param === undefined,
-          stringLength: typeof param === 'string' ? param.length : 'N/A'
+          stringLength: typeof param === 'string' ? param.length : 'N/A',
+          stringContent: typeof param === 'string' ? `"${param}"` : 'N/A',
+          isEmptyString: param === '',
+          isTrimmedEmpty: typeof param === 'string' && param.trim() === ''
         });
 
         // Determine appropriate SQL type based on the parameter value
         if (param === null || param === undefined) {
-          console.log(`⚠️ [EXECUTE-PARAM-BINDING] WARNING: Binding NULL value for ${paramName}`);
+          console.log(`⚠️ [EXECUTE-${executeId}-PARAM-${index}] WARNING: Binding NULL value for ${paramName}`);
           request.input(paramName, sql.NVarChar(255), null);
         } else if (typeof param === 'string') {
+          // Enhanced string handling
+          if (param.trim() === '') {
+            console.log(`⚠️ [EXECUTE-${executeId}-PARAM-${index}] WARNING: Binding empty string for ${paramName}`);
+          }
+          
           const sqlType = param.length > 255 ? sql.NVarChar(sql.MAX) : sql.NVarChar(255);
-          console.log(`🔗 [EXECUTE-PARAM-BINDING] Binding string ${paramName} with type ${sqlType.name || 'NVarChar'} and value: "${param}"`);
+          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding string ${paramName}:`, {
+            sqlType: sqlType.name || 'NVarChar',
+            maxLength: param.length > 255 ? 'MAX' : '255',
+            actualLength: param.length,
+            value: `"${param}"`,
+            trimmedValue: `"${param.trim()}"`
+          });
           request.input(paramName, sqlType, param);
         } else if (typeof param === 'number') {
           if (Number.isInteger(param)) {
+            console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding integer ${paramName}: ${param}`);
             request.input(paramName, sql.Int, param);
           } else {
+            console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding decimal ${paramName}: ${param}`);
             request.input(paramName, sql.Decimal(18, 2), param);
           }
         } else if (typeof param === 'boolean') {
+          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding boolean ${paramName}: ${param}`);
           request.input(paramName, sql.Bit, param);
         } else if (param instanceof Date) {
+          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding date ${paramName}: ${param.toISOString()}`);
           request.input(paramName, sql.DateTime2, param);
         } else {
           // Default to string for other types
-          request.input(paramName, sql.NVarChar(sql.MAX), String(param));
+          const stringValue = String(param);
+          console.log(`🔗 [EXECUTE-${executeId}-PARAM-${index}] Binding converted string ${paramName}: "${stringValue}"`);
+          request.input(paramName, sql.NVarChar(sql.MAX), stringValue);
         }
       });
 
-      this.storageLog('EXECUTE', `Running query: ${query.substring(0, 100)}...`, { paramCount: params.length });
+      this.storageLog('EXECUTE', `Running query with ${params.length} parameters`, { 
+        executeId,
+        query: query.substring(0, 100) + '...',
+        paramCount: params.length 
+      });
 
-      // Debug log to show actual parameter values being passed
-      console.log(`🔍 [EXECUTE-DEBUG] Parameter values:`, params.map((param, index) => ({
-        [`@param${index}`]: param,
-        type: typeof param,
-        isNull: param === null || param === undefined
-      })));
+      // Final verification of bound parameters
+      console.log(`🔍 [EXECUTE-${executeId}] Final parameter verification:`, {
+        boundParams: Object.keys(request.parameters || {}),
+        parameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
+          name,
+          type: param?.type?.name || 'unknown',
+          value: param?.value,
+          valueType: typeof param?.value
+        }))
+      });
 
       const result = await request.query(query);
-      this.storageLog('EXECUTE', `Query completed successfully`, { recordCount: result.recordset?.length || 0 });
+      
+      console.log(`✅ [EXECUTE-${executeId}] Query completed successfully:`, {
+        recordCount: result.recordset?.length || 0,
+        rowsAffected: result.rowsAffected,
+        hasRecordset: !!result.recordset
+      });
+
+      this.storageLog('EXECUTE', `Query completed successfully`, { 
+        executeId,
+        recordCount: result.recordset?.length || 0 
+      });
+      
       return result.recordset || result.recordsets;
     } catch (error: any) {
-      this.storageLog('EXECUTE', `Query execution failed: ${query.substring(0, 100)}...`, error);
-      console.error('❌ [FMB-STORAGE] Query execution failed:', error);
+      console.error(`❌ [EXECUTE-${executeId}] Query execution failed:`, {
+        error: error.message,
+        code: error.code,
+        number: error.number,
+        severity: error.class,
+        state: error.state,
+        procedure: error.procName,
+        lineNumber: error.lineNumber,
+        query: query.substring(0, 200),
+        paramCount: params.length,
+        paramValues: params
+      });
+
+      this.storageLog('EXECUTE', `Query execution failed`, { 
+        executeId,
+        error: error.message,
+        code: error.code,
+        query: query.substring(0, 100) + '...'
+      });
+      
       throw error;
     }
   }
