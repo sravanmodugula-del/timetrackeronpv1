@@ -311,7 +311,7 @@ export class FmbStorage implements IStorage {
         request.input('id', sql.NVarChar(255), orgId);
         request.input('name', sql.NVarChar(255), sanitizedName);
         request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-        request.input('user_id', sql.NVarChar(255), sanitizedUserId);
+        request.input('userId', sql.NVarChar(255), sanitizedUserId);
 
         this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
           id: orgId,
@@ -323,7 +323,7 @@ export class FmbStorage implements IStorage {
 
         const insertQuery = `
           INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-          VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
+          VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
         `;
 
         await request.query(insertQuery);
