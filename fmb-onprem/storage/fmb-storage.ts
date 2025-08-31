@@ -350,28 +350,23 @@ export class FmbStorage implements IStorage {
         userFound: true
       });
 
-      // Use the working execute method that handles parameters correctly
-      this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
-        id: orgId,
-        name: sanitizedName,
-        description: sanitizedDescription,
-        user_id: sanitizedUserId,
-        method: 'execute_method'
-      });
-
-      console.log(`🔍 [CREATE_ORG-SQL] Using execute method with parameters:`, {
-        parameters: [orgId, sanitizedName, sanitizedDescription, sanitizedUserId],
-        validation: {
-          allParametersPresent: !!(orgId && sanitizedName && sanitizedUserId),
-          userIdValid: sanitizedUserId && sanitizedUserId.trim().length > 0
-        }
+      // Prepare parameters array for the INSERT query
+      const insertParams = [orgId, sanitizedName, sanitizedDescription, sanitizedUserId];
+      
+      // CRITICAL DEBUG: Log the exact parameters being passed to execute
+      console.log(`🔍 [CREATE_ORG-CRITICAL] Parameters being passed to execute:`, {
+        param0_id: insertParams[0],
+        param1_name: insertParams[1], 
+        param2_description: insertParams[2],
+        param3_user_id: insertParams[3],
+        parameterTypes: insertParams.map((p, i) => ({ [`param${i}`]: typeof p, value: p, isNull: p === null || p === undefined }))
       });
 
       // Use the execute method that works for other queries
       await this.execute(`
         INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
         VALUES (@param0, @param1, @param2, @param3, GETDATE(), GETDATE())
-      `, [orgId, sanitizedName, sanitizedDescription, sanitizedUserId]);
+      `, insertParams);
 
       this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
         id: orgId
