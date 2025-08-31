@@ -49,14 +49,14 @@ export class CustomMSSQLStore extends Store {
 
   private async createConnection(): Promise<sql.ConnectionPool> {
     const config: sql.config = {
-      server: process.env.FMB_DATABASE_SERVER || 'localhost',
-      database: process.env.FMB_DATABASE_NAME || 'timetracker',
-      user: process.env.FMB_DATABASE_USER || 'timetracker',
-      password: process.env.FMB_DATABASE_PASSWORD || '',
-      port: parseInt(process.env.FMB_DATABASE_PORT || '1433'),
+      server: process.env.FMB_DB_SERVER || 'localhost',
+      database: process.env.FMB_DB_NAME || 'timetracker',
+      user: process.env.FMB_DB_USER || 'timetracker',
+      password: process.env.FMB_DB_PASSWORD || '',
+      port: parseInt(process.env.FMB_DB_PORT || '1433'),
       options: {
-        encrypt: process.env.FMB_DATABASE_ENCRYPT === 'true',
-        trustServerCertificate: process.env.FMB_DATABASE_TRUST_CERT === 'true',
+        encrypt: process.env.FMB_DB_ENCRYPT === 'true',
+        trustServerCertificate: process.env.FMB_DB_TRUST_CERT === 'true',
         enableArithAbort: true,
         requestTimeout: 30000,
         connectionTimeout: 30000,
