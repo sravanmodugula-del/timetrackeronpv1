@@ -193,11 +193,11 @@ export class FmbStorage implements IStorage {
   async getOrganizations(userId?: string): Promise<Organization[]> {
     try {
       this.storageLog('GET_ORGS', 'Fetching organizations', { userId });
-      
+
       if (userId) {
         return await this.getOrganizationsByUserId(userId);
       }
-      
+
       // Get all organizations with basic department count for performance
       const result = await this.execute(`
         SELECT o.*, 
@@ -205,7 +205,7 @@ export class FmbStorage implements IStorage {
         FROM organizations o 
         ORDER BY o.created_at DESC
       `);
-      
+
       this.storageLog('GET_ORGS', 'Organizations fetched successfully', { count: result.length });
       return result;
     } catch (error) {
@@ -222,11 +222,11 @@ export class FmbStorage implements IStorage {
       }
 
       this.storageLog('GET_USER_ORGS', 'Fetching organizations for user', { userId });
-      
+
       // Use parameterized query for better performance and security
       const request = this.pool!.request();
       request.input('userId', sql.NVarChar(255), userId);
-      
+
       const result = await request.query(`
         SELECT o.*, 
           (SELECT d.id, d.name, d.description, d.manager_id 
@@ -247,7 +247,7 @@ export class FmbStorage implements IStorage {
         userId, 
         count: organizations.length 
       });
-      
+
       return organizations;
     } catch (error) {
       this.storageLog('GET_USER_ORGS', 'Failed to fetch user organizations', { 
@@ -258,95 +258,119 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async createOrganization(orgData: InsertOrganization): Promise<Organization> {
+  async createOrganization(orgData: { name: string; description?: string; user_id: string }) {
     try {
-      // Enhanced input validation
-      if (!orgData) {
-        throw new Error('Organization data is required');
-      }
-      
-      if (!orgData.name || typeof orgData.name !== 'string' || orgData.name.trim().length === 0) {
-        throw new Error('Organization name is required and must be a non-empty string');
-      }
-      
-      if (!orgData.user_id || typeof orgData.user_id !== 'string') {
-        throw new Error('Valid user_id is required');
+      // Early validation
+      if (!orgData || typeof orgData !== 'object') {
+        throw new Error('Invalid organization data provided');
       }
 
-      // Check for duplicate organization names for the same user
-      const existingOrg = await this.execute(`
-        SELECT id FROM organizations 
-        WHERE name = @param0 AND user_id = @param1
-      `, [orgData.name.trim(), orgData.user_id]);
-
-      if (existingOrg.length > 0) {
-        throw new Error(`Organization with name "${orgData.name}" already exists`);
+      if (!orgData.user_id || typeof orgData.user_id !== 'string' || orgData.user_id.trim() === '') {
+        throw new Error('Valid user ID is required for organization creation');
       }
 
       const orgId = `org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const sanitizedName = orgData.name.trim();
+
+      // Sanitize inputs
+      const sanitizedName = orgData.name?.trim();
       const sanitizedDescription = orgData.description?.trim() || null;
-      
-      this.storageLog('CREATE_ORG', 'Creating organization with validated data', {
-        orgId,
+      const sanitizedUserId = orgData.user_id.trim();
+
+      if (!sanitizedName) {
+        throw new Error('Organization name cannot be empty');
+      }
+
+      this.storageLog('CREATE_ORG', 'Starting organization creation', {
+        id: orgId,
         name: sanitizedName,
-        user_id: orgData.user_id,
-        hasDescription: !!sanitizedDescription
+        user_id: sanitizedUserId,
+        hasDescription: !!sanitizedDescription,
+        rawData: {
+          nameType: typeof orgData.name,
+          userIdType: typeof orgData.user_id,
+          userIdLength: orgData.user_id?.length
+        }
       });
-      
-      // Use direct query execution with proper parameter binding
+
+      // Verify user exists first
+      const userExists = await this.execute('SELECT id FROM users WHERE id = @param0', [sanitizedUserId]);
+      if (!userExists || userExists.length === 0) {
+        throw new Error(`User with ID ${sanitizedUserId} does not exist`);
+      }
+
+      this.storageLog('CREATE_ORG', 'User validation successful', {
+        user_id: sanitizedUserId,
+        userFound: true
+      });
+
+      // Use direct query execution with explicit parameter binding
       try {
         const request = this.pool!.request();
+
+        // Add parameters with explicit types and values
         request.input('id', sql.NVarChar(255), orgId);
         request.input('name', sql.NVarChar(255), sanitizedName);
         request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
-        request.input('user_id', sql.NVarChar(255), orgData.user_id);
+        request.input('user_id', sql.NVarChar(255), sanitizedUserId);
 
-        this.storageLog('CREATE_ORG', 'Executing INSERT with parameters', {
+        this.storageLog('CREATE_ORG', 'Executing INSERT with validated parameters', {
           id: orgId,
           name: sanitizedName,
           description: sanitizedDescription,
-          user_id: orgData.user_id
+          user_id: sanitizedUserId,
+          parameterCount: 4
         });
 
-        await request.query(`
+        const insertQuery = `
           INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
           VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
-        `);
-        
-        // Fetch the created organization
+        `;
+
+        await request.query(insertQuery);
+
+        this.storageLog('CREATE_ORG', 'INSERT query executed successfully', {
+          id: orgId
+        });
+
+        // Fetch the created organization to verify
         const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
-        
+
         if (!result || result.length === 0) {
-          throw new Error('Failed to retrieve created organization');
+          throw new Error('Organization was not created successfully');
         }
 
-        this.storageLog('CREATE_ORG', 'Organization created successfully', { 
-          orgId, 
-          name: sanitizedName,
-          user_id: orgData.user_id
+        this.storageLog('CREATE_ORG', 'Organization creation completed successfully', {
+          id: orgId,
+          name: result[0].name,
+          user_id: result[0].user_id
         });
-        
+
         return result[0];
       } catch (insertError) {
-        this.storageLog('CREATE_ORG', 'Database INSERT failed', {
+        this.storageLog('CREATE_ORG', 'Database INSERT operation failed', {
           error: insertError.message,
+          errorCode: insertError.code,
+          errorNumber: insertError.number,
           orgData: {
             id: orgId,
             name: sanitizedName,
-            user_id: orgData.user_id,
+            user_id: sanitizedUserId,
             hasDescription: !!sanitizedDescription
-          }
+          },
+          sqlState: insertError.state,
+          lineNumber: insertError.lineNumber
         });
         throw insertError;
       }
     } catch (error) {
-      this.storageLog('CREATE_ORG', 'Failed to create organization', { 
+      this.storageLog('CREATE_ORG', 'Organization creation failed', { 
         orgData: { 
-          name: orgData?.name,
-          user_id: orgData?.user_id ? '[PRESENT]' : '[MISSING]'
+          name: orgData?.name || '[MISSING]',
+          user_id: orgData?.user_id ? `[PRESENT: ${orgData.user_id.substring(0, 10)}...]` : '[MISSING]',
+          dataType: typeof orgData
         }, 
-        error: error.message 
+        error: error.message,
+        errorType: error.constructor.name
       });
       throw new Error(`Failed to create organization: ${error.message}`);
     }
@@ -388,7 +412,7 @@ export class FmbStorage implements IStorage {
 
   async createProject(projectData: InsertProject): Promise<Project> {
     const projectId = `proj-${Date.now()}`;
-    
+
     // Log the projectData to debug
     this.storageLog('CREATE_PROJECT', 'Creating project with data', {
       projectId,
@@ -396,7 +420,7 @@ export class FmbStorage implements IStorage {
       user_id: projectData.user_id,
       organization_id: projectData.organization_id
     });
-    
+
     const request = this.pool!.request();
     request.input('id', sql.NVarChar(255), projectId);
     request.input('name', sql.NVarChar(255), projectData.name);
@@ -907,10 +931,10 @@ export class FmbStorage implements IStorage {
       }
 
       this.storageLog('GET_ORG_BY_ID', 'Fetching organization by ID', { id });
-      
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      
+
       const result = await request.query(`
         SELECT o.*, 
                (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count,
@@ -918,14 +942,14 @@ export class FmbStorage implements IStorage {
         FROM organizations o 
         WHERE o.id = @id
       `);
-      
+
       const organization = result.recordset[0] || null;
-      
+
       this.storageLog('GET_ORG_BY_ID', 'Organization fetch completed', { 
         id, 
         found: !!organization 
       });
-      
+
       return organization;
     } catch (error) {
       this.storageLog('GET_ORG_BY_ID', 'Failed to fetch organization by ID', { 
@@ -942,7 +966,7 @@ export class FmbStorage implements IStorage {
       if (!id || typeof id !== 'string') {
         throw new Error('Valid organization ID is required');
       }
-      
+
       if (!orgData || Object.keys(orgData).length === 0) {
         throw new Error('Update data is required');
       }
@@ -966,7 +990,7 @@ export class FmbStorage implements IStorage {
             if (typeof value !== 'string' || value.trim().length === 0) {
               throw new Error('Organization name must be a non-empty string');
             }
-            
+
             // Check for duplicate names (excluding current organization)
             const duplicateCheck = await this.execute(`
               SELECT id FROM organizations 
@@ -981,7 +1005,7 @@ export class FmbStorage implements IStorage {
           const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
           const paramName = `param${paramIndex}`;
           fields.push(`${dbField} = @${paramName}`);
-          
+
           // Sanitize string values
           const sanitizedValue = typeof value === 'string' ? value.trim() : value;
           request.input(paramName, this.getSqlType(key), sanitizedValue);
@@ -1004,7 +1028,7 @@ export class FmbStorage implements IStorage {
 
       try {
         const transactionRequest = transaction.request();
-        
+
         // Copy all inputs to transaction request
         for (let i = 0; i < paramIndex; i++) {
           const paramName = `param${i}`;
@@ -1019,14 +1043,14 @@ export class FmbStorage implements IStorage {
         `);
 
         await transaction.commit();
-        
+
         const updatedOrg = await this.getOrganizationById(id);
-        
+
         this.storageLog('UPDATE_ORG', 'Organization updated successfully', { 
           id, 
           updatedFields: Object.keys(orgData) 
         });
-        
+
         return updatedOrg as Organization;
       } catch (transactionError) {
         await transaction.rollback();
@@ -1063,11 +1087,11 @@ export class FmbStorage implements IStorage {
       ]);
 
       const [departmentCount, projectCount] = dependentChecks;
-      
+
       if (departmentCount[0]?.count > 0) {
         throw new Error(`Cannot delete organization: ${departmentCount[0].count} department(s) still exist`);
       }
-      
+
       if (projectCount[0]?.count > 0) {
         throw new Error(`Cannot delete organization: ${projectCount[0].count} project(s) still exist`);
       }
@@ -1079,15 +1103,15 @@ export class FmbStorage implements IStorage {
       try {
         const transactionRequest = transaction.request();
         transactionRequest.input('id', sql.NVarChar(255), id);
-        
+
         const result = await transactionRequest.query('DELETE FROM organizations WHERE id = @id');
-        
+
         if (result.rowsAffected[0] === 0) {
           throw new Error('Organization not found or already deleted');
         }
 
         await transaction.commit();
-        
+
         this.storageLog('DELETE_ORG', 'Organization deleted successfully', { 
           id, 
           name: existingOrg.name 
@@ -1123,7 +1147,7 @@ export class FmbStorage implements IStorage {
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
     let dateFilter = '';
     const params = [userId];
-    
+
     if (startDate && endDate) {
       dateFilter = 'AND date >= @param1 AND date <= @param2';
       params.push(startDate, endDate);
@@ -1360,7 +1384,7 @@ export class FmbStorage implements IStorage {
     try {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
-      
+
       let dateFilter = '';
       if (startDate && endDate) {
         request.input('startDate', sql.Date, startDate);
