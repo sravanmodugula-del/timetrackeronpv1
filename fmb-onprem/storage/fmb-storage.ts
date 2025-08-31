@@ -189,56 +189,159 @@ export class FmbStorage implements IStorage {
     return result[0] || null;
   }
 
-  // Organization Methods
+  // Organization Methods with enhanced validation and error handling
   async getOrganizations(userId?: string): Promise<Organization[]> {
-    if (userId) {
-      return await this.getOrganizationsByUserId(userId);
+    try {
+      this.storageLog('GET_ORGS', 'Fetching organizations', { userId });
+      
+      if (userId) {
+        return await this.getOrganizationsByUserId(userId);
+      }
+      
+      // Get all organizations with basic department count for performance
+      const result = await this.execute(`
+        SELECT o.*, 
+               (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count
+        FROM organizations o 
+        ORDER BY o.created_at DESC
+      `);
+      
+      this.storageLog('GET_ORGS', 'Organizations fetched successfully', { count: result.length });
+      return result;
+    } catch (error) {
+      this.storageLog('GET_ORGS', 'Failed to fetch organizations', { error: error.message });
+      throw new Error(`Failed to fetch organizations: ${error.message}`);
     }
-    const result = await this.execute('SELECT * FROM organizations ORDER BY created_at DESC');
-    return result;
   }
 
   async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
-    const result = await this.execute(`
-      SELECT o.*, 
-        (SELECT d.* FROM departments d WHERE d.organization_id = o.id FOR JSON PATH) as departments
-      FROM organizations o 
-      WHERE o.user_id = @param0
-    `, [userId]);
+    try {
+      // Input validation
+      if (!userId || typeof userId !== 'string') {
+        throw new Error('Valid userId is required');
+      }
 
-    return result.map((org: any) => ({
-      ...org,
-      departments: org.departments ? JSON.parse(org.departments) : []
-    }));
+      this.storageLog('GET_USER_ORGS', 'Fetching organizations for user', { userId });
+      
+      // Use parameterized query for better performance and security
+      const request = this.pool!.request();
+      request.input('userId', sql.NVarChar(255), userId);
+      
+      const result = await request.query(`
+        SELECT o.*, 
+          (SELECT d.id, d.name, d.description, d.manager_id 
+           FROM departments d 
+           WHERE d.organization_id = o.id 
+           FOR JSON PATH) as departments
+        FROM organizations o 
+        WHERE o.user_id = @userId
+        ORDER BY o.created_at DESC
+      `);
+
+      const organizations = result.recordset.map((org: any) => ({
+        ...org,
+        departments: org.departments ? JSON.parse(org.departments) : []
+      }));
+
+      this.storageLog('GET_USER_ORGS', 'User organizations fetched successfully', { 
+        userId, 
+        count: organizations.length 
+      });
+      
+      return organizations;
+    } catch (error) {
+      this.storageLog('GET_USER_ORGS', 'Failed to fetch user organizations', { 
+        userId, 
+        error: error.message 
+      });
+      throw new Error(`Failed to fetch organizations for user: ${error.message}`);
+    }
   }
 
   async createOrganization(orgData: InsertOrganization): Promise<Organization> {
-    const orgId = `org-${Date.now()}`;
-    
-    // Log the orgData to debug
-    this.storageLog('CREATE_ORG', 'Creating organization with data', orgData);
-    
     try {
+      // Enhanced input validation
+      if (!orgData) {
+        throw new Error('Organization data is required');
+      }
+      
+      if (!orgData.name || typeof orgData.name !== 'string' || orgData.name.trim().length === 0) {
+        throw new Error('Organization name is required and must be a non-empty string');
+      }
+      
+      if (!orgData.user_id || typeof orgData.user_id !== 'string') {
+        throw new Error('Valid user_id is required');
+      }
+
+      // Check for duplicate organization names for the same user
+      const existingOrg = await this.execute(`
+        SELECT id FROM organizations 
+        WHERE name = @param0 AND user_id = @param1
+      `, [orgData.name.trim(), orgData.user_id]);
+
+      if (existingOrg.length > 0) {
+        throw new Error(`Organization with name "${orgData.name}" already exists`);
+      }
+
+      const orgId = `org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const sanitizedName = orgData.name.trim();
+      const sanitizedDescription = orgData.description?.trim() || null;
+      
+      this.storageLog('CREATE_ORG', 'Creating organization with validated data', {
+        orgId,
+        name: sanitizedName,
+        user_id: orgData.user_id,
+        hasDescription: !!sanitizedDescription
+      });
+      
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), orgId);
-      request.input('name', sql.NVarChar(255), orgData.name);
-      request.input('description', sql.NVarChar(sql.MAX), orgData.description || null);
+      request.input('name', sql.NVarChar(255), sanitizedName);
+      request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
       request.input('userId', sql.NVarChar(255), orgData.user_id);
 
-      await request.query(`
-        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-        VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
-      `);
+      // Use transaction for data consistency
+      const transaction = this.pool!.transaction();
+      await transaction.begin();
 
-      const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
-      this.storageLog('CREATE_ORG', 'Organization created successfully', { orgId, name: orgData.name });
-      return result[0];
+      try {
+        const transactionRequest = transaction.request();
+        transactionRequest.input('id', sql.NVarChar(255), orgId);
+        transactionRequest.input('name', sql.NVarChar(255), sanitizedName);
+        transactionRequest.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
+        transactionRequest.input('userId', sql.NVarChar(255), orgData.user_id);
+
+        await transactionRequest.query(`
+          INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+          VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
+        `);
+
+        await transaction.commit();
+        
+        // Fetch the created organization
+        const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
+        
+        if (!result || result.length === 0) {
+          throw new Error('Failed to retrieve created organization');
+        }
+
+        this.storageLog('CREATE_ORG', 'Organization created successfully', { 
+          orgId, 
+          name: sanitizedName,
+          user_id: orgData.user_id
+        });
+        
+        return result[0];
+      } catch (transactionError) {
+        await transaction.rollback();
+        throw transactionError;
+      }
     } catch (error) {
       this.storageLog('CREATE_ORG', 'Failed to create organization', { 
-        orgData, 
+        orgData: { ...orgData, user_id: orgData?.user_id ? '[REDACTED]' : 'undefined' }, 
         error: error.message 
       });
-      throw error;
+      throw new Error(`Failed to create organization: ${error.message}`);
     }
   }
 
@@ -790,46 +893,222 @@ export class FmbStorage implements IStorage {
   }
 
   async getOrganizationById(id: string): Promise<Organization | null> {
-    const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [id]);
-    return result[0] || null;
+    try {
+      // Input validation
+      if (!id || typeof id !== 'string') {
+        throw new Error('Valid organization ID is required');
+      }
+
+      this.storageLog('GET_ORG_BY_ID', 'Fetching organization by ID', { id });
+      
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      
+      const result = await request.query(`
+        SELECT o.*, 
+               (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count,
+               (SELECT COUNT(*) FROM projects p WHERE p.organization_id = o.id) as project_count
+        FROM organizations o 
+        WHERE o.id = @id
+      `);
+      
+      const organization = result.recordset[0] || null;
+      
+      this.storageLog('GET_ORG_BY_ID', 'Organization fetch completed', { 
+        id, 
+        found: !!organization 
+      });
+      
+      return organization;
+    } catch (error) {
+      this.storageLog('GET_ORG_BY_ID', 'Failed to fetch organization by ID', { 
+        id, 
+        error: error.message 
+      });
+      throw new Error(`Failed to fetch organization: ${error.message}`);
+    }
   }
 
-  async updateOrganization(id: string, org: Partial<InsertOrganization>): Promise<Organization> {
-    const fields = [];
-    const params = [];
-    let paramIndex = 0;
-
-    for (const [key, value] of Object.entries(org)) {
-      if (value !== undefined) {
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = @param${paramIndex}`);
-        params.push(value);
-        paramIndex++;
+  async updateOrganization(id: string, orgData: Partial<InsertOrganization>): Promise<Organization> {
+    try {
+      // Input validation
+      if (!id || typeof id !== 'string') {
+        throw new Error('Valid organization ID is required');
       }
-    }
+      
+      if (!orgData || Object.keys(orgData).length === 0) {
+        throw new Error('Update data is required');
+      }
 
-    if (fields.length > 0) {
+      // Check if organization exists
+      const existingOrg = await this.getOrganizationById(id);
+      if (!existingOrg) {
+        throw new Error('Organization not found');
+      }
+
+      this.storageLog('UPDATE_ORG', 'Updating organization', { id, updateFields: Object.keys(orgData) });
+
+      const fields = [];
+      const request = this.pool!.request();
+      let paramIndex = 0;
+
+      // Validate and sanitize update fields
+      for (const [key, value] of Object.entries(orgData)) {
+        if (value !== undefined && value !== null) {
+          if (key === 'name') {
+            if (typeof value !== 'string' || value.trim().length === 0) {
+              throw new Error('Organization name must be a non-empty string');
+            }
+            
+            // Check for duplicate names (excluding current organization)
+            const duplicateCheck = await this.execute(`
+              SELECT id FROM organizations 
+              WHERE name = @param0 AND id != @param1 AND user_id = @param2
+            `, [value.trim(), id, existingOrg.user_id]);
+
+            if (duplicateCheck.length > 0) {
+              throw new Error(`Organization with name "${value}" already exists`);
+            }
+          }
+
+          const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          const paramName = `param${paramIndex}`;
+          fields.push(`${dbField} = @${paramName}`);
+          
+          // Sanitize string values
+          const sanitizedValue = typeof value === 'string' ? value.trim() : value;
+          request.input(paramName, this.getSqlType(key), sanitizedValue);
+          paramIndex++;
+        }
+      }
+
+      if (fields.length === 0) {
+        this.storageLog('UPDATE_ORG', 'No valid fields to update', { id });
+        return existingOrg;
+      }
+
+      // Add updated_at timestamp
       fields.push('updated_at = GETDATE()');
-      params.push(id);
+      request.input('id', sql.NVarChar(255), id);
 
-      await this.execute(`
-        UPDATE organizations 
-        SET ${fields.join(', ')} 
-        WHERE id = @param${paramIndex}
-      `, params);
+      // Use transaction for consistency
+      const transaction = this.pool!.transaction();
+      await transaction.begin();
+
+      try {
+        const transactionRequest = transaction.request();
+        
+        // Copy all inputs to transaction request
+        for (let i = 0; i < paramIndex; i++) {
+          const paramName = `param${i}`;
+          transactionRequest.input(paramName, request.parameters[paramName].type, request.parameters[paramName].value);
+        }
+        transactionRequest.input('id', sql.NVarChar(255), id);
+
+        await transactionRequest.query(`
+          UPDATE organizations 
+          SET ${fields.join(', ')} 
+          WHERE id = @id
+        `);
+
+        await transaction.commit();
+        
+        const updatedOrg = await this.getOrganizationById(id);
+        
+        this.storageLog('UPDATE_ORG', 'Organization updated successfully', { 
+          id, 
+          updatedFields: Object.keys(orgData) 
+        });
+        
+        return updatedOrg as Organization;
+      } catch (transactionError) {
+        await transaction.rollback();
+        throw transactionError;
+      }
+    } catch (error) {
+      this.storageLog('UPDATE_ORG', 'Failed to update organization', { 
+        id, 
+        error: error.message 
+      });
+      throw new Error(`Failed to update organization: ${error.message}`);
     }
-
-    return await this.getOrganizationById(id) as Organization;
   }
 
   async deleteOrganization(id: string): Promise<void> {
     try {
-      const request = this.pool!.request();
-      request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM organizations WHERE id = @id');
+      // Input validation
+      if (!id || typeof id !== 'string') {
+        throw new Error('Valid organization ID is required');
+      }
+
+      // Check if organization exists
+      const existingOrg = await this.getOrganizationById(id);
+      if (!existingOrg) {
+        throw new Error('Organization not found');
+      }
+
+      this.storageLog('DELETE_ORG', 'Deleting organization', { id, name: existingOrg.name });
+
+      // Check for dependent records
+      const dependentChecks = await Promise.all([
+        this.execute('SELECT COUNT(*) as count FROM departments WHERE organization_id = @param0', [id]),
+        this.execute('SELECT COUNT(*) as count FROM projects WHERE organization_id = @param0', [id])
+      ]);
+
+      const [departmentCount, projectCount] = dependentChecks;
+      
+      if (departmentCount[0]?.count > 0) {
+        throw new Error(`Cannot delete organization: ${departmentCount[0].count} department(s) still exist`);
+      }
+      
+      if (projectCount[0]?.count > 0) {
+        throw new Error(`Cannot delete organization: ${projectCount[0].count} project(s) still exist`);
+      }
+
+      // Use transaction for safe deletion
+      const transaction = this.pool!.transaction();
+      await transaction.begin();
+
+      try {
+        const transactionRequest = transaction.request();
+        transactionRequest.input('id', sql.NVarChar(255), id);
+        
+        const result = await transactionRequest.query('DELETE FROM organizations WHERE id = @id');
+        
+        if (result.rowsAffected[0] === 0) {
+          throw new Error('Organization not found or already deleted');
+        }
+
+        await transaction.commit();
+        
+        this.storageLog('DELETE_ORG', 'Organization deleted successfully', { 
+          id, 
+          name: existingOrg.name 
+        });
+      } catch (transactionError) {
+        await transaction.rollback();
+        throw transactionError;
+      }
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error deleting organization:', error);
-      throw error;
+      this.storageLog('DELETE_ORG', 'Failed to delete organization', { 
+        id, 
+        error: error.message 
+      });
+      throw new Error(`Failed to delete organization: ${error.message}`);
+    }
+  }
+
+  // Helper method to get appropriate SQL type for different fields
+  private getSqlType(fieldName: string): any {
+    switch (fieldName) {
+      case 'name':
+        return sql.NVarChar(255);
+      case 'description':
+        return sql.NVarChar(sql.MAX);
+      case 'user_id':
+        return sql.NVarChar(255);
+      default:
+        return sql.NVarChar(sql.MAX);
     }
   }
 
