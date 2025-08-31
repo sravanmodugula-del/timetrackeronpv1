@@ -1,17 +1,45 @@
-2025-08-30T18:04:16: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:04:16: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-2025-08-30T18:04:16: [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
-2025-08-30T18:04:16: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:04:16: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  override existing env vars with { override: true }
-2025-08-30T18:04:16: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-2025-08-30T18:04:16: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:04:16: 2025-08-31T01:04:16.194Z 🔴 [SERVER] Critical server startup failure: {
-  "message": "Maximum call stack size exceeded",
-  "name": "RangeError",
+2025-08-30T18:08:35: 2025-08-31T01:08:35.351Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:08:35: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+2025-08-30T18:08:35: [dotenv@17.2.1] injecting env (2) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T18:08:35: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:08:35: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
+2025-08-30T18:08:35: 2025-08-31T01:08:35.356Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Dynamic require of \"fs\" is not supported",
+  "name": "Error",
   "code": "NO_CODE",
-  "stack": "RangeError: Maximum call stack size exceeded\n    at console.value (node:internal/console/constructor:302:13)\n    at console.log (node:internal/console/constructor:384:26)\n    at _log (C:\\fmb-timetracker\\node_modules\\dotenv\\lib\\main.js:139:11)\n    at Object.configDotenv (C:\\fmb-timetracker\\node_modules\\dotenv\\lib\\main.js:317:5)\n    at Object.config (C:\\fmb-timetracker\\node_modules\\dotenv\\lib\\main.js:331:25)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:22:10)\n    at getFmbConfig (file:///C:/fmb-timetracker/dist/index.js:29:5)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at getFmbConfig (file:///C:/fmb-timetracker/dist/index.js:29:5)",
+  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
   "errorType": "object",
-  "errorConstructor": "RangeError",
-  "serializedError": "{\"stack\":\"RangeError: Maximum call stack size exceeded\\n    at console.value (node:internal/console/constructor:302:13)\\n    at console.log (node:internal/console/constructor:384:26)\\n    at _log (C:\\\\fmb-timetracker\\\\node_modules\\\\dotenv\\\\lib\\\\main.js:139:11)\\n    at Object.configDotenv (C:\\\\fmb-timetracker\\\\node_modules\\\\dotenv\\\\lib\\\\main.js:317:5)\\n    at Object.config (C:\\\\fmb-timetracker\\\\node_modules\\\\dotenv\\\\lib\\\\main.js:331:25)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:22:10)\\n    at getFmbConfig (file:///C:/fmb-timetracker/dist/index.js:29:5)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at getFmbConfig (file:///C:/fmb-timetracker/dist/index.js:29:5)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\",\"message\":\"Maximum call stack size exceeded\"}"
+  "errorConstructor": "Error",
+  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
 }
-2025-08-30T18:04:16: 2025-08-31T01:04:16.696Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:08:35: 2025-08-31T01:08:35.857Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:08:42: 2025-08-31T01:08:42.383Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:08:42: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  override existing env vars with { override: true }
+2025-08-30T18:08:42: [dotenv@17.2.1] injecting env (2) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T18:08:42: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:08:42: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
+2025-08-30T18:08:42: 2025-08-31T01:08:42.389Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Dynamic require of \"fs\" is not supported",
+  "name": "Error",
+  "code": "NO_CODE",
+  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
+  "errorType": "object",
+  "errorConstructor": "Error",
+  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
+}
+2025-08-30T18:08:42: 2025-08-31T01:08:42.890Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:08:49: 2025-08-31T01:08:49.330Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:08:49: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+2025-08-30T18:08:49: [dotenv@17.2.1] injecting env (2) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T18:08:49: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:08:49: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
+2025-08-30T18:08:49: 2025-08-31T01:08:49.335Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Dynamic require of \"fs\" is not supported",
+  "name": "Error",
+  "code": "NO_CODE",
+  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
+  "errorType": "object",
+  "errorConstructor": "Error",
+  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
+}
+2025-08-30T18:08:49: 2025-08-31T01:08:49.835Z 🔴 [SERVER] Exiting due to startup failure
