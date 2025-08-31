@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 // Load FMB on-premises configuration
 export function loadFmbOnPremConfig() {
@@ -57,9 +58,6 @@ export function getFmbConfig() {
 // Helper function to read certificate file content
 function readCertificateFile(certPath: string): string {
   try {
-    const fs = require('fs');
-    const path = require('path');
-
     // Handle relative paths from the project root
     const fullPath = path.isAbsolute(certPath) ? certPath : path.join(process.cwd(), certPath);
 
