@@ -6,6 +6,12 @@ import { getFmbStorage } from '../fmb-onprem/config/fmb-database.js';
 import { insertProjectSchema, insertTaskSchema, insertTimeEntrySchema, insertEmployeeSchema } from "../shared/schema.js";
 import { z } from "zod";
 
+// Import SAML debug routes
+import fmbSamlRoutes from './routes/fmb-saml.js';
+import healthRoutes from './routes/health.js';
+import sessionRoutes from './routes/session-management.js';
+import samlDebugRoutes from './routes/saml-debug.js';
+
 // Role-based permissions helper
 function getRolePermissions(role: string) {
   const permissions = {
@@ -1254,6 +1260,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Register SAML debug routes
+  app.use('/api', fmbSamlRoutes);
+  app.use('/api', healthRoutes);
+  app.use('/api', samlDebugRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

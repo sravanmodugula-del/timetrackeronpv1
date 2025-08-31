@@ -1,6 +1,9 @@
 
+import { Router } from 'express';
 import type { Express } from 'express';
 import { isAuthenticated } from '../../fmb-onprem/auth/fmb-saml-auth.js';
+
+const router = Router();
 
 function extractUserId(user: any): string {
   return user.userId || user.email || user.id;
@@ -138,3 +141,5 @@ export function registerSessionManagementRoutes(app: Express) {
 
   console.log('🛡️ [SESSION-MGMT] Enterprise session management routes registered');
 }
+
+export default router;

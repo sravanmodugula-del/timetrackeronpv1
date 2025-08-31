@@ -43,7 +43,7 @@ export async function setupFmbSamlAuth(app: Express) {
       wantAssertionsSigned: true,
       wantAuthnResponseSigned: false, // Based on your IDP metadata
       signatureAlgorithm: 'sha256',
-      validateInResponseTo: false,
+      validateInResponseTo: 'never',
       disableRequestedAuthnContext: true,
       skipRequestCompression: true,
       // Audience should match your SP entity ID, not IDP
@@ -269,6 +269,24 @@ export async function setupFmbSamlAuth(app: Express) {
   });
 
   authLog('INFO', 'FMB SAML Authentication setup completed');
+}
+
+// SAML metadata generation function
+export function getFmbSamlMetadata(): string {
+  const fmbConfig = getFmbConfig();
+  
+  const metadata = `<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" 
+                     entityID="${fmbConfig.saml.issuer}">
+  <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <md:AssertionConsumerService 
+      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+      Location="${fmbConfig.saml.callbackUrl}" 
+      index="0" />
+  </md:SPSSODescriptor>
+</md:EntityDescriptor>`;
+
+  return metadata;
 }
 
 // Authentication middleware for FMB
