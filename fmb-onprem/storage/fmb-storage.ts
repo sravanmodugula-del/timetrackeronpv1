@@ -218,19 +218,28 @@ export class FmbStorage implements IStorage {
     // Log the orgData to debug
     this.storageLog('CREATE_ORG', 'Creating organization with data', orgData);
     
-    const request = this.pool!.request();
-    request.input('id', sql.NVarChar(255), orgId);
-    request.input('name', sql.NVarChar(255), orgData.name);
-    request.input('description', sql.NVarChar(sql.MAX), orgData.description || null);
-    request.input('userId', sql.NVarChar(255), orgData.user_id);
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), orgId);
+      request.input('name', sql.NVarChar(255), orgData.name);
+      request.input('description', sql.NVarChar(sql.MAX), orgData.description || null);
+      request.input('userId', sql.NVarChar(255), orgData.user_id);
 
-    await request.query(`
-      INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-      VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
-    `);
+      await request.query(`
+        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+        VALUES (@id, @name, @description, @userId, GETDATE(), GETDATE())
+      `);
 
-    const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
-    return result[0];
+      const result = await this.execute('SELECT * FROM organizations WHERE id = @param0', [orgId]);
+      this.storageLog('CREATE_ORG', 'Organization created successfully', { orgId, name: orgData.name });
+      return result[0];
+    } catch (error) {
+      this.storageLog('CREATE_ORG', 'Failed to create organization', { 
+        orgData, 
+        error: error.message 
+      });
+      throw error;
+    }
   }
 
   // Project Methods  
