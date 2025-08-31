@@ -367,92 +367,164 @@ export class FmbStorage implements IStorage {
 
   async createOrganization(orgData: Partial<Organization>): Promise<Organization> {
     const requestId = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const id = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-    console.log(`🔍 [CREATE_ORG-${requestId}] Starting organization creation with data:`, {
-      name: orgData.name,
-      description: orgData.description,
-      user_id: orgData.user_id,
-      dataKeys: Object.keys(orgData || {}),
-      dataValues: Object.values(orgData || {}),
-      orgDataType: typeof orgData,
-      orgDataIsNull: orgData === null,
-      orgDataIsUndefined: orgData === undefined
+    // CHECKPOINT 1: Input validation and logging
+    console.log(`🎯 [CHECKPOINT-1-${requestId}] Initial data received:`, {
+      originalData: orgData,
+      dataType: typeof orgData,
+      hasName: 'name' in orgData,
+      hasUserId: 'user_id' in orgData,
+      nameValue: orgData.name,
+      userIdValue: orgData.user_id,
+      nameType: typeof orgData.name,
+      userIdType: typeof orgData.user_id,
+      generatedId: id
     });
 
     try {
-      const id = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-      console.log(`🔍 [CREATE_ORG-${requestId}] Generated organization ID: ${id}`);
-
-      // Validate required fields with enhanced logging
+      // CHECKPOINT 2: Field validation
+      console.log(`🎯 [CHECKPOINT-2-${requestId}] Validating required fields...`);
+      
       if (!orgData.name || orgData.name.trim().length === 0) {
-        console.log(`❌ [CREATE_ORG-${requestId}] Validation failed: Missing or empty name`, {
-          nameProvided: !!orgData.name,
-          nameValue: orgData.name,
-          nameLength: orgData.name?.length || 0,
-          nameTrimmed: orgData.name?.trim?.() || 'NO_TRIM_METHOD'
-        });
+        console.log(`❌ [CHECKPOINT-2-${requestId}] FAILED: Name validation failed`);
         throw new Error('Organization name is required and cannot be empty');
       }
+      console.log(`✅ [CHECKPOINT-2-${requestId}] Name validation passed: "${orgData.name}"`);
 
       if (!orgData.user_id || orgData.user_id.trim().length === 0) {
-        console.log(`❌ [CREATE_ORG-${requestId}] Validation failed: Missing or empty user_id`, {
-          userIdProvided: !!orgData.user_id,
-          userIdValue: orgData.user_id,
-          userIdType: typeof orgData.user_id,
-          userIdLength: orgData.user_id?.length || 0
-        });
+        console.log(`❌ [CHECKPOINT-2-${requestId}] FAILED: User ID validation failed`);
         throw new Error('User ID is required for organization creation');
       }
+      console.log(`✅ [CHECKPOINT-2-${requestId}] User ID validation passed: "${orgData.user_id}"`);
 
-      console.log(`✅ [CREATE_ORG-${requestId}] Validation passed, proceeding with database insertion`);
-
-      // Prepare sanitized data
+      // CHECKPOINT 3: Data sanitization
+      console.log(`🎯 [CHECKPOINT-3-${requestId}] Sanitizing data...`);
       const sanitizedName = orgData.name.trim();
       const sanitizedDescription = orgData.description?.trim() || null;
       const sanitizedUserId = orgData.user_id.trim();
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Sanitized data:`, {
-        id: id,
-        name: sanitizedName,
-        description: sanitizedDescription,
-        user_id: sanitizedUserId,
-        userIdIsNull: sanitizedUserId === null,
-        userIdIsUndefined: sanitizedUserId === undefined,
-        userIdIsEmpty: sanitizedUserId === '',
-        userIdLength: sanitizedUserId?.length || 0
+      console.log(`✅ [CHECKPOINT-3-${requestId}] Data sanitized:`, {
+        originalName: orgData.name,
+        sanitizedName: sanitizedName,
+        originalDescription: orgData.description,
+        sanitizedDescription: sanitizedDescription,
+        originalUserId: orgData.user_id,
+        sanitizedUserId: sanitizedUserId,
+        sanitizedUserIdLength: sanitizedUserId.length
       });
 
-      // Final validation before SQL execution
-      if (!sanitizedUserId || sanitizedUserId === '') {
-        console.log(`❌ [CREATE_ORG-${requestId}] CRITICAL: sanitized user_id is null or empty`, {
-          sanitizedUserId: sanitizedUserId,
-          originalUserId: orgData.user_id
-        });
-        throw new Error('Sanitized user_id cannot be null or empty for organization creation');
+      // CHECKPOINT 4: Database connection verification
+      console.log(`🎯 [CHECKPOINT-4-${requestId}] Verifying database connection...`);
+      if (!this.pool) {
+        console.log(`❌ [CHECKPOINT-4-${requestId}] FAILED: No database pool available`);
+        throw new Error('Database not connected');
+      }
+      
+      if (!this.pool.connected) {
+        console.log(`❌ [CHECKPOINT-4-${requestId}] FAILED: Database pool not connected`);
+        throw new Error('Database connection lost');
+      }
+      console.log(`✅ [CHECKPOINT-4-${requestId}] Database connection verified`);
+
+      // CHECKPOINT 5: Test database with simple query first
+      console.log(`🎯 [CHECKPOINT-5-${requestId}] Testing database with simple query...`);
+      try {
+        const testResult = await this.execute('SELECT 1 as test_value');
+        console.log(`✅ [CHECKPOINT-5-${requestId}] Simple query test passed:`, testResult);
+      } catch (testError) {
+        console.log(`❌ [CHECKPOINT-5-${requestId}] FAILED: Simple query test failed:`, testError);
+        throw new Error(`Database query test failed: ${testError.message}`);
       }
 
-      // Use direct SQL request with explicit parameter binding - simplified approach
-      const request = this.pool!.request();
+      // CHECKPOINT 6: Verify table structure
+      console.log(`🎯 [CHECKPOINT-6-${requestId}] Verifying organizations table structure...`);
+      try {
+        const tableInfo = await this.execute(`
+          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH 
+          FROM INFORMATION_SCHEMA.COLUMNS 
+          WHERE TABLE_NAME = 'organizations' 
+          ORDER BY ORDINAL_POSITION
+        `);
+        console.log(`✅ [CHECKPOINT-6-${requestId}] Table structure verified:`, tableInfo);
+      } catch (tableError) {
+        console.log(`❌ [CHECKPOINT-6-${requestId}] FAILED: Table structure check failed:`, tableError);
+        throw new Error(`Table structure verification failed: ${tableError.message}`);
+      }
 
-      // Bind parameters with explicit logging
-      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgId: "${id}"`);
-      request.input('orgId', sql.NVarChar(255), id);
+      // CHECKPOINT 7: Test user_id exists in users table
+      console.log(`🎯 [CHECKPOINT-7-${requestId}] Verifying user_id exists in users table...`);
+      try {
+        const userCheck = await this.execute('SELECT id, email, role FROM users WHERE id = @param0', [sanitizedUserId]);
+        if (userCheck.length === 0) {
+          console.log(`❌ [CHECKPOINT-7-${requestId}] FAILED: User not found in database`);
+          throw new Error(`User with ID "${sanitizedUserId}" not found in users table`);
+        }
+        console.log(`✅ [CHECKPOINT-7-${requestId}] User exists in database:`, userCheck[0]);
+      } catch (userError) {
+        console.log(`❌ [CHECKPOINT-7-${requestId}] FAILED: User verification failed:`, userError);
+        throw new Error(`User verification failed: ${userError.message}`);
+      }
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgName: "${sanitizedName}"`);
-      request.input('orgName', sql.NVarChar(255), sanitizedName);
+      // CHECKPOINT 8: Check for duplicate organization names
+      console.log(`🎯 [CHECKPOINT-8-${requestId}] Checking for duplicate organization names...`);
+      try {
+        const duplicateCheck = await this.execute(
+          'SELECT id, name FROM organizations WHERE name = @param0 AND user_id = @param1', 
+          [sanitizedName, sanitizedUserId]
+        );
+        if (duplicateCheck.length > 0) {
+          console.log(`❌ [CHECKPOINT-8-${requestId}] FAILED: Duplicate organization name found:`, duplicateCheck[0]);
+          throw new Error(`Organization with name "${sanitizedName}" already exists for this user`);
+        }
+        console.log(`✅ [CHECKPOINT-8-${requestId}] No duplicate names found`);
+      } catch (dupError) {
+        console.log(`❌ [CHECKPOINT-8-${requestId}] FAILED: Duplicate check failed:`, dupError);
+        throw dupError;
+      }
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgDescription: "${sanitizedDescription}"`);
-      request.input('orgDescription', sql.NVarChar(sql.MAX), sanitizedDescription);
+      // CHECKPOINT 9: Manual parameter preparation (bypassing execute method temporarily)
+      console.log(`🎯 [CHECKPOINT-9-${requestId}] Preparing manual SQL execution...`);
+      
+      const insertSql = `
+        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
+        VALUES (@id, @name, @description, @user_id, GETDATE(), GETDATE())
+      `;
 
-      console.log(`🔍 [CREATE_ORG-${requestId}] Binding parameter orgUserId: "${sanitizedUserId}"`);
-      request.input('orgUserId', sql.NVarChar(255), sanitizedUserId);
+      console.log(`🎯 [CHECKPOINT-9-${requestId}] SQL Query:`, insertSql);
+      console.log(`🎯 [CHECKPOINT-9-${requestId}] Parameters to bind:`, {
+        id: { value: id, type: typeof id, length: id.length },
+        name: { value: sanitizedName, type: typeof sanitizedName, length: sanitizedName.length },
+        description: { value: sanitizedDescription, type: typeof sanitizedDescription, isNull: sanitizedDescription === null },
+        user_id: { value: sanitizedUserId, type: typeof sanitizedUserId, length: sanitizedUserId.length }
+      });
 
-      // Log all bound parameters for verification
-      console.log(`🔍 [CREATE_ORG-${requestId}] All parameters bound, verifying:`, {
-        totalParams: Object.keys(request.parameters || {}).length,
-        parameterNames: Object.keys(request.parameters || {}),
-        parameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
+      // CHECKPOINT 10: Manual SQL execution with direct parameter binding
+      console.log(`🎯 [CHECKPOINT-10-${requestId}] Creating request and binding parameters manually...`);
+      
+      const request = this.pool.request();
+      
+      // Bind each parameter individually with detailed logging
+      console.log(`🔗 [CHECKPOINT-10-${requestId}] Binding parameter 'id'...`);
+      request.input('id', sql.NVarChar(255), id);
+      console.log(`✅ [CHECKPOINT-10-${requestId}] Parameter 'id' bound successfully`);
+
+      console.log(`🔗 [CHECKPOINT-10-${requestId}] Binding parameter 'name'...`);
+      request.input('name', sql.NVarChar(255), sanitizedName);
+      console.log(`✅ [CHECKPOINT-10-${requestId}] Parameter 'name' bound successfully`);
+
+      console.log(`🔗 [CHECKPOINT-10-${requestId}] Binding parameter 'description'...`);
+      request.input('description', sql.NVarChar(sql.MAX), sanitizedDescription);
+      console.log(`✅ [CHECKPOINT-10-${requestId}] Parameter 'description' bound successfully`);
+
+      console.log(`🔗 [CHECKPOINT-10-${requestId}] Binding parameter 'user_id'...`);
+      request.input('user_id', sql.NVarChar(255), sanitizedUserId);
+      console.log(`✅ [CHECKPOINT-10-${requestId}] Parameter 'user_id' bound successfully`);
+
+      // CHECKPOINT 11: Verify bound parameters before execution
+      console.log(`🎯 [CHECKPOINT-11-${requestId}] Verifying all bound parameters:`, {
+        boundParameterNames: Object.keys(request.parameters || {}),
+        boundParameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
           name,
           type: param?.type?.name || 'unknown',
           value: param?.value,
@@ -462,86 +534,84 @@ export class FmbStorage implements IStorage {
         }))
       });
 
-      // Verify the critical user_id parameter one more time
-      const userIdParam = request.parameters['orgUserId'];
-      if (!userIdParam || userIdParam.value === null || userIdParam.value === undefined || userIdParam.value === '') {
-        console.log(`❌ [CREATE_ORG-${requestId}] CRITICAL: orgUserId parameter validation failed`, {
-          userIdParam: userIdParam,
-          paramValue: userIdParam?.value,
-          paramType: typeof userIdParam?.value,
-          allParams: Object.keys(request.parameters || {})
+      // CHECKPOINT 12: Execute the query
+      console.log(`🎯 [CHECKPOINT-12-${requestId}] Executing INSERT query...`);
+      
+      try {
+        const insertResult = await request.query(insertSql);
+        console.log(`✅ [CHECKPOINT-12-${requestId}] INSERT query executed successfully:`, {
+          rowsAffected: insertResult.rowsAffected,
+          recordCount: insertResult.recordset?.length || 0
         });
-        throw new Error('orgUserId parameter validation failed at execution time');
+      } catch (insertError) {
+        console.log(`❌ [CHECKPOINT-12-${requestId}] INSERT query FAILED:`, {
+          message: insertError.message,
+          code: insertError.code,
+          number: insertError.number,
+          severity: insertError.class,
+          state: insertError.state,
+          procedure: insertError.procName,
+          lineNumber: insertError.lineNumber,
+          boundParams: Object.keys(request.parameters || {}),
+          paramValues: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
+            name,
+            value: param?.value,
+            type: param?.type?.name
+          }))
+        });
+        throw insertError;
       }
 
-      const insertQuery = `
-        INSERT INTO organizations (id, name, description, user_id, created_at, updated_at)
-        VALUES (@orgId, @orgName, @orgDescription, @orgUserId, GETDATE(), GETDATE())
-      `;
-
-      console.log(`🔍 [CREATE_ORG-${requestId}] Executing insert query:`, {
-        query: insertQuery,
-        boundParameterCount: Object.keys(request.parameters || {}).length
-      });
-
-      await request.query(insertQuery);
-
-      console.log(`✅ [CREATE_ORG-${requestId}] Organization inserted successfully:`, {
-        organizationId: id
-      });
-
-      // Fetch the created organization using a fresh request to avoid any parameter conflicts
-      const fetchRequest = this.pool!.request();
-      fetchRequest.input('orgId', sql.NVarChar(255), id);
-      const fetchResult = await fetchRequest.query('SELECT * FROM organizations WHERE id = @orgId');
-
-      const createdOrg = fetchResult.recordset[0];
-
-      if (!createdOrg) {
-        console.log(`❌ [CREATE_ORG-${requestId}] Failed to fetch created organization from database`);
-        throw new Error('Organization was created but could not be retrieved');
-      }
-
-      console.log(`✅ [CREATE_ORG-${requestId}] Organization created and verified:`, {
-        id: createdOrg.id,
-        name: createdOrg.name,
-        user_id: createdOrg.user_id
-      });
-
-      this.storageLog('CREATE_ORG', 'Organization created successfully', {
-        id: createdOrg.id,
-        name: createdOrg.name,
-        user_id: createdOrg.user_id,
-        requestId: requestId
-      });
-
-      return createdOrg;
-
-    } catch (insertError: any) {
-      console.log(`❌ [CREATE_ORG-${requestId}] Organization creation failed:`, {
-        message: insertError.message,
-        code: insertError.code,
-        number: insertError.number,
-        severity: insertError.class,
-        state: insertError.state,
-        procedure: insertError.procName || 'N/A',
-        lineNumber: insertError.lineNumber || 'N/A',
-        serverName: insertError.serverName || 'N/A',
-        originalData: {
-          name: orgData.name,
-          description: orgData.description,
-          user_id: orgData.user_id
+      // CHECKPOINT 13: Verify insertion by fetching the record
+      console.log(`🎯 [CHECKPOINT-13-${requestId}] Verifying insertion by fetching created record...`);
+      
+      try {
+        const fetchResult = await this.execute('SELECT * FROM organizations WHERE id = @param0', [id]);
+        
+        if (!fetchResult || fetchResult.length === 0) {
+          console.log(`❌ [CHECKPOINT-13-${requestId}] FAILED: Record not found after insertion`);
+          throw new Error('Organization was inserted but cannot be retrieved');
         }
+
+        const createdOrg = fetchResult[0];
+        console.log(`✅ [CHECKPOINT-13-${requestId}] Record successfully retrieved:`, {
+          id: createdOrg.id,
+          name: createdOrg.name,
+          description: createdOrg.description,
+          user_id: createdOrg.user_id,
+          created_at: createdOrg.created_at
+        });
+
+        this.storageLog('CREATE_ORG', 'Organization created successfully', {
+          id: createdOrg.id,
+          name: createdOrg.name,
+          user_id: createdOrg.user_id
+        });
+
+        return createdOrg;
+
+      } catch (fetchError) {
+        console.log(`❌ [CHECKPOINT-13-${requestId}] FAILED: Error fetching created record:`, fetchError);
+        throw new Error(`Record fetch failed: ${fetchError.message}`);
+      }
+
+    } catch (error: any) {
+      console.log(`❌ [CREATE_ORG-${requestId}] FINAL ERROR - Organization creation failed at checkpoint:`, {
+        message: error.message,
+        code: error.code,
+        number: error.number,
+        sqlState: error.state,
+        severity: error.class,
+        originalStack: error.stack?.split('\n').slice(0, 5)
       });
 
       this.storageLog('CREATE_ORG_ERROR', 'Failed to create organization', {
-        error: insertError.message,
-        code: insertError.code,
-        sqlState: insertError.state,
-        lineNumber: insertError.lineNumber
+        error: error.message,
+        code: error.code,
+        checkpoint: 'See detailed logs above'
       });
 
-      throw insertError;
+      throw error;
     }
   }
 
@@ -1494,6 +1564,110 @@ export class FmbStorage implements IStorage {
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Database ping failed:', error?.message);
       return false;
+    }
+  }
+
+  /**
+   * Comprehensive database schema verification for organizations table
+   */
+  async verifyOrganizationsTableSchema(): Promise<any> {
+    try {
+      console.log('🔍 [SCHEMA-VERIFY] Starting organizations table schema verification...');
+
+      // Check if table exists
+      const tableExists = await this.execute(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_NAME = 'organizations'
+      `);
+
+      if (tableExists.length === 0) {
+        throw new Error('Organizations table does not exist');
+      }
+      console.log('✅ [SCHEMA-VERIFY] Organizations table exists');
+
+      // Get column information
+      const columns = await this.execute(`
+        SELECT 
+          COLUMN_NAME,
+          DATA_TYPE,
+          IS_NULLABLE,
+          CHARACTER_MAXIMUM_LENGTH,
+          COLUMN_DEFAULT,
+          ORDINAL_POSITION
+        FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'organizations' 
+        ORDER BY ORDINAL_POSITION
+      `);
+
+      console.log('📋 [SCHEMA-VERIFY] Table columns:', columns);
+
+      // Check constraints
+      const constraints = await this.execute(`
+        SELECT 
+          CONSTRAINT_NAME,
+          CONSTRAINT_TYPE,
+          COLUMN_NAME
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+        JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+        WHERE tc.TABLE_NAME = 'organizations'
+      `);
+
+      console.log('🔒 [SCHEMA-VERIFY] Table constraints:', constraints);
+
+      // Check foreign key references
+      const foreignKeys = await this.execute(`
+        SELECT 
+          fk.name AS FK_NAME,
+          tp.name AS PARENT_TABLE,
+          cp.name AS PARENT_COLUMN,
+          tr.name AS REFERENCED_TABLE,
+          cr.name AS REFERENCED_COLUMN
+        FROM sys.foreign_keys fk
+        INNER JOIN sys.tables tp ON fk.parent_object_id = tp.object_id
+        INNER JOIN sys.tables tr ON fk.referenced_object_id = tr.object_id
+        INNER JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id
+        INNER JOIN sys.columns cp ON fkc.parent_column_id = cp.column_id AND fkc.parent_object_id = cp.object_id
+        INNER JOIN sys.columns cr ON fkc.referenced_column_id = cr.column_id AND fkc.referenced_object_id = cr.object_id
+        WHERE tp.name = 'organizations'
+      `);
+
+      console.log('🔗 [SCHEMA-VERIFY] Foreign key constraints:', foreignKeys);
+
+      // Test specific user_id constraint
+      const userIdConstraint = foreignKeys.find(fk => fk.PARENT_COLUMN === 'user_id');
+      if (userIdConstraint) {
+        console.log('🔍 [SCHEMA-VERIFY] Found user_id foreign key constraint:', userIdConstraint);
+        
+        // Test if the constraint is causing issues
+        try {
+          const testUserExists = await this.execute(`
+            SELECT COUNT(*) as count FROM ${userIdConstraint.REFERENCED_TABLE} 
+            WHERE ${userIdConstraint.REFERENCED_COLUMN} = @param0
+          `, ['admin-001']);
+          
+          console.log('🔍 [SCHEMA-VERIFY] Test user constraint validation:', {
+            testUserId: 'admin-001',
+            existsInReferencedTable: testUserExists[0]?.count > 0
+          });
+        } catch (constraintError) {
+          console.log('❌ [SCHEMA-VERIFY] Constraint test failed:', constraintError);
+        }
+      } else {
+        console.log('⚠️ [SCHEMA-VERIFY] No user_id foreign key constraint found');
+      }
+
+      return {
+        tableExists: true,
+        columns,
+        constraints,
+        foreignKeys,
+        userIdConstraint
+      };
+
+    } catch (error) {
+      console.error('❌ [SCHEMA-VERIFY] Schema verification failed:', error);
+      throw error;
     }
   }
 
