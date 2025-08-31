@@ -120,6 +120,12 @@ export class FmbStorage implements IStorage {
   }
 
   async execute(query: string, params: any[] = []): Promise<any> {
+    // IMMEDIATE DETECTION - Show every execute call
+    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Execute method called at ${new Date().toISOString()}`);
+    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Query:`, query.substring(0, 100));
+    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Params:`, params);
+    console.log(`🟦 [IMMEDIATE-EXECUTE-DETECTION] Param types:`, params.map(p => typeof p));
+    
     if (!this.pool) {
       throw new Error('Database not connected. Call connect() first.');
     }
@@ -366,6 +372,13 @@ export class FmbStorage implements IStorage {
   }
 
   async createOrganization(orgData: Partial<Organization>): Promise<Organization> {
+    // IMMEDIATE DETECTION - This should appear FIRST in storage logs
+    console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] createOrganization method called at ${new Date().toISOString()}`);
+    console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] Input data:`, orgData);
+    console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] Data type:`, typeof orgData);
+    console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] User ID value:`, orgData.user_id);
+    console.log(`🟥 [IMMEDIATE-STORAGE-DETECTION] User ID type:`, typeof orgData.user_id);
+    
     const requestId = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const id = `org-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
