@@ -114,6 +114,3 @@ export function loadAndExportFmbConfig() {
   global.fmbConfig = config;
   return config;
 }
-
-// Re-export getFmbConfig to ensure it uses the loaded config
-export { getFmbConfig };
