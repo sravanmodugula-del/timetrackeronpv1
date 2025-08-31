@@ -169,6 +169,18 @@ async function createServer() {
   loadFmbOnPremConfig();
   enhancedLog('INFO', 'FMB-ONPREM', 'FMB On-premises environment initialized');
 
+  // Validate critical environment variables early
+  const sessionSecret = process.env.FMB_SESSION_SECRET;
+  if (!sessionSecret) {
+    enhancedLog('ERROR', 'CONFIG', 'Missing FMB_SESSION_SECRET environment variable');
+    throw new Error('FMB_SESSION_SECRET environment variable is required');
+  }
+  if (sessionSecret.length < 32) {
+    enhancedLog('ERROR', 'CONFIG', `FMB_SESSION_SECRET too short: ${sessionSecret.length} characters (minimum 32 required)`);
+    throw new Error('FMB_SESSION_SECRET must be at least 32 characters');
+  }
+  enhancedLog('INFO', 'CONFIG', 'FMB session secret validated successfully');
+
   // Initialize database
   try {
     await initializeDatabase();
@@ -208,9 +220,12 @@ async function createServer() {
   } catch (error) {
     enhancedLog('ERROR', 'SERVER', 'Failed to configure FMB session middleware:', {
       message: error?.message || 'Unknown session error',
-      stack: error?.stack || 'NO_STACK'
+      name: error?.name || 'UnknownError',
+      stack: error?.stack || 'NO_STACK',
+      errorType: typeof error,
+      serializedError: JSON.stringify(error, Object.getOwnPropertyNames(error))
     });
-    throw error;
+    throw new Error(`Session middleware configuration failed: ${error?.message || 'Unknown error'}`);
   }
 
   // Body parsing middleware
@@ -296,18 +311,34 @@ async function createServer() {
 
   } catch (error) {
     enhancedLog('ERROR', 'SERVER', 'Failed to start FMB server:', {
-      message: error?.message || 'Unknown error',
+      message: error?.message || 'Unknown server startup error',
       name: error?.name || 'Unknown',
       code: error?.code || 'NO_CODE',
       stack: error?.stack || 'NO_STACK',
+      errorType: typeof error,
+      errorString: String(error),
       fullError: error
     });
 
-    process.exit(1);
+    // Don't exit immediately - give more specific error context
+    setTimeout(() => process.exit(1), 1000);
   }
 }
 
 createServer().catch((error) => {
-  enhancedLog('ERROR', 'SERVER', 'Failed to start FMB server:', error);
-  process.exit(1);
+  enhancedLog('ERROR', 'SERVER', 'Critical server startup failure:', {
+    message: error?.message || 'Unknown startup error',
+    name: error?.name || 'UnknownError', 
+    code: error?.code || 'NO_CODE',
+    stack: error?.stack?.split('\n').slice(0, 10).join('\n') || 'NO_STACK',
+    errorType: typeof error,
+    errorConstructor: error?.constructor?.name || 'Unknown',
+    serializedError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+  });
+  
+  // Give time for logging before exit
+  setTimeout(() => {
+    enhancedLog('ERROR', 'SERVER', 'Exiting due to startup failure');
+    process.exit(1);
+  }, 500);
 });
