@@ -1098,88 +1098,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      console.log(`🔍 [ORG-CREATE-${requestId}] Starting organization creation with UI values first`, {
+      console.log(`🔍 [ORG-CREATE-${requestId}] Starting organization creation`, {
         userId: userId ? '[PRESENT]' : '[MISSING]',
         bodyKeys: Object.keys(req.body || {}),
         userAgent: req.get('User-Agent')?.substring(0, 100)
       });
 
-      // COMPREHENSIVE DEBUG: Log ALL request data
-      console.log(`🔍 [ORG-CREATE-${requestId}] COMPLETE REQUEST DEBUG:`, {
-        // Request body analysis
-        rawBody: req.body,
-        bodyType: typeof req.body,
-        bodyStringified: JSON.stringify(req.body, null, 2),
-        bodyIsNull: req.body === null,
-        bodyIsUndefined: req.body === undefined,
-        bodyKeys: req.body ? Object.keys(req.body) : 'N/A',
-
-        // Request headers
-        headers: {
-          contentType: req.get('Content-Type'),
-          contentLength: req.get('Content-Length'),
-          authorization: req.get('Authorization') ? '[PRESENT]' : '[MISSING]',
-          userAgent: req.get('User-Agent'),
-          accept: req.get('Accept'),
-          origin: req.get('Origin')
-        },
-
-        // User object analysis
-        user: {
-          fullUserObject: req.user,
-          userType: typeof req.user,
-          userIsNull: req.user === null,
-          userIsUndefined: req.user === undefined,
-          userKeys: req.user ? Object.keys(req.user) : 'null',
-          id: req.user?.id || '[MISSING]',
-          email: req.user?.email || '[MISSING]',
-          userId: req.user?.userId || '[MISSING]',
-          extractedUserId: userId,
-          extractedUserIdType: typeof userId,
-          extractedUserIdLength: userId?.length || 0
-        },
-
-        // Session data
-        session: {
-          sessionId: req.sessionID || '[MISSING]',
-          sessionKeys: req.session ? Object.keys(req.session) : 'null',
-          sessionExists: !!req.session
-        },
-
-        // Request metadata
-        request: {
-          method: req.method,
-          url: req.url,
-          ip: req.ip,
-          ips: req.ips,
-          protocol: req.protocol,
-          secure: req.secure
-        }
-      });
-
-      // CRITICAL: Log the exact values being used for organization creation
-      console.log(`🔍 [ORG-CREATE-${requestId}] EXACT VALUES FOR CREATION:`, {
-        name: req.body?.name,
-        nameType: typeof req.body?.name,
-        nameValue: `"${req.body?.name}"`,
-        nameLength: req.body?.name?.length || 0,
-
-        description: req.body?.description,
-        descriptionType: typeof req.body?.description,
-        descriptionValue: `"${req.body?.description}"`,
-        descriptionLength: req.body?.description?.length || 0,
-
-        extractedUserId: userId,
-        extractedUserIdType: typeof userId,
-        extractedUserIdValue: `"${userId}"`,
-        extractedUserIdLength: userId?.length || 0,
-        extractedUserIdIsEmpty: userId === '' || userId === null || userId === undefined
-      });
-
-      // Comprehensive input validation
+      // Input validation
       if (!userId || typeof userId !== 'string') {
         console.error(`❌ [ORG-CREATE-${requestId}] Invalid user session`, {
-          userObject: req.user ? Object.keys(req.user) : 'null',
           extractedUserId: userId
         });
         return res.status(401).json({
@@ -1188,7 +1115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Validate request body
       if (!req.body || typeof req.body !== 'object') {
         console.error(`❌ [ORG-CREATE-${requestId}] Invalid request body`);
         return res.status(400).json({
@@ -1199,11 +1125,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { name, description } = req.body;
 
-      // Validate organization name (allow even if null for testing)
-      if (name && (typeof name !== 'string' || name.trim().length > 255)) {
+      // Validate organization name
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
         console.error(`❌ [ORG-CREATE-${requestId}] Invalid organization name`, { name });
         return res.status(400).json({
-          message: "Organization name must be a string with less than 255 characters",
+          message: "Organization name is required",
+          code: "INVALID_NAME"
+        });
+      }
+
+      if (name.trim().length > 255) {
+        return res.status(400).json({
+          message: "Organization name must be less than 255 characters",
           code: "INVALID_NAME"
         });
       }
@@ -1245,137 +1178,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // STEP 1: Try with UI values first
-      let organization;
-      let creationMethod = 'UI_VALUES';
-
-      // Prepare sanitized organization data from UI
-      const uiOrganizationData = {
-        name: name?.trim() || `UI_ORG_${Date.now()}`,
-        description: description?.trim() || 'Organization created from UI',
+      // Prepare organization data with proper structure matching the schema
+      const organizationData = {
+        name: name.trim(),
+        description: description?.trim() || null,
         user_id: userId
       };
 
-      console.log(`🏢 [ORG-CREATE-${requestId}] STEP 1: Trying with UI values`, {
-        name: uiOrganizationData.name,
-        hasDescription: !!uiOrganizationData.description,
-        descriptionLength: uiOrganizationData.description?.length || 0,
-        user_id: uiOrganizationData.user_id,
-        user_id_type: typeof uiOrganizationData.user_id,
-        user_id_length: uiOrganizationData.user_id?.length || 0
+      console.log(`🏢 [ORG-CREATE-${requestId}] Creating organization with data:`, {
+        name: organizationData.name,
+        hasDescription: !!organizationData.description,
+        user_id: organizationData.user_id,
+        user_id_type: typeof organizationData.user_id,
+        user_id_length: organizationData.user_id?.length || 0
       });
 
-      try {
-        console.log(`🔍 [ORG-CREATE-${requestId}] Attempting UI data creation:`, JSON.stringify(uiOrganizationData, null, 2));
-        organization = await activeStorage.createOrganization(uiOrganizationData);
-        
-        console.log(`✅ [ORG-CREATE-${requestId}] SUCCESS with UI values!`, {
-          organizationId: organization.id,
-          name: organization.name,
-          method: creationMethod
-        });
+      // Create the organization
+      const organization = await activeStorage.createOrganization(organizationData);
 
-      } catch (uiError) {
-        console.log(`❌ [ORG-CREATE-${requestId}] UI values failed:`, {
-          error: uiError.message,
-          code: uiError.code,
-          number: uiError.number,
-          severity: uiError.class,
-          state: uiError.state
-        });
-
-        creationMethod = 'DUMMY_FALLBACK';
-        
-        // STEP 2: Fallback to dummy values for debugging
-        const dummyOrgData = {
-          name: `DEBUG_ORG_${Date.now()}`,
-          description: "Dummy organization for debugging purposes",
-          user_id: userId // Use same user_id to isolate the issue
-        };
-
-        console.log(`🔍 [ORG-CREATE-${requestId}] STEP 2: Trying with dummy values:`, JSON.stringify(dummyOrgData, null, 2));
-
-        try {
-          organization = await activeStorage.createOrganization(dummyOrgData);
-
-          console.log(`✅ [ORG-CREATE-${requestId}] SUCCESS with dummy values!`, {
-            organizationId: organization.id,
-            name: organization.name,
-            method: creationMethod,
-            diagnosis: 'UI_DATA_ISSUE_DETECTED',
-            originalData: uiOrganizationData,
-            workingData: dummyOrgData,
-            conclusion: 'Issue is with UI data format/content, not storage layer'
-          });
-
-        } catch (dummyError) {
-          console.log(`❌ [ORG-CREATE-${requestId}] BOTH UI AND DUMMY FAILED!`, {
-            diagnosis: 'STORAGE_LAYER_ISSUE',
-            uiError: {
-              message: uiError.message,
-              code: uiError.code,
-              state: uiError.state
-            },
-            dummyError: {
-              message: dummyError.message,
-              code: dummyError.code,
-              state: dummyError.state
-            },
-            conclusion: 'Problem is at storage/database level'
-          });
-
-          // STEP 3: Try with hardcoded user_id as last resort
-          const hardcodedOrgData = {
-            name: `HARDCODED_ORG_${Date.now()}`,
-            description: "Hardcoded organization with known user_id",
-            user_id: "admin-001" // Known existing user from setup.sql
-          };
-
-          console.log(`🔍 [ORG-CREATE-${requestId}] STEP 3: Trying with hardcoded user_id:`, JSON.stringify(hardcodedOrgData, null, 2));
-
-          try {
-            organization = await activeStorage.createOrganization(hardcodedOrgData);
-            creationMethod = 'HARDCODED_FALLBACK';
-
-            console.log(`✅ [ORG-CREATE-${requestId}] SUCCESS with hardcoded user_id!`, {
-              organizationId: organization.id,
-              name: organization.name,
-              method: creationMethod,
-              diagnosis: 'USER_ID_ISSUE_DETECTED',
-              originalUserId: userId,
-              workingUserId: "admin-001",
-              conclusion: 'Issue is with extracted user_id, not storage layer'
-            });
-
-          } catch (hardcodedError) {
-            console.log(`❌ [ORG-CREATE-${requestId}] ALL METHODS FAILED!`, {
-              diagnosis: 'CRITICAL_STORAGE_ISSUE',
-              allErrors: {
-                ui: uiError.message,
-                dummy: dummyError.message,
-                hardcoded: hardcodedError.message
-              },
-              conclusion: 'Database or storage configuration issue'
-            });
-
-            // Re-throw the original error
-            throw uiError;
-          }
-        }
-      }
+      console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully:`, {
+        organizationId: organization.id,
+        name: organization.name
+      });
 
       res.status(201).json({
         ...organization,
-        message: "Organization created successfully",
-        debug: {
-          creationMethod,
-          requestId
-        }
+        message: "Organization created successfully"
       });
 
     } catch (error: any) {
       const requestId = `req-${Date.now()}`;
-      console.error(`❌ [ORG-CREATE-${requestId}] Organization creation completely failed`, {
+      console.error(`❌ [ORG-CREATE-${requestId}] Organization creation failed`, {
         message: error?.message,
         code: error?.code,
         sqlState: error?.state,
@@ -1383,7 +1216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         severity: error?.class,
         procedure: error?.procName,
         lineNumber: error?.lineNumber,
-        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+        serverName: error?.serverName
       });
 
       // Handle specific error types
