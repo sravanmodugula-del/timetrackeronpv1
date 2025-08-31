@@ -1092,40 +1092,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced organization creation with comprehensive validation
   app.post("/api/organizations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      console.log('🔍 [ORG-CREATE] Extracted userId:', userId);
-      console.log('🔍 [ORG-CREATE] Request user object:', JSON.stringify(req.user, null, 2));
-      console.log('🔍 [ORG-CREATE] Request body:', JSON.stringify(req.body, null, 2));
+      const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      console.log(`🔍 [ORG-CREATE-${requestId}] Starting organization creation`, {
+        userId: userId ? '[PRESENT]' : '[MISSING]',
+        bodyKeys: Object.keys(req.body || {}),
+        userAgent: req.get('User-Agent')?.substring(0, 100)
+      });
+      
+      // Comprehensive input validation
+      if (!userId || typeof userId !== 'string') {
+        console.error(`❌ [ORG-CREATE-${requestId}] Invalid user session`, {
+          userObject: req.user ? Object.keys(req.user) : 'null',
+          extractedUserId: userId
+        });
+        return res.status(401).json({ 
+          message: "Invalid user session. Please log in again.",
+          code: "INVALID_SESSION" 
+        });
+      }
+
+      // Validate request body
+      if (!req.body || typeof req.body !== 'object') {
+        console.error(`❌ [ORG-CREATE-${requestId}] Invalid request body`);
+        return res.status(400).json({ 
+          message: "Invalid request data",
+          code: "INVALID_REQUEST_BODY" 
+        });
+      }
+
+      const { name, description } = req.body;
+
+      // Validate organization name
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        console.error(`❌ [ORG-CREATE-${requestId}] Invalid organization name`, { name });
+        return res.status(400).json({ 
+          message: "Organization name is required and must be a non-empty string",
+          code: "INVALID_NAME" 
+        });
+      }
+
+      if (name.trim().length > 255) {
+        return res.status(400).json({ 
+          message: "Organization name must be less than 255 characters",
+          code: "NAME_TOO_LONG" 
+        });
+      }
+
+      // Validate description if provided
+      if (description && (typeof description !== 'string' || description.length > 1000)) {
+        return res.status(400).json({ 
+          message: "Description must be a string with less than 1000 characters",
+          code: "INVALID_DESCRIPTION" 
+        });
+      }
       
       const activeStorage = getStorage();
-      const user = await activeStorage.getUser(userId);
-      const userRole = user?.role || 'employee';
-
-      console.log('🔍 [ORG-CREATE] User from DB:', JSON.stringify(user, null, 2));
-      console.log('🔍 [ORG-CREATE] User role:', userRole);
-
-      // Only system administrators can create organizations
-      if (userRole !== 'admin') {
-        return res.status(403).json({ message: "Insufficient permissions to create organizations" });
-      }
-
-      // Ensure user_id is properly set and not null
-      if (!userId) {
-        console.error('❌ [ORG-CREATE] User ID is null or undefined');
-        return res.status(400).json({ message: "Invalid user session - user ID not found" });
-      }
-
-      const organizationData = { ...req.body, user_id: userId };
-      console.log('🏢 [ORG-CREATE] Final organization data:', JSON.stringify(organizationData, null, 2));
       
+      // Get user and validate permissions
+      const user = await activeStorage.getUser(userId);
+      if (!user) {
+        console.error(`❌ [ORG-CREATE-${requestId}] User not found in database`, { userId });
+        return res.status(401).json({ 
+          message: "User not found. Please log in again.",
+          code: "USER_NOT_FOUND" 
+        });
+      }
+
+      const userRole = user.role || 'employee';
+      console.log(`🔍 [ORG-CREATE-${requestId}] User validation successful`, { 
+        userRole, 
+        userName: `${user.first_name} ${user.last_name}` 
+      });
+
+      // Check admin permissions
+      if (userRole !== 'admin') {
+        console.warn(`🚫 [ORG-CREATE-${requestId}] Insufficient permissions`, { userRole });
+        return res.status(403).json({ 
+          message: "Only System Administrators can create organizations",
+          code: "INSUFFICIENT_PERMISSIONS",
+          requiredRole: "admin",
+          currentRole: userRole
+        });
+      }
+
+      // Prepare sanitized organization data
+      const organizationData = {
+        name: name.trim(),
+        description: description?.trim() || undefined,
+        user_id: userId
+      };
+      
+      console.log(`🏢 [ORG-CREATE-${requestId}] Creating organization`, {
+        name: organizationData.name,
+        hasDescription: !!organizationData.description,
+        descriptionLength: organizationData.description?.length || 0
+      });
+      
+      // Create organization with enhanced error handling
       const organization = await activeStorage.createOrganization(organizationData);
-      console.log('✅ [ORG-CREATE] Organization created successfully:', organization.id);
-      res.status(201).json(organization);
-    } catch (error) {
-      console.error("❌ [ORG-CREATE] Error creating organization:", error);
-      res.status(500).json({ message: "Failed to create organization" });
+      
+      console.log(`✅ [ORG-CREATE-${requestId}] Organization created successfully`, {
+        organizationId: organization.id,
+        name: organization.name
+      });
+      
+      res.status(201).json({
+        ...organization,
+        message: "Organization created successfully"
+      });
+      
+    } catch (error: any) {
+      const requestId = `req-${Date.now()}`;
+      console.error(`❌ [ORG-CREATE-${requestId}] Organization creation failed`, {
+        message: error?.message,
+        code: error?.code,
+        sqlState: error?.state,
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      });
+      
+      // Handle specific error types
+      if (error?.message?.includes("already exists")) {
+        return res.status(409).json({ 
+          message: error.message,
+          code: "DUPLICATE_NAME" 
+        });
+      }
+      
+      if (error?.message?.includes("user_id")) {
+        return res.status(400).json({ 
+          message: "Invalid user data. Please log in again.",
+          code: "INVALID_USER_DATA" 
+        });
+      }
+      
+      // Generic server error
+      res.status(500).json({ 
+        message: "Failed to create organization. Please try again.",
+        code: "INTERNAL_ERROR",
+        requestId
+      });
     }
   });
 
