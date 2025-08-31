@@ -1,45 +1,250 @@
-2025-08-30T18:08:35: 2025-08-31T01:08:35.351Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
-2025-08-30T18:08:35: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 version env with Radar: https://dotenvx.com/radar
-2025-08-30T18:08:35: [dotenv@17.2.1] injecting env (2) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-2025-08-30T18:08:35: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:08:35: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
-2025-08-30T18:08:35: 2025-08-31T01:08:35.356Z 🔴 [SERVER] Critical server startup failure: {
-  "message": "Dynamic require of \"fs\" is not supported",
-  "name": "Error",
-  "code": "NO_CODE",
-  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
-  "errorType": "object",
-  "errorConstructor": "Error",
-  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
+2025-08-30T18:12:52: 2025-08-31T01:12:52.401Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:12:52: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  write to custom object with { processEnv: myObject }
+2025-08-30T18:12:52: [dotenv@17.2.1] injecting env (2) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+2025-08-30T18:12:52: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:12:52: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:12:52: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:12:52: 2025-08-31T01:12:52.407Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T18:12:52: 2025-08-31T01:12:52.407Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T18:12:52: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T18:12:52: ❌ Failed to connect to FMB database: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ESOCKET',
+    [cause]: Error: self-signed certificate
+        at TLSSocket.onConnectSecure (node:_tls_wrap:1679:34)
+        at TLSSocket.emit (node:events:518:28)
+        at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+        at ssl.onhandshakedone (node:_tls_wrap:864:12)
+        at DuplexSocket.ondata (node:internal/js_stream_socket:79:22)
+        at DuplexSocket.emit (node:events:518:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5)
+        at DuplexSocket._write (C:\fmb-timetracker\node_modules\native-duplexpair\index.js:24:22) {
+      code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    }
+  }
 }
-2025-08-30T18:08:35: 2025-08-31T01:08:35.857Z 🔴 [SERVER] Exiting due to startup failure
-2025-08-30T18:08:42: 2025-08-31T01:08:42.383Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
-2025-08-30T18:08:42: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  override existing env vars with { override: true }
-2025-08-30T18:08:42: [dotenv@17.2.1] injecting env (2) from .env -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-2025-08-30T18:08:42: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:08:42: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
-2025-08-30T18:08:42: 2025-08-31T01:08:42.389Z 🔴 [SERVER] Critical server startup failure: {
-  "message": "Dynamic require of \"fs\" is not supported",
-  "name": "Error",
-  "code": "NO_CODE",
-  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
+2025-08-30T18:12:52: 2025-08-31T01:12:52.576Z 🔴 [DATABASE] FMB Database initialization failed - cannot continue without database
+2025-08-30T18:12:52: 2025-08-31T01:12:52.576Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate",
+  "name": "ConnectionError",
+  "code": "ESOCKET",
+  "stack": "ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\n    at C:\\fmb-timetracker\\node_modules\\mssql\\lib\\tedious\\connection-pool.js:85:17\n    at Connection.onConnect (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:849:9)\n    at Object.onceWrapper (node:events:633:26)\n    at Connection.emit (node:events:518:28)\n    at Connection.emit (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:970:18)\n    at Connection.socketError (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:1353:12)\n    at C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:2258:25\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)",
   "errorType": "object",
-  "errorConstructor": "Error",
-  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
+  "errorConstructor": "ConnectionError",
+  "serializedError": "{\"stack\":\"ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\mssql\\\\lib\\\\tedious\\\\connection-pool.js:85:17\\n    at Connection.onConnect (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:849:9)\\n    at Object.onceWrapper (node:events:633:26)\\n    at Connection.emit (node:events:518:28)\\n    at Connection.emit (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:970:18)\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:12)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"originalError\":{\"stack\":\"Error: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:28)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"name\":\"Error\"},\"name\":\"ConnectionError\"}"
 }
-2025-08-30T18:08:42: 2025-08-31T01:08:42.890Z 🔴 [SERVER] Exiting due to startup failure
-2025-08-30T18:08:49: 2025-08-31T01:08:49.330Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
-2025-08-30T18:08:49: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
-2025-08-30T18:08:49: [dotenv@17.2.1] injecting env (2) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-2025-08-30T18:08:49: 🏢 FMB On-Premises configuration loaded
-2025-08-30T18:08:49: 🔴 [FMB-CONFIG] Error reading certificate file: Error: Dynamic require of "fs" is not supported
-2025-08-30T18:08:49: 2025-08-31T01:08:49.335Z 🔴 [SERVER] Critical server startup failure: {
-  "message": "Dynamic require of \"fs\" is not supported",
-  "name": "Error",
-  "code": "NO_CODE",
-  "stack": "Error: Dynamic require of \"fs\" is not supported\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)",
+2025-08-30T18:12:53: 2025-08-31T01:12:53.076Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:12:59: 2025-08-31T01:12:59.596Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:12:59: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+2025-08-30T18:12:59: [dotenv@17.2.1] injecting env (2) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+2025-08-30T18:12:59: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:12:59: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:12:59: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:12:59: 2025-08-31T01:12:59.603Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T18:12:59: 2025-08-31T01:12:59.604Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T18:12:59: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T18:12:59: ❌ Failed to connect to FMB database: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ESOCKET',
+    [cause]: Error: self-signed certificate
+        at TLSSocket.onConnectSecure (node:_tls_wrap:1679:34)
+        at TLSSocket.emit (node:events:518:28)
+        at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+        at ssl.onhandshakedone (node:_tls_wrap:864:12)
+        at DuplexSocket.ondata (node:internal/js_stream_socket:79:22)
+        at DuplexSocket.emit (node:events:518:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5)
+        at DuplexSocket._write (C:\fmb-timetracker\node_modules\native-duplexpair\index.js:24:22) {
+      code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    }
+  }
+}
+2025-08-30T18:12:59: 2025-08-31T01:12:59.750Z 🔴 [DATABASE] FMB Database initialization failed - cannot continue without database
+2025-08-30T18:12:59: 2025-08-31T01:12:59.750Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate",
+  "name": "ConnectionError",
+  "code": "ESOCKET",
+  "stack": "ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\n    at C:\\fmb-timetracker\\node_modules\\mssql\\lib\\tedious\\connection-pool.js:85:17\n    at Connection.onConnect (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:849:9)\n    at Object.onceWrapper (node:events:633:26)\n    at Connection.emit (node:events:518:28)\n    at Connection.emit (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:970:18)\n    at Connection.socketError (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:1353:12)\n    at C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:2258:25\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)",
   "errorType": "object",
-  "errorConstructor": "Error",
-  "serializedError": "{\"stack\":\"Error: Dynamic require of \\\"fs\\\" is not supported\\n    at file:///C:/fmb-timetracker/dist/index.js:7:9\\n    at readCertificateFile (file:///C:/fmb-timetracker/dist/index.js:35:17)\\n    at loadAndExportFmbConfig (file:///C:/fmb-timetracker/dist/index.js:70:13)\\n    at loadFmbOnPremConfig (file:///C:/fmb-timetracker/dist/index.js:25:10)\\n    at createServer2 (file:///C:/fmb-timetracker/dist/index.js:3848:3)\\n    at file:///C:/fmb-timetracker/dist/index.js:3973:1\\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:647:26)\",\"message\":\"Dynamic require of \\\"fs\\\" is not supported\"}"
+  "errorConstructor": "ConnectionError",
+  "serializedError": "{\"stack\":\"ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\mssql\\\\lib\\\\tedious\\\\connection-pool.js:85:17\\n    at Connection.onConnect (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:849:9)\\n    at Object.onceWrapper (node:events:633:26)\\n    at Connection.emit (node:events:518:28)\\n    at Connection.emit (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:970:18)\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:12)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"originalError\":{\"stack\":\"Error: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:28)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"name\":\"Error\"},\"name\":\"ConnectionError\"}"
 }
-2025-08-30T18:08:49: 2025-08-31T01:08:49.835Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:13:00: 2025-08-31T01:13:00.251Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:13:06: 2025-08-31T01:13:06.949Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:13:06: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+2025-08-30T18:13:06: [dotenv@17.2.1] injecting env (2) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+2025-08-30T18:13:06: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:13:06: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:06: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:06: 2025-08-31T01:13:06.956Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T18:13:06: 2025-08-31T01:13:06.956Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T18:13:06: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T18:13:07: ❌ Failed to connect to FMB database: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ESOCKET',
+    [cause]: Error: self-signed certificate
+        at TLSSocket.onConnectSecure (node:_tls_wrap:1679:34)
+        at TLSSocket.emit (node:events:518:28)
+        at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+        at ssl.onhandshakedone (node:_tls_wrap:864:12)
+        at DuplexSocket.ondata (node:internal/js_stream_socket:79:22)
+        at DuplexSocket.emit (node:events:518:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5)
+        at DuplexSocket._write (C:\fmb-timetracker\node_modules\native-duplexpair\index.js:24:22) {
+      code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    }
+  }
+}
+2025-08-30T18:13:07: 2025-08-31T01:13:07.090Z 🔴 [DATABASE] FMB Database initialization failed - cannot continue without database
+2025-08-30T18:13:07: 2025-08-31T01:13:07.091Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate",
+  "name": "ConnectionError",
+  "code": "ESOCKET",
+  "stack": "ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\n    at C:\\fmb-timetracker\\node_modules\\mssql\\lib\\tedious\\connection-pool.js:85:17\n    at Connection.onConnect (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:849:9)\n    at Object.onceWrapper (node:events:633:26)\n    at Connection.emit (node:events:518:28)\n    at Connection.emit (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:970:18)\n    at Connection.socketError (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:1353:12)\n    at C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:2258:25\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)",
+  "errorType": "object",
+  "errorConstructor": "ConnectionError",
+  "serializedError": "{\"stack\":\"ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\mssql\\\\lib\\\\tedious\\\\connection-pool.js:85:17\\n    at Connection.onConnect (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:849:9)\\n    at Object.onceWrapper (node:events:633:26)\\n    at Connection.emit (node:events:518:28)\\n    at Connection.emit (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:970:18)\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:12)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"originalError\":{\"stack\":\"Error: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:28)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"name\":\"Error\"},\"name\":\"ConnectionError\"}"
+}
+2025-08-30T18:13:07: 2025-08-31T01:13:07.591Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:13:14: 2025-08-31T01:13:14.294Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:13:14: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
+2025-08-30T18:13:14: [dotenv@17.2.1] injecting env (2) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+2025-08-30T18:13:14: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:13:14: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:14: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:14: 2025-08-31T01:13:14.300Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T18:13:14: 2025-08-31T01:13:14.301Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T18:13:14: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T18:13:14: ❌ Failed to connect to FMB database: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ESOCKET',
+    [cause]: Error: self-signed certificate
+        at TLSSocket.onConnectSecure (node:_tls_wrap:1679:34)
+        at TLSSocket.emit (node:events:518:28)
+        at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+        at ssl.onhandshakedone (node:_tls_wrap:864:12)
+        at DuplexSocket.ondata (node:internal/js_stream_socket:79:22)
+        at DuplexSocket.emit (node:events:518:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5)
+        at DuplexSocket._write (C:\fmb-timetracker\node_modules\native-duplexpair\index.js:24:22) {
+      code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    }
+  }
+}
+2025-08-30T18:13:14: 2025-08-31T01:13:14.439Z 🔴 [DATABASE] FMB Database initialization failed - cannot continue without database
+2025-08-30T18:13:14: 2025-08-31T01:13:14.440Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate",
+  "name": "ConnectionError",
+  "code": "ESOCKET",
+  "stack": "ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\n    at C:\\fmb-timetracker\\node_modules\\mssql\\lib\\tedious\\connection-pool.js:85:17\n    at Connection.onConnect (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:849:9)\n    at Object.onceWrapper (node:events:633:26)\n    at Connection.emit (node:events:518:28)\n    at Connection.emit (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:970:18)\n    at Connection.socketError (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:1353:12)\n    at C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:2258:25\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)",
+  "errorType": "object",
+  "errorConstructor": "ConnectionError",
+  "serializedError": "{\"stack\":\"ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\mssql\\\\lib\\\\tedious\\\\connection-pool.js:85:17\\n    at Connection.onConnect (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:849:9)\\n    at Object.onceWrapper (node:events:633:26)\\n    at Connection.emit (node:events:518:28)\\n    at Connection.emit (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:970:18)\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:12)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"originalError\":{\"stack\":\"Error: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:28)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"name\":\"Error\"},\"name\":\"ConnectionError\"}"
+}
+2025-08-30T18:13:14: 2025-08-31T01:13:14.940Z 🔴 [SERVER] Exiting due to startup failure
+2025-08-30T18:13:21: 2025-08-31T01:13:21.483Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
+2025-08-30T18:13:21: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+2025-08-30T18:13:21: [dotenv@17.2.1] injecting env (2) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+2025-08-30T18:13:21: 🏢 FMB On-Premises configuration loaded
+2025-08-30T18:13:21: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:21: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
+2025-08-30T18:13:21: 2025-08-31T01:13:21.489Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
+2025-08-30T18:13:21: 2025-08-31T01:13:21.489Z 🟢 [CONFIG] FMB session secret validated successfully
+2025-08-30T18:13:21: 🔗 Connecting to FMB MS SQL database...
+2025-08-30T18:13:21: ❌ Failed to connect to FMB database: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+    at C:\fmb-timetracker\node_modules\mssql\lib\tedious\connection-pool.js:85:17
+    at Connection.onConnect (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:849:9)
+    at Object.onceWrapper (node:events:633:26)
+    at Connection.emit (node:events:518:28)
+    at Connection.emit (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:970:18)
+    at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:12)
+    at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+  code: 'ESOCKET',
+  originalError: ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate
+      at Connection.socketError (C:\fmb-timetracker\node_modules\tedious\lib\connection.js:1353:28)
+      at C:\fmb-timetracker\node_modules\tedious\lib\connection.js:2258:25
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
+    code: 'ESOCKET',
+    [cause]: Error: self-signed certificate
+        at TLSSocket.onConnectSecure (node:_tls_wrap:1679:34)
+        at TLSSocket.emit (node:events:518:28)
+        at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+        at ssl.onhandshakedone (node:_tls_wrap:864:12)
+        at DuplexSocket.ondata (node:internal/js_stream_socket:79:22)
+        at DuplexSocket.emit (node:events:518:28)
+        at addChunk (node:internal/streams/readable:561:12)
+        at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+        at Readable.push (node:internal/streams/readable:392:5)
+        at DuplexSocket._write (C:\fmb-timetracker\node_modules\native-duplexpair\index.js:24:22) {
+      code: 'DEPTH_ZERO_SELF_SIGNED_CERT'
+    }
+  }
+}
+2025-08-30T18:13:21: 2025-08-31T01:13:21.638Z 🔴 [DATABASE] FMB Database initialization failed - cannot continue without database
+2025-08-30T18:13:21: 2025-08-31T01:13:21.638Z 🔴 [SERVER] Critical server startup failure: {
+  "message": "Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate",
+  "name": "ConnectionError",
+  "code": "ESOCKET",
+  "stack": "ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\n    at C:\\fmb-timetracker\\node_modules\\mssql\\lib\\tedious\\connection-pool.js:85:17\n    at Connection.onConnect (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:849:9)\n    at Object.onceWrapper (node:events:633:26)\n    at Connection.emit (node:events:518:28)\n    at Connection.emit (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:970:18)\n    at Connection.socketError (C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:1353:12)\n    at C:\\fmb-timetracker\\node_modules\\tedious\\lib\\connection.js:2258:25\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)",
+  "errorType": "object",
+  "errorConstructor": "ConnectionError",
+  "serializedError": "{\"stack\":\"ConnectionError: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\mssql\\\\lib\\\\tedious\\\\connection-pool.js:85:17\\n    at Connection.onConnect (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:849:9)\\n    at Object.onceWrapper (node:events:633:26)\\n    at Connection.emit (node:events:518:28)\\n    at Connection.emit (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:970:18)\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:12)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"originalError\":{\"stack\":\"Error: Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\\n    at Connection.socketError (C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:1353:28)\\n    at C:\\\\fmb-timetracker\\\\node_modules\\\\tedious\\\\lib\\\\connection.js:2258:25\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\",\"message\":\"Failed to connect to HUB-SQL1TST-LIS:1433 - self-signed certificate\",\"code\":\"ESOCKET\",\"name\":\"Error\"},\"name\":\"ConnectionError\"}"
+}
+2025-08-30T18:13:22: 2025-08-31T01:13:22.139Z 🔴 [SERVER] Exiting due to startup failure
