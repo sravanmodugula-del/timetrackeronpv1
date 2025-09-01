@@ -586,45 +586,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { name, description, status, project_id } = req.body;
+      const { name, title, description, status, project_id, projectId } = req.body;
 
-      console.log("📝 Task Creation Request:", { name, description, status, project_id, userId });
+      console.log("📝 Task Creation Request:", { 
+        name, 
+        title, 
+        description, 
+        status, 
+        project_id: project_id || projectId, 
+        userId 
+      });
+
+      const taskName = name || title;
+      const taskProjectId = project_id || projectId;
 
       // Validate required fields
-      if (!name || !project_id) {
+      if (!taskName || !taskProjectId) {
         return res.status(400).json({
-          message: "Name and project_id are required fields",
-          received: { name: !!name, project_id: !!project_id }
+          message: "Name/title and project_id are required fields",
+          received: { 
+            name: !!taskName, 
+            project_id: !!taskProjectId 
+          }
         });
       }
 
       const activeStorage = getStorage();
-      const taskData = {
-        name: name.trim(),
-        description: description?.trim() || '',
-        status: status || 'active',
-        project_id: project_id.trim()
-      };
 
-      // Verify project exists
-      const project = await activeStorage.getProject(taskData.project_id, userId);
+      // Verify project exists and user has access
+      const project = await activeStorage.getProject(taskProjectId, userId);
       if (!project) {
         return res.status(404).json({ 
-          message: "Project not found",
-          projectId: taskData.project_id
+          message: "Project not found or access denied",
+          projectId: taskProjectId
         });
       }
+
+      const taskData = {
+        name: taskName.trim(),
+        title: taskName.trim(),
+        description: description?.trim() || '',
+        status: status || 'active',
+        project_id: taskProjectId.trim()
+      };
 
       const task = await activeStorage.createTask(taskData, userId);
       console.log("✅ Task created successfully:", task.id);
       res.status(201).json(task);
-    } catch (error) {
-      console.error("❌ Task creation error:", error);
+    } catch (error: any) {
+      console.error("❌ Task creation error:", {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack?.split('\n').slice(0, 5)
+      });
+      
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+        return res.status(400).json({ 
+          message: "Invalid task data", 
+          errors: error.errors 
+        });
       }
-      console.error("Error creating task:", error);
-      res.status(500).json({ message: "Failed to create task" });
+      
+      if (error?.message?.includes('does not exist')) {
+        return res.status(404).json({ 
+          message: error.message 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to create task",
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
     }
   });
 

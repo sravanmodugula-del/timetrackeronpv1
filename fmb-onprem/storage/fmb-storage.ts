@@ -631,7 +631,7 @@ export class FmbStorage implements IStorage {
   }
 
   async createProject(projectData: InsertProject): Promise<Project> {
-    const projectId = `proj-${Date.now()}`;
+    const projectId = `proj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Log the projectData to debug
     this.storageLog('CREATE_PROJECT', 'Creating project with data', {
@@ -719,12 +719,12 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      
+
       const result = await request.query('DELETE FROM projects WHERE id = @id');
-      
+
       const deleted = result.rowsAffected[0] > 0;
       console.log('✅ [FMB-STORAGE] Project deleted:', { id, deleted });
-      
+
       return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting project:', error);
@@ -780,27 +780,6 @@ export class FmbStorage implements IStorage {
     return this.getTask(id);
   }
 
-  async getTasksByProjectId(projectId: string): Promise<Task[]> {
-    try {
-      const result = await this.pool.request()
-        .input('project_id', projectId)
-        .input('user_id', this.userId)
-        .query(`
-          SELECT t.*, p.name as project_name
-          FROM tasks t
-          INNER JOIN projects p ON t.project_id = p.id
-          WHERE t.project_id = @project_id
-            AND (p.user_id = @user_id OR p.is_enterprise_wide = 1)
-          ORDER BY t.created_at DESC
-        `);
-
-      return result.recordset.map(this.mapTaskFromDb);
-    } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching tasks by project:', error);
-      throw error;
-    }
-  }
-
   async getAllUserTasks(userId: string): Promise<Task[]> {
     try {
       const result = await this.pool.request()
@@ -820,37 +799,7 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async getTaskById(id: string): Promise<Task | null> {
-    try {
-      const request = this.pool!.request();
-      request.input('id', sql.NVarChar(255), id);
-      const result = await request.query('SELECT * FROM tasks WHERE id = @id');
-
-      if (result.recordset.length === 0) {
-        return null;
-      }
-
-      const task = result.recordset[0];
-      return {
-        id: task.id,
-        project_id: task.project_id,
-        name: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        assigned_to: task.assigned_to,
-        created_by: task.created_by,
-        due_date: task.due_date,
-        estimated_hours: task.estimated_hours,
-        actual_hours: task.actual_hours,
-        created_at: task.created_at,
-        updated_at: task.updated_at
-      };
-    } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching task by ID:', error);
-      throw error;
-    }
-  }
+  
 
   async createTask(taskData: InsertTask | any, userId?: string): Promise<Task> {
     try {
@@ -869,23 +818,29 @@ export class FmbStorage implements IStorage {
         throw new Error('project_id is required for task creation');
       }
 
+      // Verify project exists first
+      const projectExists = await this.execute('SELECT id FROM projects WHERE id = @param0', [projectId]);
+      if (!projectExists || projectExists.length === 0) {
+        throw new Error(`Project with ID ${projectId} does not exist`);
+      }
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), taskId);
       request.input('project_id', sql.NVarChar(255), projectId);
-      request.input('title', sql.NVarChar(500), taskData.name);
+      request.input('title', sql.NVarChar(500), taskData.name || taskData.title);
       request.input('description', sql.NText, taskData.description || '');
       request.input('status', sql.NVarChar(50), taskData.status || 'active');
       request.input('priority', sql.NVarChar(50), taskData.priority || 'medium');
-      request.input('assigned_to', sql.NVarChar(255), taskData.assignedTo || null);
-      request.input('created_by', sql.NVarChar(255), userId || taskData.createdBy || null);
-      request.input('due_date', sql.DateTime, taskData.dueDate ? new Date(taskData.dueDate) : null);
-      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimatedHours || null);
-      request.input('actual_hours', sql.Decimal(10, 2), taskData.actualHours || 0);
+      request.input('assigned_to', sql.NVarChar(255), taskData.assigned_to || taskData.assignedTo || null);
+      request.input('created_by', sql.NVarChar(255), userId || taskData.created_by || taskData.createdBy || null);
+      request.input('due_date', sql.DateTime, taskData.due_date || taskData.dueDate ? new Date(taskData.due_date || taskData.dueDate) : null);
+      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimated_hours || taskData.estimatedHours || null);
+      request.input('actual_hours', sql.Decimal(10, 2), taskData.actual_hours || taskData.actualHours || 0);
 
       console.log('📝 [FMB-STORAGE] Task SQL parameters bound:', {
         id: taskId,
         project_id: projectId,
-        title: taskData.name,
+        title: taskData.name || taskData.title,
         status: taskData.status || 'active'
       });
 
@@ -902,7 +857,7 @@ export class FmbStorage implements IStorage {
       `);
 
       const createdTask = await this.getTaskById(taskId);
-      console.log(`✅ [FMB-STORAGE] Task created successfully: ${taskId} - "${taskData.name}"`);
+      console.log(`✅ [FMB-STORAGE] Task created successfully: ${taskId} - "${taskData.name || taskData.title}"`);
       return createdTask as Task;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error creating task:', {
@@ -948,12 +903,12 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      
+
       const result = await request.query('DELETE FROM tasks WHERE id = @id');
-      
+
       const deleted = result.rowsAffected[0] > 0;
       console.log('✅ [FMB-STORAGE] Task deleted:', { id, deleted });
-      
+
       return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting task:', error);
@@ -970,6 +925,11 @@ export class FmbStorage implements IStorage {
     offset?: number;
   }): Promise<TimeEntryWithProject[]> {
     try {
+      console.log('🕒 [FMB-STORAGE] Fetching time entries for user:', userId, 'filters:', filters);
+
+      const request = this.pool!.request();
+      request.input('userId', sql.NVarChar(255), userId);
+
       let query = `
         SELECT 
           te.id,
@@ -980,13 +940,14 @@ export class FmbStorage implements IStorage {
           te.start_time,
           te.end_time,
           te.duration,
+          te.hours,
           te.description,
           te.created_at,
           te.updated_at,
           p.name as project_name,
           p.project_number,
           p.status as project_status,
-          t.name as task_name,
+          t.title as task_name,
           t.description as task_description
         FROM time_entries te
         LEFT JOIN projects p ON te.project_id = p.id
@@ -994,23 +955,19 @@ export class FmbStorage implements IStorage {
         WHERE te.user_id = @userId
       `;
 
-      const params = [
-        { name: 'userId', type: sql.VarChar, value: userId }
-      ];
-
-      if (filters?.projectId) {
+      if (filters?.projectId && filters.projectId !== 'all') {
         query += ` AND te.project_id = @projectId`;
-        params.push({ name: 'projectId', type: sql.VarChar, value: filters.projectId });
+        request.input('projectId', sql.NVarChar(255), filters.projectId);
       }
 
       if (filters?.startDate) {
         query += ` AND te.date >= @startDate`;
-        params.push({ name: 'startDate', type: sql.Date, value: filters.startDate });
+        request.input('startDate', sql.Date, new Date(filters.startDate));
       }
 
       if (filters?.endDate) {
         query += ` AND te.date <= @endDate`;
-        params.push({ name: 'endDate', type: sql.Date, value: filters.endDate });
+        request.input('endDate', sql.Date, new Date(filters.endDate));
       }
 
       query += ` ORDER BY te.date DESC, te.created_at DESC`;
@@ -1019,9 +976,11 @@ export class FmbStorage implements IStorage {
         query += ` OFFSET ${filters.offset || 0} ROWS FETCH NEXT ${filters.limit} ROWS ONLY`;
       }
 
-      const result = await this.executeQuery(query, params);
+      console.log('🔍 [FMB-STORAGE] Executing time entries query:', query.substring(0, 200) + '...');
 
-      return result.recordset.map((row: any) => ({
+      const result = await request.query(query);
+
+      const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
         project_id: row.project_id,
         task_id: row.task_id,
@@ -1029,7 +988,8 @@ export class FmbStorage implements IStorage {
         date: row.date,
         start_time: row.start_time,
         end_time: row.end_time,
-        duration: row.duration,
+        duration: row.duration || row.hours,
+        hours: row.hours || row.duration,
         description: row.description,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -1045,8 +1005,15 @@ export class FmbStorage implements IStorage {
           description: row.task_description
         } : undefined
       }));
+
+      console.log(`✅ [FMB-STORAGE] Found ${timeEntries.length} time entries for user ${userId}`);
+      return timeEntries;
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching time entries:', error);
+      console.error('🔴 [FMB-STORAGE] Error fetching time entries:', {
+        error: error.message,
+        userId,
+        filters
+      });
       throw error;
     }
   }
@@ -1160,12 +1127,12 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      
+
       const result = await request.query('DELETE FROM time_entries WHERE id = @id');
-      
+
       const deleted = result.rowsAffected[0] > 0;
       console.log('✅ [FMB-STORAGE] Time entry deleted:', { id, deleted });
-      
+
       return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting time entry:', error);
@@ -1339,12 +1306,12 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      
+
       const result = await request.query('DELETE FROM departments WHERE id = @id');
-      
+
       const deleted = result.rowsAffected[0] > 0;
       console.log('✅ [FMB-STORAGE] Department deleted:', { id, deleted });
-      
+
       return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting department:', error);
@@ -1603,7 +1570,7 @@ export class FmbStorage implements IStorage {
           id,
           name: existingOrg.name
         });
-        
+
         return true;
       } catch (transactionError) {
         await transaction.rollback();
@@ -1626,7 +1593,7 @@ export class FmbStorage implements IStorage {
     }
 
     const request = this.pool.request();
-    
+
     // Bind parameters
     params.forEach(param => {
       request.input(param.name, param.type, param.value);
@@ -1910,7 +1877,7 @@ export class FmbStorage implements IStorage {
 
       console.log('🔗 [SCHEMA-VERIFY] Foreign key constraints:', foreignKeys);
 
-      // Test specific user_id constraint
+      // Check specific user_id constraint
       const userIdConstraint = foreignKeys.find(fk => fk.PARENT_COLUMN === 'user_id');
       if (userIdConstraint) {
         console.log('🔍 [SCHEMA-VERIFY] Found user_id foreign key constraint:', userIdConstraint);
