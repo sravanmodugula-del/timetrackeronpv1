@@ -133,18 +133,17 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         name: data.name.trim(),
         description: data.description?.trim() || "",
         status: data.status || "active",
-        projectId: data.project_id.trim(),
       };
 
       console.log("🔧 Creating task with payload:", payload);
       console.log("🔧 API Request details:", {
-        endpoint: `/api/projects/${payload.projectId}/tasks`,
+        endpoint: `/api/projects/${data.project_id.trim()}/tasks`,
         method: "POST",
         payload: payload
       });
       
       try {
-        const response = await apiRequest(`/api/projects/${payload.projectId}/tasks`, "POST", payload);
+        const response = await apiRequest(`/api/projects/${data.project_id.trim()}/tasks`, "POST", payload);
         console.log("✅ Task creation response:", response);
         return response;
       } catch (error) {
