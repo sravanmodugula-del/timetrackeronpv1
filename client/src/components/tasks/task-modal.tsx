@@ -52,7 +52,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     isOpen,
     isEditing: !!task
   });
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!task;
@@ -65,7 +65,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       taskExists: !!task,
       isEditing
     });
-    
+
     if (isOpen && !isEditing) {
       // Reset form when opening for new task creation
       console.log("🔄 Resetting form for new task creation");
@@ -74,7 +74,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "",
         status: "pending",
       });
-      
+
       // Clear any previous errors
       form.clearErrors();
     }
@@ -109,7 +109,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     }
   }, [isOpen, isEditing, task, projectId, form]);
 
-  
+
 
   // Create task mutation
   const createTask = useMutation({
@@ -136,7 +136,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         method: "POST",
         payload: payload
       });
-      
+
       try {
         const response = await apiRequest(`/api/projects/${projectId}/tasks`, "POST", payload);
         console.log("✅ Task creation response:", response);
@@ -152,10 +152,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "Task created successfully",
       });
       form.reset();
-      // Invalidate both the specific project tasks and all tasks queries
+      // Invalidate the specific project tasks query
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
@@ -192,14 +191,13 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         title: "Success",
         description: "Task updated successfully",
       });
-      // Invalidate both the specific project tasks and all tasks queries
+      // Invalidate the specific project tasks query
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
-      if (isUnauthorizedError(error as Error) {
+      if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
           description: "You are logged out. Logging in again...",
@@ -228,7 +226,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     }
   };
 
-  
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
