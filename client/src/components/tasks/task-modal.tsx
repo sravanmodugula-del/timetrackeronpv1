@@ -41,6 +41,7 @@ const taskFormSchema = insertTaskSchema.extend({
   name: z.string().min(1, "Task name is required"),
   status: z.enum(["active", "completed", "archived"]).default("active"),
   description: z.string().nullable().optional().transform(val => val || ""),
+  project_id: z.string().min(1, "Project ID is required"),
 });
 
 type TaskFormData = z.infer<typeof taskFormSchema>;
@@ -53,7 +54,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      projectId: projectId,
+      project_id: projectId,
       name: task?.name || "",
       description: task?.description || "",
       status: (task?.status as "active" | "completed" | "archived") || "active",
@@ -63,7 +64,13 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   // Create task mutation
   const createTask = useMutation({
     mutationFn: async (data: TaskFormData) => {
-      await apiRequest("/api/tasks", "POST", data);
+      const payload = {
+        name: data.name,
+        description: data.description || "",
+        status: data.status,
+        project_id: data.project_id
+      };
+      await apiRequest("/api/tasks", "POST", payload);
     },
     onSuccess: () => {
       toast({
@@ -110,6 +117,19 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
+
+            <FormField
+              control={form.control}
+              name="project_id"
+              render={({ field }) => (
+                <FormItem style={{ display: 'none' }}>
+                  <FormControl>
+                    <Input type="hidden" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
           title: "Unauthorized",
           description: "You are logged out. Logging in again...",
           variant: "destructive",
