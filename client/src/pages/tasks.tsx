@@ -16,13 +16,26 @@ import TaskModal from "@/components/tasks/task-modal";
 import TaskCloneModal from "@/components/tasks/task-clone-modal";
 
 export default function Tasks() {
+  console.log("🔄 Tasks component mounting/re-rendering");
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const { canCreateTasks, canEditTasks } = usePermissions();
   const queryClient = useQueryClient();
-  const [selectedProject, setSelectedProject] = useState<string>("all");
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<string>(() => {
+    const initial = "all";
+    console.log("🎯 Initial selectedProject state:", initial);
+    return initial;
+  });
+  const [editingTask, setEditingTask] = useState<Task | null>(() => {
+    const initial = null;
+    console.log("📝 Initial editingTask state:", initial);
+    return initial;
+  });
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(() => {
+    const initial = false;
+    console.log("🔓 Initial isTaskModalOpen state:", initial);
+    return initial;
+  });
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
 
   // Redirect to home if not authenticated
@@ -40,13 +53,28 @@ export default function Tasks() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
+  // Debug state changes
+  useEffect(() => {
+    console.log("🔄 Tasks component state changed:", {
+      selectedProject,
+      editingTask: editingTask ? { id: editingTask.id, name: editingTask.name } : null,
+      isTaskModalOpen,
+      isCloneModalOpen
+    });
+  }, [selectedProject, editingTask, isTaskModalOpen, isCloneModalOpen]);
+
   // Fetch projects
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    select: (data) => Array.isArray(data) ? data : [],
+    select: (data) => {
+      console.log("📊 Projects query select function called with data:", data);
+      const result = Array.isArray(data) ? data : [];
+      console.log("📊 Projects query returning:", result);
+      return result;
+    },
   });
 
   // Log projects data for debugging
@@ -158,14 +186,18 @@ export default function Tasks() {
   };
 
   const handleCreateTask = () => {
-    console.log("🎯 Create task button clicked", {
+    console.log("🎯 CREATE TASK BUTTON CLICKED - Starting debug trace");
+    console.log("📋 Current component state:", {
       selectedProject,
       canCreateTasks,
       projects: projects?.length || 0,
-      projectsData: projects
+      projectsData: projects,
+      isTaskModalOpen,
+      editingTask
     });
 
     if (selectedProject === "all") {
+      console.log("❌ Selected project is 'all', showing error toast");
       toast({
         title: "Select a Project",
         description: "Please select a specific project to create a task",
@@ -175,6 +207,7 @@ export default function Tasks() {
     }
 
     if (!projects || projects.length === 0) {
+      console.log("❌ No projects available, showing error toast");
       toast({
         title: "No Projects Available",
         description: "Please create a project first before adding tasks",
@@ -185,6 +218,8 @@ export default function Tasks() {
 
     const selectedProjectData = projects.find(p => p.id === selectedProject);
     if (!selectedProjectData) {
+      console.log("❌ Selected project not found in projects array");
+      console.log("🔍 Projects available:", projects.map(p => ({ id: p.id, name: p.name })));
       toast({
         title: "Invalid Project",
         description: "Selected project not found. Please refresh and try again.",
@@ -193,9 +228,16 @@ export default function Tasks() {
       return;
     }
 
-    console.log("✅ Opening task modal for project:", selectedProjectData);
+    console.log("✅ All validations passed, opening task modal");
+    console.log("📂 Selected project data:", selectedProjectData);
+    
     setEditingTask(null);
+    console.log("🔄 Set editingTask to null");
+    
     setIsTaskModalOpen(true);
+    console.log("🔄 Set isTaskModalOpen to true");
+    
+    console.log("🎯 CREATE TASK BUTTON CLICKED - End of function");
   };
 
   const getStatusColor = (status: string) => {
@@ -238,7 +280,13 @@ export default function Tasks() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Project</label>
-                <Select value={selectedProject} onValueChange={setSelectedProject}>
+                <Select 
+                  value={selectedProject} 
+                  onValueChange={(value) => {
+                    console.log("🎯 Project selection changed:", { from: selectedProject, to: value });
+                    setSelectedProject(value);
+                  }}
+                >
                   <SelectTrigger className="w-64">
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
@@ -268,16 +316,29 @@ export default function Tasks() {
                     Clone Task
                   </Button>
                 )}
-                {canCreateTasks && (
-                  <Button 
-                    onClick={handleCreateTask}
-                    disabled={selectedProject === "all"}
-                    title={selectedProject === "all" ? "Please select a project first" : "Create a new task"}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Task
-                  </Button>
-                )}
+                {(() => {
+                  console.log("🔍 Create task button render check:", {
+                    canCreateTasks,
+                    selectedProject,
+                    isDisabled: selectedProject === "all"
+                  });
+                  
+                  return canCreateTasks && (
+                    <Button 
+                      onClick={(e) => {
+                        console.log("🖱️ Create task button clicked - event triggered");
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleCreateTask();
+                      }}
+                      disabled={selectedProject === "all"}
+                      title={selectedProject === "all" ? "Please select a project first" : "Create a new task"}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Task
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
           </CardContent>
@@ -371,24 +432,33 @@ export default function Tasks() {
       </main>
 
       {/* Task Modal */}
-      {isTaskModalOpen && selectedProject && selectedProject !== "all" && (
-        <TaskModal
-          task={editingTask}
-          projectId={selectedProject}
-          isOpen={isTaskModalOpen}
-          onClose={() => {
-            console.log("🔒 Closing task modal");
-            setIsTaskModalOpen(false);
-            setEditingTask(null);
-          }}
-          onSuccess={() => {
-            console.log("✅ Task operation successful, refreshing data");
-            refetch();
-            setIsTaskModalOpen(false);
-            setEditingTask(null);
-          }}
-        />
-      )}
+      {(() => {
+        console.log("🔍 Modal render condition check:", {
+          isTaskModalOpen,
+          selectedProject,
+          isSelectedProjectNotAll: selectedProject !== "all",
+          shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all"
+        });
+        
+        return isTaskModalOpen && selectedProject && selectedProject !== "all" ? (
+          <TaskModal
+            task={editingTask}
+            projectId={selectedProject}
+            isOpen={isTaskModalOpen}
+            onClose={() => {
+              console.log("🔒 Closing task modal");
+              setIsTaskModalOpen(false);
+              setEditingTask(null);
+            }}
+            onSuccess={() => {
+              console.log("✅ Task operation successful, refreshing data");
+              refetch();
+              setIsTaskModalOpen(false);
+              setEditingTask(null);
+            }}
+          />
+        ) : null;
+      })()}
 
       {/* Task Clone Modal */}
       <TaskCloneModal

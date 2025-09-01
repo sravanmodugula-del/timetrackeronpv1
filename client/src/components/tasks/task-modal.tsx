@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,9 +47,26 @@ const taskFormSchema = insertTaskSchema.extend({
 type TaskFormData = z.infer<typeof taskFormSchema>;
 
 export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess }: TaskModalProps) {
+  console.log("🎭 TaskModal component rendered with props:", {
+    task: task ? { id: task.id, name: task.name } : null,
+    projectId,
+    isOpen,
+    isEditing: !!task
+  });
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!task;
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log("🔄 TaskModal state change:", {
+      isOpen,
+      projectId,
+      taskExists: !!task,
+      isEditing
+    });
+  }, [isOpen, projectId, task, isEditing]);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -59,6 +76,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       description: task?.description || "",
       status: (task?.status as "active" | "completed" | "archived") || "active",
     },
+    mode: "onChange",
   });
 
   // Create task mutation
@@ -78,7 +96,8 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         name: data.name.trim(),
         description: data.description?.trim() || "",
         status: data.status || "active",
-        projectId: data.project_id.trim()
+        projectId: data.project_id.trim(),
+        project_id: data.project_id.trim()
       };
 
       console.log("🔧 Creating task with payload:", payload);
@@ -153,18 +172,32 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   });
 
   const onSubmit = (data: TaskFormData) => {
-    console.log("🚀 Form submitted with data:", data);
+    console.log("🚀 FORM SUBMITTED - Starting debug trace");
+    console.log("📝 Form data received:", data);
     console.log("📊 Form validation state:", {
       isEditing,
       hasProjectId: !!data.project_id,
       hasName: !!data.name,
-      formValues: form.getValues()
+      formValues: form.getValues(),
+      formState: {
+        isValid: form.formState.isValid,
+        errors: form.formState.errors,
+        isDirty: form.formState.isDirty
+      }
+    });
+
+    console.log("🎯 Mutation selection:", {
+      isEditing,
+      willCallUpdateTask: isEditing,
+      willCallCreateTask: !isEditing
     });
 
     try {
       if (isEditing) {
+        console.log("📤 Calling updateTask.mutate with data:", data);
         updateTask.mutate(data);
       } else {
+        console.log("📤 Calling createTask.mutate with data:", data);
         createTask.mutate(data);
       }
     } catch (error) {
