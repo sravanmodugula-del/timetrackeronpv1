@@ -435,9 +435,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      
+
       console.log('🗑️ [API] Delete project request:', { id, userId });
-      
+
       const deleted = await activeStorage.deleteProject(id, userId);
 
       if (!deleted) {
@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId } = req.query;
+      const {projectId } = req.query;
       const activeStorage = getStorage();
 
       if (!projectId || projectId === "all") {
@@ -585,6 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create task for specific project
   app.post('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
@@ -592,69 +593,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, description, status } = req.body;
 
       console.log("📝 Project Task Creation Request:", { 
-        projectId,
+        projectId, 
         name, 
         description, 
-        status, 
+        status,
         userId 
       });
 
-      // Validate required fields
-      if (!name || !projectId) {
-        return res.status(400).json({
-          message: "Name and projectId are required fields",
-          received: { 
-            name: !!name, 
-            projectId: !!projectId 
-          }
-        });
+      if (!name?.trim()) {
+        return res.status(400).json({ message: "Task name is required" });
+      }
+
+      if (!projectId?.trim()) {
+        return res.status(400).json({ message: "Project ID is required" });
       }
 
       const activeStorage = getStorage();
 
-      // Verify project exists and user has access
+      // Validate project exists and user has access
       const project = await activeStorage.getProject(projectId, userId);
       if (!project) {
-        return res.status(404).json({ 
-          message: "Project not found or access denied",
-          projectId: projectId
-        });
+        return res.status(404).json({ message: "Project not found or access denied" });
       }
 
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const taskData = {
+        id: taskId,
+        project_id: projectId,
         name: name.trim(),
-        title: name.trim(),
-        description: description?.trim() || '',
-        status: status || 'active',
-        projectId: projectId.trim()
+        description: description?.trim() || "",
+        status: status || "pending",
+        priority: "medium",
+        assigned_to: userId,
+        created_by: userId
       };
 
-      const task = await activeStorage.createTask(taskData, userId);
-      console.log("✅ Project task created successfully:", task.id);
-      res.status(201).json(task);
-    } catch (error: any) {
+      const newTask = await activeStorage.createTask(taskData);
+
+      // Ensure we return a proper task object
+      const responseTask = newTask || {
+        id: taskId,
+        project_id: projectId,
+        name: taskData.name,
+        description: taskData.description,
+        status: taskData.status,
+        priority: taskData.priority,
+        assigned_to: taskData.assigned_to,
+        created_by: taskData.created_by,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+      console.log("✅ Task created successfully:", responseTask.id);
+      res.json(responseTask);
+    } catch (error) {
       console.error("❌ Project task creation error:", {
-        message: error?.message,
-        code: error?.code,
-        stack: error?.stack?.split('\n').slice(0, 5)
+        message: error.message,
+        code: error.code,
+        stack: error.stack?.split('\n')
       });
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid task data", 
-          errors: error.errors 
-        });
-      }
-      
-      if (error?.message?.includes('does not exist')) {
-        return res.status(404).json({ 
-          message: error.message 
-        });
-      }
-      
       res.status(500).json({ 
         message: "Failed to create task",
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        error: "Internal server error"
       });
     }
   });
@@ -746,20 +746,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: error?.code,
         stack: error?.stack?.split('\n').slice(0, 5)
       });
-      
+
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           message: "Invalid task data", 
           errors: error.errors 
         });
       }
-      
+
       if (error?.message?.includes('does not exist')) {
         return res.status(404).json({ 
           message: error.message 
         });
       }
-      
+
       res.status(500).json({ 
         message: "Failed to create task",
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
@@ -802,9 +802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      
+
       console.log('🗑️ [API] Delete task request:', { id, userId });
-      
+
       // Check if task exists first
       const task = await activeStorage.getTask(id, userId);
       if (!task) {
@@ -964,9 +964,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      
+
       console.log('🗑️ [API] Delete time entry request:', { id, userId });
-      
+
       // Check if time entry exists first
       const timeEntry = await activeStorage.getTimeEntry(id, userId);
       if (!timeEntry) {
