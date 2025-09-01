@@ -79,7 +79,7 @@ export function usePermissions() {
 // Role checking hook
 export function useRole() {
   const { user } = useAuth();
-  const role = user?.authContext?.role || 'employee';
+  const role = user?.role || 'employee';
 
   const isAdmin = () => role === 'admin';
   const isManager = () => role === 'manager';
@@ -91,10 +91,10 @@ export function useRole() {
 
   return {
     role,
-    isAdmin,
-    isManager,
-    isEmployee,
-    isViewer,
+    isAdmin: isAdmin(),
+    isManager: isManager(),
+    isEmployee: isEmployee(),
+    isViewer: isViewer(),
     hasRole,
     hasAnyRole,
   };

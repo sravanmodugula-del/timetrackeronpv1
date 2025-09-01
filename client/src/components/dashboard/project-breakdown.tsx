@@ -16,6 +16,13 @@ interface ProjectBreakdownProps {
   };
 }
 
+const CHART_COLORS = [
+  { color: '#1976D2', bg: 'bg-primary', border: 'border-primary' },
+  { color: '#388E3C', bg: 'bg-green-500', border: 'border-green-500' },
+  { color: '#F57C00', bg: 'bg-orange-500', border: 'border-orange-500' },
+  { color: '#D32F2F', bg: 'bg-red-500', border: 'border-red-500' },
+];
+
 export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
   const { data: breakdown, isLoading } = useQuery<ProjectBreakdownItem[]>({
     queryKey: ["/api/dashboard/project-breakdown", dateRange],
@@ -32,15 +39,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
     },
   });
 
-  const getProjectColor = (project: Project) => {
-    const colors = {
-      '#1976D2': { bg: 'bg-primary', border: 'border-primary' },
-      '#388E3C': { bg: 'bg-green-500', border: 'border-green-500' },
-      '#F57C00': { bg: 'bg-orange-500', border: 'border-orange-500' },
-      '#D32F2F': { bg: 'bg-red-500', border: 'border-red-500' },
-    };
-    return colors[project.color as keyof typeof colors] || { bg: 'bg-gray-500', border: 'border-gray-500' };
-  };
+  
 
   if (isLoading) {
     return (
@@ -90,6 +89,18 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
     );
   }
 
+  const projectData = breakdown?.map((item: any, index: number) => {
+    const colors = CHART_COLORS[index % CHART_COLORS.length] || CHART_COLORS[0];
+    return {
+      name: item.project?.name || 'Unknown Project',
+      hours: parseFloat(item.totalHours?.toString() || '0') || 0,
+      percentage: parseFloat(item.percentage?.toString() || '0') || 0,
+      color: colors?.color || '#8884d8',
+      bg: colors?.bg || 'bg-blue-500',
+      border: colors?.border || 'border-blue-500'
+    };
+  }) || [];
+
   return (
     <Card>
       <CardHeader>
@@ -100,23 +111,23 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {breakdown.map((item, index) => {
-            const colors = getProjectColor(item.project);
+          {projectData.map((item, index) => {
+            const colors = CHART_COLORS[index % CHART_COLORS.length] || CHART_COLORS[0];
             return (
               <div key={index}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 ${colors.bg} rounded-full mr-3`}></div>
-                    <span className="font-medium text-gray-900">{item.project.name}</span>
+                    <div className={`${colors?.bg || 'bg-blue-500'} w-3 h-3 rounded-full mr-3`}></div>
+                    <span className="font-medium text-gray-900">{item.name}</span>
                   </div>
                   <div className="text-right">
-                    <span className="font-semibold text-gray-900">{item.totalHours.toFixed(1)}h</span>
+                    <span className="font-semibold text-gray-900">{item.hours.toFixed(1)}h</span>
                     <span className="text-sm text-gray-500 ml-2">{item.percentage}%</span>
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`${colors.bg} h-2 rounded-full transition-all duration-300`}
+                  <div
+                    className={`${colors?.bg || 'bg-blue-500'} h-2 rounded-full transition-all duration-300`}
                     style={{ width: `${item.percentage}%` }}
                   ></div>
                 </div>
