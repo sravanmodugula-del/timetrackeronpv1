@@ -203,14 +203,15 @@ export default function TimeLog() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Projects</SelectItem>
-                      {projects?.filter(project => 
+                      {Array.isArray(projects) && projects.filter(project => 
                         project?.id && 
                         typeof project.id === 'string' && 
                         project.id.trim() !== '' &&
-                        project.name
+                        project.name &&
+                        project.name.trim() !== ''
                       ).map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
+                        <SelectItem key={project.id} value={project.id || 'unknown'}>
+                          {project.name || 'Unnamed Project'}
                         </SelectItem>
                       ))}
                     </SelectContent>

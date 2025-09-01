@@ -184,9 +184,10 @@ export default function RoleTesting() {
   });
 
   // Fetch test users
-  const { data: testUsers = [] } = useQuery<TestUser[]>({
+  const { data: testUsers = [], isLoading: testUsersLoading } = useQuery<TestUser[]>({
     queryKey: ["/api/admin/test-users"],
     retry: false,
+    select: (data) => Array.isArray(data) ? data : [],
   });
 
   const handleCreateTestUsers = () => {
@@ -277,7 +278,7 @@ export default function RoleTesting() {
               <div>
                 <h4 className="font-semibold mb-3">Switch Role (Testing Mode):</h4>
                 <div className="space-y-3">
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <Select value={selectedRole || ""} onValueChange={setSelectedRole}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role to test" />
                     </SelectTrigger>
@@ -368,24 +369,29 @@ export default function RoleTesting() {
                   )}
                 </Button>
 
-                {testUsers.length > 0 && (
+                {testUsersLoading ? (
+                  <div className="mt-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-center text-muted-foreground">Loading test users...</p>
+                  </div>
+                ) : Array.isArray(testUsers) && testUsers.length > 0 && (
                   <div className="mt-6">
                     <h4 className="font-semibold mb-4">Test Users Created:</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {testUsers.map((testUser) => {
-                        const roleInfo = getRoleInfo(testUser.role);
+                      {testUsers.filter(testUser => testUser && testUser.id).map((testUser) => {
+                        const roleInfo = getRoleInfo(testUser.role || 'employee');
                         return (
                           <div key={testUser.id} className="p-4 border rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium">
-                                {testUser.firstName} {testUser.lastName}
+                                {testUser.firstName || 'Unknown'} {testUser.lastName || 'User'}
                               </span>
                               <Badge className={roleInfo.color}>
-                                {testUser.role.toUpperCase()}
+                                {(testUser.role || 'employee').toUpperCase()}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {testUser.email}
+                              {testUser.email || 'No email'}
                             </p>
                           </div>
                         );
