@@ -148,14 +148,14 @@ export default function TimeLog() {
     return format(date, 'MMM dd, yyyy');
   };
 
-  const getProjectColor = (color: string) => {
+  const getProjectColor = (color: string | undefined) => {
     const colors = {
       '#1976D2': 'bg-primary/10 text-primary',
       '#388E3C': 'bg-green-100 text-green-700',
       '#F57C00': 'bg-orange-100 text-orange-700',
       '#D32F2F': 'bg-red-100 text-red-700',
     };
-    return colors[color as keyof typeof colors] || 'bg-gray-100 text-gray-700';
+    return colors[(color || '#1976D2') as keyof typeof colors] || 'bg-gray-100 text-gray-700';
   };
 
   if (isLoading || !isAuthenticated) {
@@ -272,12 +272,12 @@ export default function TimeLog() {
                           {formatDate(entry.date)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className={getProjectColor(entry.project.color)}>
-                            {entry.project.name}
+                          <Badge className={getProjectColor(entry.project?.color)}>
+                            {entry.project?.name || 'Unknown Project'}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {entry.project.project_number ? (
+                          {entry.project?.project_number ? (
                             <Badge variant="outline" className="bg-gray-50 text-gray-700">
                               {entry.project.project_number}
                             </Badge>
