@@ -585,6 +585,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = extractUserId(req.user);
+      const { projectId } = req.params;
+      const { name, description, status } = req.body;
+
+      console.log("📝 Project Task Creation Request:", { 
+        projectId,
+        name, 
+        description, 
+        status, 
+        userId 
+      });
+
+      // Validate required fields
+      if (!name || !projectId) {
+        return res.status(400).json({
+          message: "Name and projectId are required fields",
+          received: { 
+            name: !!name, 
+            projectId: !!projectId 
+          }
+        });
+      }
+
+      const activeStorage = getStorage();
+
+      // Verify project exists and user has access
+      const project = await activeStorage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ 
+          message: "Project not found or access denied",
+          projectId: projectId
+        });
+      }
+
+      const taskData = {
+        name: name.trim(),
+        title: name.trim(),
+        description: description?.trim() || '',
+        status: status || 'active',
+        projectId: projectId.trim()
+      };
+
+      const task = await activeStorage.createTask(taskData, userId);
+      console.log("✅ Project task created successfully:", task.id);
+      res.status(201).json(task);
+    } catch (error: any) {
+      console.error("❌ Project task creation error:", {
+        message: error?.message,
+        code: error?.code,
+        stack: error?.stack?.split('\n').slice(0, 5)
+      });
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid task data", 
+          errors: error.errors 
+        });
+      }
+      
+      if (error?.message?.includes('does not exist')) {
+        return res.status(404).json({ 
+          message: error.message 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to create task",
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
+    }
+  });
+
   // Get all tasks across projects for cloning (must be before /api/tasks/:id)
   app.get('/api/tasks/all', isAuthenticated, async (req: any, res) => {
     try {
