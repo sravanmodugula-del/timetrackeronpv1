@@ -34,6 +34,7 @@ export interface IStorage {
   // User management
   getUser(id: string): Promise<User | null>;
   getUserById(id: string): Promise<User | null>;
+  getUserByEmail(email: string): Promise<User | null>;
   getUsers(): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
   createUser(user: UpsertUser): Promise<User>;
@@ -66,7 +67,7 @@ export interface IStorage {
   getDepartments(): Promise<Department[]>;
   getDepartment(id: string): Promise<Department | null>;
   getDepartmentById(id: string): Promise<Department | null>;
-  createDepartment(department: UpsertDepartment): Promise<Department>;
+  createDepartment(data: { name: string; organization_id: string; user_id: string }): Promise<Department>;
   updateDepartment(id: string, department: Partial<UpsertDepartment>): Promise<Department>;
   deleteDepartment(id: string): Promise<void>;
   assignManagerToDepartment(departmentId: string, managerId: string, userId: string): Promise<void>;
@@ -75,6 +76,7 @@ export interface IStorage {
   getProjects(): Promise<Project[]>;
   getProject(id: string, userId?: string): Promise<Project | null>;
   getProjectById(id: string): Promise<Project | null>;
+  getProjectsByUserId(userId: string): Promise<Project[]>;
   createProject(project: UpsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<UpsertProject>): Promise<Project>;
   deleteProject(id: string): Promise<void>;
@@ -87,6 +89,7 @@ export interface IStorage {
   getAllUserTasks(userId: string): Promise<Task[]>;
   getTask(id: string, userId?: string): Promise<Task | null>;
   getTaskById(id: string): Promise<Task | null>;
+  getTasksByProjectId(projectId: string): Promise<Task[]>;
   createTask(task: UpsertTask): Promise<Task>;
   updateTask(id: string, task: Partial<UpsertTask>): Promise<Task>;
   deleteTask(id: string): Promise<void>;
@@ -94,6 +97,8 @@ export interface IStorage {
   // Time entry management
   getTimeEntries(): Promise<TimeEntry[]>;
   getTimeEntry(id: string, userId?: string): Promise<TimeEntry | null>;
+  getTimeEntryById(id: string): Promise<TimeEntry | null>;
+  getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]>;
   getTimeEntriesByProjectId(projectId: string): Promise<TimeEntry[]>;
   getTimeEntriesForProject(projectId: string): Promise<TimeEntry[]>;
   createTimeEntry(entry: UpsertTimeEntry): Promise<TimeEntry>;
@@ -114,12 +119,28 @@ export interface IStorage {
 // Create storage implementation that delegates to the database instance
 class StorageImplementation implements IStorage {
   // Users
+  async getUser(id: string): Promise<User | null> {
+    const db = await this.getDb();
+    if (typeof db.getUser === 'function') {
+      return await db.getUser(id);
+    }
+    return null;
+  }
+
   async getUsers(): Promise<User[]> {
     const db = await this.getDb();
     if (typeof db.getUsers === 'function') {
       return await db.getUsers();
     }
     return [];
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    const db = await this.getDb();
+    if (typeof db.upsertUser === 'function') {
+      return await db.upsertUser(user);
+    }
+    return user as User;
   }
 
   async getUserById(id: string): Promise<User | null> {
@@ -219,6 +240,14 @@ class StorageImplementation implements IStorage {
     return [];
   }
 
+  async getProject(id: string, userId?: string): Promise<Project | null> {
+    const db = await this.getDb();
+    if (typeof db.getProject === 'function') {
+      return await db.getProject(id, userId);
+    }
+    return null;
+  }
+
   async getProjectById(id: string): Promise<Project | null> {
     const db = await this.getDb();
     if (typeof db.getProjectById === 'function') {
@@ -314,12 +343,133 @@ class StorageImplementation implements IStorage {
     }
   }
 
-  // Employees (placeholder implementations)
-  async getEmployees(): Promise<Employee[]> { return []; }
-  async getEmployeeById(id: string): Promise<Employee | null> { return null; }
-  async createEmployee(employee: InsertEmployee): Promise<Employee> { return employee as Employee; }
-  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee> { return { id, ...employee } as Employee; }
-  async deleteEmployee(id: string): Promise<void> {}
+  // Dashboard and analytics methods
+  async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
+    const db = await this.getDb();
+    if (typeof db.getDashboardStats === 'function') {
+      return await db.getDashboardStats(userId, startDate, endDate);
+    }
+    return {};
+  }
+
+  async getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any> {
+    const db = await this.getDb();
+    if (typeof db.getProjectTimeBreakdown === 'function') {
+      return await db.getProjectTimeBreakdown(userId, startDate, endDate);
+    }
+    return {};
+  }
+
+  async getRecentActivity(userId: string, limit?: number): Promise<any> {
+    const db = await this.getDb();
+    if (typeof db.getRecentActivity === 'function') {
+      return await db.getRecentActivity(userId, limit);
+    }
+    return [];
+  }
+
+  async getDepartmentHoursSummary(userId: string, startDate: string, endDate: string): Promise<any> {
+    const db = await this.getDb();
+    if (typeof db.getDepartmentHoursSummary === 'function') {
+      return await db.getDepartmentHoursSummary(userId, startDate, endDate);
+    }
+    return {};
+  }
+
+  async getTimeEntriesForProject(projectId: string): Promise<TimeEntry[]> {
+    const db = await this.getDb();
+    if (typeof db.getTimeEntriesForProject === 'function') {
+      return await db.getTimeEntriesForProject(projectId);
+    }
+    return [];
+  }
+
+  async getProjectEmployees(): Promise<any[]> {
+    const db = await this.getDb();
+    if (typeof db.getProjectEmployees === 'function') {
+      return await db.getProjectEmployees();
+    }
+    return [];
+  }
+
+  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId: string): Promise<void> {
+    const db = await this.getDb();
+    if (typeof db.assignEmployeesToProject === 'function') {
+      await db.assignEmployeesToProject(projectId, employeeIds, userId);
+    }
+  }
+
+  async removeEmployeeFromProject(projectId: string, employeeId: string, userId: string): Promise<boolean> {
+    const db = await this.getDb();
+    if (typeof db.removeEmployeeFromProject === 'function') {
+      return await db.removeEmployeeFromProject(projectId, employeeId, userId);
+    }
+    return false;
+  }
+
+  async getDepartmentsByOrganization(organizationId: string): Promise<Department[]> {
+    const db = await this.getDb();
+    if (typeof db.getDepartmentsByOrganization === 'function') {
+      return await db.getDepartmentsByOrganization(organizationId);
+    }
+    return [];
+  }
+
+  async pingDatabase(): Promise<boolean> {
+    const db = await this.getDb();
+    if (typeof db.pingDatabase === 'function') {
+      return await db.pingDatabase();
+    }
+    return false;
+  }
+
+  // Employees
+  async getEmployees(): Promise<Employee[]> { 
+    const db = await this.getDb();
+    if (typeof db.getEmployees === 'function') {
+      return await db.getEmployees();
+    }
+    return []; 
+  }
+
+  async getEmployee(id: string, userId?: string): Promise<Employee | null> {
+    const db = await this.getDb();
+    if (typeof db.getEmployee === 'function') {
+      return await db.getEmployee(id, userId);
+    }
+    return null;
+  }
+
+  async getEmployeeById(id: string): Promise<Employee | null> { 
+    const db = await this.getDb();
+    if (typeof db.getEmployeeById === 'function') {
+      return await db.getEmployeeById(id);
+    }
+    return null; 
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> { 
+    const db = await this.getDb();
+    if (typeof db.createEmployee === 'function') {
+      return await db.createEmployee(employee);
+    }
+    return employee as Employee; 
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee> { 
+    const db = await this.getDb();
+    if (typeof db.updateEmployee === 'function') {
+      return await db.updateEmployee(id, employee);
+    }
+    return { id, ...employee } as Employee; 
+  }
+
+  async deleteEmployee(id: string): Promise<void> {
+    const db = await this.getDb();
+    if (typeof db.deleteEmployee === 'function') {
+      await db.deleteEmployee(id);
+    }
+  }
 
   // Departments
   async getDepartments(): Promise<Department[]> {
@@ -329,6 +479,7 @@ class StorageImplementation implements IStorage {
     }
     return [];
   }
+
   async getDepartment(id: string): Promise<Department | null> {
     const db = await this.getDb();
     if (typeof db.getDepartment === 'function') {
@@ -336,6 +487,7 @@ class StorageImplementation implements IStorage {
     }
     return null;
   }
+
   async getDepartmentById(id: string): Promise<Department | null> {
     const db = await this.getDb();
     if (typeof db.getDepartmentById === 'function') {
@@ -343,6 +495,7 @@ class StorageImplementation implements IStorage {
     }
     return null;
   }
+
   async createDepartment(data: { name: string; organization_id: string; user_id: string }): Promise<Department> {
     const db = await this.getDb();
     if (typeof db.createDepartment === 'function') {
@@ -350,6 +503,7 @@ class StorageImplementation implements IStorage {
     }
     return data as Department;
   }
+
   async updateDepartment(id: string, dept: Partial<InsertDepartment>): Promise<Department> {
     const db = await this.getDb();
     if (typeof db.updateDepartment === 'function') {
@@ -357,38 +511,89 @@ class StorageImplementation implements IStorage {
     }
     return { id, ...dept } as Department;
   }
-  async deleteDepartment(id: string): Promise<void> {}
 
-  // Tasks (placeholder implementations)
-  async getTasks(): Promise<Task[]> { return []; }
-  async getTaskById(id: string): Promise<Task | null> { return null; }
-  async getTasksByProjectId(projectId: string): Promise<Task[]> { return []; }
-  async createTask(task: InsertTask): Promise<Task> { return task as Task; }
-  async updateTask(id: string, task: Partial<InsertTask>): Promise<Task> { return { id, ...task } as Task; }
-  async deleteTask(id: string): Promise<void> {}
-
-  // Project Employees (placeholder implementations)
-  async getProjectEmployees(): Promise<ProjectEmployee[]> { return []; }
-  async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> { return []; }
-  async createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee> { return assignment as ProjectEmployee; }
-  async deleteProjectEmployee(id: string): Promise<void> {}
-
-  // Organization methods implementation
-  async getOrganization(id: string, userId?: string): Promise<Organization | null> {
+  async deleteDepartment(id: string): Promise<void> {
     const db = await this.getDb();
-    if (typeof db.getOrganizationById === 'function') {
-      return await db.getOrganizationById(id);
+    if (typeof db.deleteDepartment === 'function') {
+      await db.deleteDepartment(id);
+    }
+  }
+
+  async assignManagerToDepartment(departmentId: string, managerId: string, userId: string): Promise<void> {
+    const db = await this.getDb();
+    if (typeof db.assignManagerToDepartment === 'function') {
+      await db.assignManagerToDepartment(departmentId, managerId, userId);
+    }
+  }
+
+  // Tasks
+  async getTasks(): Promise<Task[]> { 
+    const db = await this.getDb();
+    if (typeof db.getTasks === 'function') {
+      return await db.getTasks();
+    }
+    return []; 
+  }
+
+  async getAllUserTasks(userId: string): Promise<Task[]> {
+    const db = await this.getDb();
+    if (typeof db.getAllUserTasks === 'function') {
+      return await db.getAllUserTasks(userId);
+    }
+    return [];
+  }
+
+  async getTask(id: string, userId?: string): Promise<Task | null> {
+    const db = await this.getDb();
+    if (typeof db.getTask === 'function') {
+      return await db.getTask(id, userId);
     }
     return null;
   }
 
-  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
+  async getTaskById(id: string): Promise<Task | null> { 
     const db = await this.getDb();
-    if (typeof db.getOrganizationsByUserId === 'function') {
-      return await db.getOrganizationsByUserId(userId);
+    if (typeof db.getTaskById === 'function') {
+      return await db.getTaskById(id);
     }
-    return [];
+    return null; 
   }
+
+  async getTasksByProjectId(projectId: string): Promise<Task[]> { 
+    const db = await this.getDb();
+    if (typeof db.getTasksByProjectId === 'function') {
+      return await db.getTasksByProjectId(projectId);
+    }
+    return []; 
+  }
+
+  async createTask(task: InsertTask): Promise<Task> { 
+    const db = await this.getDb();
+    if (typeof db.createTask === 'function') {
+      return await db.createTask(task);
+    }
+    return task as Task; 
+  }
+
+  async updateTask(id: string, task: Partial<InsertTask>): Promise<Task> { 
+    const db = await this.getDb();
+    if (typeof db.updateTask === 'function') {
+      return await db.updateTask(id, task);
+    }
+    return { id, ...task } as Task; 
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    const db = await this.getDb();
+    if (typeof db.deleteTask === 'function') {
+      await db.deleteTask(id);
+    }
+  }
+
+  // Project Employees (placeholder implementations)
+  async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> { return []; }
+  async createProjectEmployee(assignment: InsertProjectEmployee): Promise<ProjectEmployee> { return assignment as ProjectEmployee; }
+  async deleteProjectEmployee(id: string): Promise<void> {}
 
   // User management methods for admin functionality
   async getAllUsers(): Promise<User[]> {
@@ -421,14 +626,6 @@ class StorageImplementation implements IStorage {
       return await db.updateUserRole(userId, role);
     }
     throw new Error('Update user role not implemented');
-  }
-
-  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
-    const db = await this.getDb();
-    if (typeof db.getOrganizationsByUserId === 'function') {
-      return await db.getOrganizationsByUserId(userId);
-    }
-    return [];
   }
 
   private async getDb() {
