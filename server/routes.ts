@@ -532,6 +532,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Task routes
+  app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = extractUserId(req.user);
+      const { projectId } = req.query;
+      const activeStorage = getStorage();
+
+      if (!projectId || projectId === "all") {
+        // Return all tasks for the user
+        try {
+          const tasks = await activeStorage.getAllUserTasks(userId);
+          res.json(Array.isArray(tasks) ? tasks : []);
+          return;
+        } catch (error) {
+          console.error("Error fetching all user tasks:", error);
+          res.json([]); // Return empty array on error
+          return;
+        }
+      }
+
+      // Verify user has access to the project
+      const project = await activeStorage.getProject(projectId as string, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const tasks = await activeStorage.getTasksByProjectId(projectId as string);
+      res.json(Array.isArray(tasks) ? tasks : []);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
   app.get('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
