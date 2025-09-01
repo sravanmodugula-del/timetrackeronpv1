@@ -317,8 +317,17 @@ export interface InsertTimeEntry {
 }
 
 export interface TimeEntryWithProject extends TimeEntry {
-  project: Project;
-  task: Task | null;
+  project?: {
+    id: string;
+    name: string;
+    project_number?: string;
+    status?: string;
+  };
+  task?: {
+    id: string;
+    name: string;
+    description?: string;
+  };
 }
 
 // =============================================================================

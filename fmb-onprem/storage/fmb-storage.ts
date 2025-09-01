@@ -380,9 +380,9 @@ export class FmbStorage implements IStorage {
       console.log(`🎯 [CHECKPOINT-6-${requestId}] Verifying organizations table structure...`);
       try {
         const tableInfo = await this.execute(`
-          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH 
-          FROM INFORMATION_SCHEMA.COLUMNS 
-          WHERE TABLE_NAME = 'organizations' 
+          SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, CHARACTER_MAXIMUM_LENGTH
+          FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_NAME = 'organizations'
           ORDER BY ORDINAL_POSITION
         `);
         console.log(`✅ [CHECKPOINT-6-${requestId}] Table structure verified:`, tableInfo);
@@ -906,32 +906,55 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntries(userId?: string, filters?: any): Promise<TimeEntry[]> {
+  async getTimeEntries(userId: string, filters?: {
+    projectId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<TimeEntryWithProject[]> {
     try {
       let query = `
-        SELECT te.*, p.name as project_name, p.color as project_color, t.name as task_name
+        SELECT 
+          te.id,
+          te.project_id,
+          te.task_id,
+          te.user_id,
+          te.date,
+          te.start_time,
+          te.end_time,
+          te.duration,
+          te.description,
+          te.created_at,
+          te.updated_at,
+          p.name as project_name,
+          p.project_number,
+          p.status as project_status,
+          t.name as task_name,
+          t.description as task_description
         FROM time_entries te
         LEFT JOIN projects p ON te.project_id = p.id
         LEFT JOIN tasks t ON te.task_id = t.id
-        WHERE te.user_id = @user_id
+        WHERE te.user_id = @userId
       `;
 
-      const request = this.pool.request()
-        .input('user_id', userId || this.userId);
+      const params = [
+        { name: 'userId', type: sql.VarChar, value: userId }
+      ];
 
       if (filters?.projectId) {
-        query += ` AND te.project_id = @project_id`;
-        request.input('project_id', filters.projectId);
+        query += ` AND te.project_id = @projectId`;
+        params.push({ name: 'projectId', type: sql.VarChar, value: filters.projectId });
       }
 
       if (filters?.startDate) {
-        query += ` AND te.date >= @start_date`;
-        request.input('start_date', filters.startDate);
+        query += ` AND te.date >= @startDate`;
+        params.push({ name: 'startDate', type: sql.Date, value: filters.startDate });
       }
 
       if (filters?.endDate) {
-        query += ` AND te.date <= @end_date`;
-        request.input('end_date', filters.endDate);
+        query += ` AND te.date <= @endDate`;
+        params.push({ name: 'endDate', type: sql.Date, value: filters.endDate });
       }
 
       query += ` ORDER BY te.date DESC, te.created_at DESC`;
@@ -940,11 +963,35 @@ export class FmbStorage implements IStorage {
         query += ` OFFSET ${filters.offset || 0} ROWS FETCH NEXT ${filters.limit} ROWS ONLY`;
       }
 
-      const result = await request.query(query);
-      return result.recordset.map(this.mapTimeEntryFromDb);
+      const result = await this.executeQuery(query, params);
+
+      return result.recordset.map((row: any) => ({
+        id: row.id,
+        project_id: row.project_id,
+        task_id: row.task_id,
+        user_id: row.user_id,
+        date: row.date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        duration: row.duration,
+        description: row.description,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        project: row.project_name ? {
+          id: row.project_id,
+          name: row.project_name,
+          project_number: row.project_number,
+          status: row.project_status
+        } : undefined,
+        task: row.task_name ? {
+          id: row.task_id,
+          name: row.task_name,
+          description: row.task_description
+        } : undefined
+      }));
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching time entries:', error);
-      throw error;
+      this.logError('EXECUTE', `Failed to fetch time entries: ${error}`);
+      throw new Error('Failed to fetch time entries');
     }
   }
 
@@ -954,7 +1001,7 @@ export class FmbStorage implements IStorage {
         .input('entry_id', id)
         .input('user_id', userId || this.userId)
         .query(`
-          SELECT te.*, p.name as project_name, p.color as project_color, t.name as task_name
+          SELECT te.*, p.name as project_name, p.project_number, t.name as task_name
           FROM time_entries te
           LEFT JOIN projects p ON te.project_id = p.id
           LEFT JOIN tasks t ON te.task_id = t.id

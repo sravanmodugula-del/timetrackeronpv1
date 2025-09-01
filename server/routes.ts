@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const activeStorage = getStorage();
-      
+
       // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             code: "DEPARTMENT_NOT_FOUND"
           });
         }
-        
+
         // If both organization and department are specified, verify they match
         if (organizationId && department.organization_id !== organizationId) {
           return res.status(400).json({
@@ -317,9 +317,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`📁 Creating project: "${projectData.name}" by user: ${user.email} (${userRole})`);
 
       const project = await activeStorage.createProject(projectData);
-      
+
       console.log(`✅ Project created successfully: ${project.id} - "${project.name}"`);
-      
+
       res.status(201).json({
         ...project,
         message: "Project created successfully"
@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { projectId } = req.params;
       const activeStorage = getStorage();
-      
+
       // Verify user has access to the project
       const project = await activeStorage.getProject(projectId, userId);
       if (!project) {
@@ -1034,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const activeStorage = getStorage();
-      
+
       // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
@@ -1067,11 +1067,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId}) by user: ${user.email} (${userRole})`);
-      
+
       const employee = await activeStorage.createEmployee(employeeData);
-      
+
       console.log(`✅ Employee created successfully: ${employee.id} - ${employee.firstName} ${employee.lastName}`);
-      
+
       res.status(201).json({
         ...employee,
         message: "Employee created successfully"
@@ -1243,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const activeStorage = getStorage();
-      
+
       // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
@@ -1293,11 +1293,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log(`🏢 Creating department: "${departmentData.name}" in organization: ${organization.name} by user: ${user.email}`);
-      
+
       const department = await activeStorage.createDepartment(departmentData);
-      
+
       console.log(`✅ Department created successfully: ${department.id} - "${department.name}"`);
-      
+
       res.status(201).json({
         ...department,
         message: "Department created successfully"
@@ -1582,7 +1582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const activeStorage = getStorage();
-      
+
       // Check user permissions
       const user = await activeStorage.getUser(userId);
       if (!user) {
@@ -1610,7 +1610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log(`🏢 Creating organization: "${organizationData.name}" by user: ${user.email}`);
-      
+
       const organization = await activeStorage.createOrganization(organizationData);
 
       console.log(`✅ Organization created successfully: ${organization.id} - "${organization.name}"`);
