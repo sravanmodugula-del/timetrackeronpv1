@@ -152,7 +152,10 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "Task created successfully",
       });
       form.reset();
+      // Invalidate both the specific project tasks and all tasks queries
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
@@ -189,11 +192,14 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         title: "Success",
         description: "Task updated successfully",
       });
+      // Invalidate both the specific project tasks and all tasks queries
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
+      if (isUnauthorizedError(error as Error) {
         toast({
           title: "Unauthorized",
           description: "You are logged out. Logging in again...",
