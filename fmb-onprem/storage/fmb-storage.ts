@@ -681,30 +681,32 @@ export class FmbStorage implements IStorage {
       request.input('userId', sql.NVarChar(255), userId);
 
       const result = await request.query(`
-        SELECT DISTINCT t.*, p.name as project_name
+        SELECT t.*, p.name as project_name, p.color as project_color
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
-        WHERE p.user_id = @userId OR t.created_by = @userId
+        WHERE p.user_id = @userId
         ORDER BY t.created_at DESC
       `);
 
-      return result.recordset.map(row => ({
-        id: row.id,
-        title: row.title || row.name,
-        name: row.name || row.title,
-        description: row.description,
-        project_id: row.project_id,
-        projectId: row.project_id,
-        status: row.status || 'active',
-        priority: row.priority || 'medium',
-        assigned_to: row.assigned_to,
-        created_by: row.created_by,
-        due_date: row.due_date,
-        estimated_hours: row.estimated_hours,
-        actual_hours: row.actual_hours,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        project_name: row.project_name
+      return result.recordset.map(task => ({
+        id: task.id,
+        project_id: task.project_id,
+        name: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        assigned_to: task.assigned_to,
+        created_by: task.created_by,
+        due_date: task.due_date,
+        estimated_hours: task.estimated_hours,
+        actual_hours: task.actual_hours,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        project: {
+          id: task.project_id,
+          name: task.project_name,
+          color: task.project_color
+        }
       }));
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error fetching all user tasks:', error);
@@ -732,38 +734,73 @@ export class FmbStorage implements IStorage {
   }
 
   async getTaskById(id: string): Promise<Task | null> {
-    const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [id]);
-    return result[0] || null;
+    try {
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), id);
+      const result = await request.query('SELECT * FROM tasks WHERE id = @id');
+
+      if (result.recordset.length === 0) {
+        return null;
+      }
+
+      const task = result.recordset[0];
+      return {
+        id: task.id,
+        project_id: task.project_id,
+        name: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        assigned_to: task.assigned_to,
+        created_by: task.created_by,
+        due_date: task.due_date,
+        estimated_hours: task.estimated_hours,
+        actual_hours: task.actual_hours,
+        created_at: task.created_at,
+        updated_at: task.updated_at
+      };
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching task by ID:', error);
+      throw error;
+    }
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
-    const insertData = {
-      id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      project_id: taskData.project_id,
-      title: taskData.title,
-      name: taskData.name || taskData.title,
-      description: taskData.description,
-      status: taskData.status || 'pending',
-      priority: taskData.priority || 'medium',
-      assigned_to: taskData.assigned_to,
-      created_by: taskData.created_by,
-      due_date: taskData.due_date,
-      estimated_hours: taskData.estimated_hours,
-    };
-    await this.execute(`
-      INSERT INTO tasks (id, project_id, title, name, description, status, priority,
-                        assigned_to, created_by, due_date, estimated_hours,
-                        created_at, updated_at)
-      VALUES (@param0, @param1, @param2, @param3, @param4, @param5, @param6,
-              @param7, @param8, @param9, @param10, GETDATE(), GETDATE())
-    `, [
-      insertData.id, insertData.project_id, insertData.title, insertData.name, insertData.description,
-      insertData.status, insertData.priority, insertData.assigned_to,
-      insertData.created_by, insertData.due_date, insertData.estimated_hours
-    ]);
+    try {
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const result = await this.execute('SELECT * FROM tasks WHERE id = @param0', [insertData.id]);
-    return result[0];
+      const request = this.pool!.request();
+      request.input('id', sql.NVarChar(255), taskId);
+      request.input('project_id', sql.NVarChar(255), taskData.projectId);
+      request.input('title', sql.NVarChar(500), taskData.name);
+      request.input('description', sql.NText, taskData.description);
+      request.input('status', sql.NVarChar(50), taskData.status || 'active');
+      request.input('priority', sql.NVarChar(50), taskData.priority || 'medium');
+      request.input('assigned_to', sql.NVarChar(255), taskData.assignedTo);
+      request.input('created_by', sql.NVarChar(255), taskData.createdBy);
+      request.input('due_date', sql.DateTime, taskData.dueDate ? new Date(taskData.dueDate) : null);
+      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimatedHours);
+      request.input('actual_hours', sql.Decimal(10, 2), taskData.actualHours || 0);
+
+      await request.query(`
+        INSERT INTO tasks (
+          id, project_id, title, description, status, priority, 
+          assigned_to, created_by, due_date, estimated_hours, actual_hours,
+          created_at, updated_at
+        ) VALUES (
+          @id, @project_id, @title, @description, @status, @priority,
+          @assigned_to, @created_by, @due_date, @estimated_hours, @actual_hours,
+          GETDATE(), GETDATE()
+        )
+      `);
+
+      const createdTask = await this.getTaskById(taskId);
+      console.log(`✅ [FMB-STORAGE] Task created successfully: ${taskId} - "${taskData.name}"`);
+      return createdTask as Task;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error creating task:', error);
+      throw error;
+    }
   }
 
   async updateTask(id: string, taskData: Partial<InsertTask>): Promise<Task> {
@@ -1390,13 +1427,37 @@ export class FmbStorage implements IStorage {
 
   async getTasksByProjectId(projectId: string): Promise<Task[]> {
     try {
-      const result = await this.pool.request()
-        .input('projectId', sql.NVarChar, projectId)
-        .query('SELECT * FROM tasks WHERE project_id = @projectId ORDER BY created_at DESC');
+      const request = this.pool!.request();
+      request.input('projectId', sql.NVarChar(255), projectId);
 
-      return result.recordset.map(this.mapTaskFromDb);
+      const result = await request.query(`
+        SELECT t.*, p.name as project_name
+        FROM tasks t
+        LEFT JOIN projects p ON t.project_id = p.id
+        WHERE t.project_id = @projectId
+        ORDER BY t.created_at DESC
+      `);
+
+      return result.recordset.map(task => ({
+        id: task.id,
+        project_id: task.project_id,
+        name: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        assigned_to: task.assigned_to,
+        created_by: task.created_by,
+        due_date: task.due_date,
+        estimated_hours: task.estimated_hours,
+        actual_hours: task.actual_hours,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        project: {
+          name: task.project_name
+        }
+      }));
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Failed to get tasks by project ID:', error);
+      console.error('🔴 [FMB-STORAGE] Error fetching tasks by project ID:', error);
       throw error;
     }
   }

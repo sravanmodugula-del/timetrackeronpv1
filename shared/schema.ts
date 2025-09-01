@@ -31,10 +31,9 @@ export const insertProjectSchema = z.object({
 
 export const insertTaskSchema = z.object({
   projectId: z.string().min(1, "Project ID is required"),
-  title: z.string().min(1, "Task title is required"),
-  name: z.string().optional(),
+  name: z.string().min(1, "Task name is required"),
   description: z.string().optional(),
-  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
+  status: z.enum(['active', 'completed', 'archived']).default('active'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignedTo: z.string().optional(),
   createdBy: z.string().optional(),
@@ -119,6 +118,13 @@ export interface InsertUser {
 }
 
 export interface UpsertUser extends InsertUser {}
+
+export interface UpsertOrganization extends InsertOrganization {}
+export interface UpsertEmployee extends InsertEmployee {}
+export interface UpsertDepartment extends InsertDepartment {}
+export interface UpsertProject extends InsertProject {}
+export interface UpsertTask extends InsertTask {}
+export interface UpsertTimeEntry extends InsertTimeEntry {}
 
 // =============================================================================
 // Organizations Table
@@ -234,8 +240,7 @@ export interface ProjectWithEmployees extends Project {
 export interface Task {
   id: string;
   project_id: string;
-  title: string;
-  name?: string;
+  name: string;
   description?: string;
   status: string;
   priority: string;
@@ -251,8 +256,7 @@ export interface Task {
 export interface InsertTask {
   id: string;
   project_id: string;
-  title: string;
-  name?: string;
+  name: string;
   description?: string;
   status?: string;
   priority?: string;

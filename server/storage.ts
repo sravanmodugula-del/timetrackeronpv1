@@ -28,7 +28,7 @@ import type {
   UpsertTimeEntry,
 } from "../shared/schema.js";
 
-import sql from 'mssql'; // Assuming mssql is used for database operations
+// Database operations are handled through the storage abstraction
 
 export interface IStorage {
   // User management

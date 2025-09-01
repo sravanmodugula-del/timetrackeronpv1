@@ -167,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:id', isAuthenticated, async (req: any, res: any) => {
     try {
       const userId = extractUserId(req.user);
       const { id } = req.params;
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects', isAuthenticated, async (req: any, res: any) => {
     try {
       const userId = extractUserId(req.user);
       const { name, description, organizationId, departmentId, status, budget, startDate, endDate, projectNumber } = req.body;
@@ -532,7 +532,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { projectId } = req.params;
       const activeStorage = getStorage();
-      const tasks = await activeStorage.getTasks(projectId, userId);
+      
+      // Verify user has access to the project
+      const project = await activeStorage.getProject(projectId, userId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const tasks = await activeStorage.getTasksByProjectId(projectId);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -591,7 +598,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const task = await activeStorage.createTask(taskData);
+      // Map projectId to project_id for database storage
+      const dbTaskData = {
+        ...taskData,
+        project_id: taskData.projectId,
+        created_by: userId
+      };
+      delete dbTaskData.projectId;
+
+      const task = await activeStorage.createTask(dbTaskData);
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof z.ZodError) {
