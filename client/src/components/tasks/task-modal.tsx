@@ -232,6 +232,24 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     }
   };
 
+  // Force submission handler
+  const handleForceSubmit = () => {
+    console.log("🔥 FORCE SUBMIT TRIGGERED");
+    const currentValues = form.getValues();
+    console.log("🔥 Current form values:", currentValues);
+    
+    // Force validation first
+    form.trigger().then((isValid) => {
+      console.log("🔥 Force validation result:", isValid);
+      if (isValid) {
+        console.log("🔥 Calling onSubmit directly");
+        onSubmit(currentValues);
+      } else {
+        console.log("🔥 Force validation failed:", form.formState.errors);
+      }
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[525px]">
@@ -331,24 +349,34 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={createTask.isPending || updateTask.isPending}
-                onClick={(e) => {
-                  console.log("🖱️ Submit button clicked - Debug info:");
-                  console.log("📊 Current form state:", {
-                    isValid: form.formState.isValid,
-                    errors: form.formState.errors,
-                    values: form.getValues(),
-                    isDirty: form.formState.isDirty
-                  });
-                  console.log("🎯 Button event:", e.type);
-                  
-                  // Don't prevent default here - let the form handle it
-                }}
-              >
-                {createTask.isPending || updateTask.isPending ? "Saving..." : (isEditing ? "Update Task" : "Create Task")}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={createTask.isPending || updateTask.isPending}
+                  onClick={(e) => {
+                    console.log("🖱️ Submit button clicked - Debug info:");
+                    console.log("📊 Current form state:", {
+                      isValid: form.formState.isValid,
+                      errors: form.formState.errors,
+                      values: form.getValues(),
+                      isDirty: form.formState.isDirty
+                    });
+                    console.log("🎯 Button event:", e.type);
+                    
+                    // Don't prevent default here - let the form handle it
+                  }}
+                >
+                  {createTask.isPending || updateTask.isPending ? "Saving..." : (isEditing ? "Update Task" : "Create Task")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleForceSubmit}
+                  disabled={createTask.isPending || updateTask.isPending}
+                >
+                  Force Submit
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </Form>
