@@ -117,19 +117,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
-
-            <FormField
-              control={form.control}
-              name="project_id"
-              render={({ field }) => (
-                <FormItem style={{ display: 'none' }}>
-                  <FormControl>
-                    <Input type="hidden" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
           title: "Unauthorized",
           description: "You are logged out. Logging in again...",
           variant: "destructive",
@@ -161,8 +148,8 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         <DialogHeader>
           <DialogTitle>{isEditing ? "Edit Task" : "Create New Task"}</DialogTitle>
           <DialogDescription>
-            {isEditing 
-              ? "Update the task details below." 
+            {isEditing
+              ? "Update the task details below."
               : "Fill in the details to create a new task for this project."
             }
           </DialogDescription>
@@ -172,14 +159,26 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
+              name="project_id"
+              render={({ field }) => (
+                <FormItem style={{ display: 'none' }}>
+                  <FormControl>
+                    <Input type="hidden" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Task Name</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter task name" 
-                      {...field} 
+                    <Input
+                      placeholder="Enter task name"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -194,7 +193,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Enter task description (optional)"
                       rows={4}
                       {...field}
@@ -231,15 +230,15 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
             />
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={onClose}
                 disabled={createTask.isPending || updateTask.isPending}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 disabled={createTask.isPending || updateTask.isPending}
               >
