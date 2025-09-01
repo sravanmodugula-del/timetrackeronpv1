@@ -68,8 +68,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         name: data.name,
         description: data.description || "",
         status: data.status,
-        project_id: data.project_id
+        projectId: data.project_id
       };
+      console.log("🔧 Creating task with payload:", payload);
       await apiRequest("/api/tasks", "POST", payload);
     },
     onSuccess: () => {

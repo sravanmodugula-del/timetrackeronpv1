@@ -134,6 +134,15 @@ export default function Tasks() {
   };
 
   const handleCreateTask = () => {
+    console.log("🎯 Create task button clicked, selectedProject:", selectedProject);
+    if (selectedProject === "all") {
+      toast({
+        title: "Select a Project",
+        description: "Please select a specific project to create a task",
+        variant: "destructive",
+      });
+      return;
+    }
     setEditingTask(null);
     setIsTaskModalOpen(true);
   };
@@ -206,6 +215,7 @@ export default function Tasks() {
                   <Button 
                     onClick={handleCreateTask}
                     disabled={selectedProject === "all"}
+                    title={selectedProject === "all" ? "Please select a project first" : "Create a new task"}
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Task
