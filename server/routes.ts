@@ -435,18 +435,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
+      
+      console.log('🗑️ [API] Delete project request:', { id, userId });
+      
       const deleted = await activeStorage.deleteProject(id, userId);
 
       if (!deleted) {
+        console.log('❌ [API] Project not found for deletion:', { id, userId });
         return res.status(404).json({ message: "Project not found" });
       }
 
+      console.log('✅ [API] Project deleted successfully:', { id });
       res.status(204).send();
     } catch (error) {
       if (error instanceof Error && error.message.includes('Insufficient permissions')) {
         return res.status(403).json({ message: error.message });
       }
-      console.error("Error deleting project:", error);
+      console.error("❌ [API] Error deleting project:", error);
       res.status(500).json({ message: "Failed to delete project" });
     }
   });
@@ -581,34 +586,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
+      const { name, description, status, project_id } = req.body;
+
+      console.log("📝 Task Creation Request:", { name, description, status, project_id, userId });
+
+      // Validate required fields
+      if (!name || !project_id) {
+        return res.status(400).json({
+          message: "Name and project_id are required fields",
+          received: { name: !!name, project_id: !!project_id }
+        });
+      }
+
       const activeStorage = getStorage();
-      const user = await activeStorage.getUser(userId);
-      const userRole = user?.role || 'employee';
-
-      // Only project managers and admins can create tasks
-      if (!['admin', 'project_manager'].includes(userRole)) {
-        return res.status(403).json({ message: "Insufficient permissions to create tasks" });
-      }
-
-      const taskData = insertTaskSchema.parse(req.body);
-
-      // Verify project exists (project access is now enterprise-wide)
-      const project = await activeStorage.getProject(taskData.projectId, userId);
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-
-      // Map projectId to project_id for database storage
-      const dbTaskData = {
-        ...taskData,
-        project_id: taskData.projectId,
-        created_by: userId
+      const taskData = {
+        name: name.trim(),
+        description: description?.trim() || '',
+        status: status || 'active',
+        project_id: project_id.trim()
       };
-      delete dbTaskData.projectId;
 
-      const task = await activeStorage.createTask(dbTaskData);
+      // Verify project exists
+      const project = await activeStorage.getProject(taskData.project_id, userId);
+      if (!project) {
+        return res.status(404).json({ 
+          message: "Project not found",
+          projectId: taskData.project_id
+        });
+      }
+
+      const task = await activeStorage.createTask(taskData, userId);
+      console.log("✅ Task created successfully:", task.id);
       res.status(201).json(task);
     } catch (error) {
+      console.error("❌ Task creation error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid task data", errors: error.errors });
       }
@@ -652,15 +663,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      const deleted = await activeStorage.deleteTask(id, userId);
-
-      if (!deleted) {
+      
+      console.log('🗑️ [API] Delete task request:', { id, userId });
+      
+      // Check if task exists first
+      const task = await activeStorage.getTask(id, userId);
+      if (!task) {
+        console.log('❌ [API] Task not found for deletion:', { id, userId });
         return res.status(404).json({ message: "Task not found" });
       }
 
+      await activeStorage.deleteTask(id, userId);
+      console.log('✅ [API] Task deleted successfully:', { id });
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting task:", error);
+      console.error("❌ [API] Error deleting task:", error);
       res.status(500).json({ message: "Failed to delete task" });
     }
   });
@@ -808,15 +825,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      const deleted = await activeStorage.deleteTimeEntry(id, userId);
-
-      if (!deleted) {
+      
+      console.log('🗑️ [API] Delete time entry request:', { id, userId });
+      
+      // Check if time entry exists first
+      const timeEntry = await activeStorage.getTimeEntry(id, userId);
+      if (!timeEntry) {
+        console.log('❌ [API] Time entry not found for deletion:', { id, userId });
         return res.status(404).json({ message: "Time entry not found" });
       }
 
+      await activeStorage.deleteTimeEntry(id, userId);
+      console.log('✅ [API] Time entry deleted successfully:', { id });
       res.status(204).send();
     } catch (error) {
-      console.error("Error deleting time entry:", error);
+      console.error("❌ [API] Error deleting time entry:", error);
       res.status(500).json({ message: "Failed to delete time entry" });
     }
   });
@@ -1374,6 +1397,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await activeStorage.getUser(userId);
       const userRole = user?.role || 'employee';
 
+      console.log('🗑️ [API] Delete department request:', { id, userId, userRole });
+
       // Only system administrators can delete departments
       if (userRole !== 'admin') {
         return res.status(403).json({ message: "Insufficient permissions to delete departments" });
@@ -1382,12 +1407,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await activeStorage.deleteDepartment(id, userId);
 
       if (!success) {
+        console.log('❌ [API] Department not found for deletion:', { id, userId });
         return res.status(404).json({ message: "Department not found" });
       }
 
+      console.log('✅ [API] Department deleted successfully:', { id });
       res.json({ message: "Department deleted successfully" });
     } catch (error) {
-      console.error("Error deleting department:", error);
+      console.error("❌ [API] Error deleting department:", error);
       res.status(500).json({ message: "Failed to delete department" });
     }
   });
@@ -1684,6 +1711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await activeStorage.getUser(userId);
       const userRole = user?.role || 'employee';
 
+      console.log('🗑️ [API] Delete organization request:', { id, userId, userRole });
+
       // Only system administrators can delete organizations
       if (userRole !== 'admin') {
         return res.status(403).json({ message: "Insufficient permissions to delete organizations" });
@@ -1692,12 +1721,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await activeStorage.deleteOrganization(id, userId);
 
       if (!success) {
+        console.log('❌ [API] Organization not found for deletion:', { id, userId });
         return res.status(404).json({ message: "Organization not found" });
       }
 
+      console.log('✅ [API] Organization deleted successfully:', { id });
       res.json({ message: "Organization deleted successfully" });
     } catch (error) {
-      console.error("Error deleting organization:", error);
+      console.error("❌ [API] Error deleting organization:", error);
       res.status(500).json({ message: "Failed to delete organization" });
     }
   });

@@ -48,6 +48,15 @@ export class FmbStorage implements IStorage {
     }
   }
 
+  // Add logging helper method
+  private logInfo(message: string, data?: any) {
+    console.log(`🗄️ [FMB-STORAGE] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+  }
+
+  private logError(message: string, error?: any) {
+    console.error(`🔴 [FMB-STORAGE] ${message}`, error);
+  }
+
   async connect(): Promise<boolean> {
     try {
       console.log('🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...');
@@ -697,11 +706,26 @@ export class FmbStorage implements IStorage {
     return await this.getProjectById(id) as Project;
   }
 
-  async deleteProject(id: string): Promise<void> {
+  async deleteProject(id: string, userId?: string): Promise<boolean> {
     try {
+      console.log('🗑️ [FMB-STORAGE] Deleting project:', { id, userId });
+
+      // First check if project exists and user has access
+      const project = await this.getProject(id, userId);
+      if (!project) {
+        console.log('❌ [FMB-STORAGE] Project not found for deletion:', id);
+        return false;
+      }
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM projects WHERE id = @id');
+      
+      const result = await request.query('DELETE FROM projects WHERE id = @id');
+      
+      const deleted = result.rowsAffected[0] > 0;
+      console.log('✅ [FMB-STORAGE] Project deleted:', { id, deleted });
+      
+      return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting project:', error);
       throw error;
@@ -828,22 +852,42 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async createTask(taskData: InsertTask): Promise<Task> {
+  async createTask(taskData: InsertTask | any, userId?: string): Promise<Task> {
     try {
       const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+      console.log('📝 [FMB-STORAGE] Creating task with data:', {
+        taskId,
+        taskData,
+        userId,
+        project_id: taskData.project_id || taskData.projectId
+      });
+
+      // Handle both project_id and projectId formats
+      const projectId = taskData.project_id || taskData.projectId;
+      if (!projectId) {
+        throw new Error('project_id is required for task creation');
+      }
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), taskId);
-      request.input('project_id', sql.NVarChar(255), taskData.projectId);
+      request.input('project_id', sql.NVarChar(255), projectId);
       request.input('title', sql.NVarChar(500), taskData.name);
-      request.input('description', sql.NText, taskData.description);
+      request.input('description', sql.NText, taskData.description || '');
       request.input('status', sql.NVarChar(50), taskData.status || 'active');
       request.input('priority', sql.NVarChar(50), taskData.priority || 'medium');
-      request.input('assigned_to', sql.NVarChar(255), taskData.assignedTo);
-      request.input('created_by', sql.NVarChar(255), taskData.createdBy);
+      request.input('assigned_to', sql.NVarChar(255), taskData.assignedTo || null);
+      request.input('created_by', sql.NVarChar(255), userId || taskData.createdBy || null);
       request.input('due_date', sql.DateTime, taskData.dueDate ? new Date(taskData.dueDate) : null);
-      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimatedHours);
+      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimatedHours || null);
       request.input('actual_hours', sql.Decimal(10, 2), taskData.actualHours || 0);
+
+      console.log('📝 [FMB-STORAGE] Task SQL parameters bound:', {
+        id: taskId,
+        project_id: projectId,
+        title: taskData.name,
+        status: taskData.status || 'active'
+      });
 
       await request.query(`
         INSERT INTO tasks (
@@ -861,7 +905,11 @@ export class FmbStorage implements IStorage {
       console.log(`✅ [FMB-STORAGE] Task created successfully: ${taskId} - "${taskData.name}"`);
       return createdTask as Task;
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error creating task:', error);
+      console.error('🔴 [FMB-STORAGE] Error creating task:', {
+        error: error.message,
+        taskData,
+        userId
+      });
       throw error;
     }
   }
@@ -894,11 +942,19 @@ export class FmbStorage implements IStorage {
     return await this.getTaskById(id) as Task;
   }
 
-  async deleteTask(id: string): Promise<void> {
+  async deleteTask(id: string, userId?: string): Promise<boolean> {
     try {
+      console.log('🗑️ [FMB-STORAGE] Deleting task:', { id, userId });
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM tasks WHERE id = @id');
+      
+      const result = await request.query('DELETE FROM tasks WHERE id = @id');
+      
+      const deleted = result.rowsAffected[0] > 0;
+      console.log('✅ [FMB-STORAGE] Task deleted:', { id, deleted });
+      
+      return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting task:', error);
       throw error;
@@ -990,8 +1046,8 @@ export class FmbStorage implements IStorage {
         } : undefined
       }));
     } catch (error) {
-      this.logError('EXECUTE', `Failed to fetch time entries: ${error}`);
-      throw new Error('Failed to fetch time entries');
+      console.error('🔴 [FMB-STORAGE] Error fetching time entries:', error);
+      throw error;
     }
   }
 
@@ -1098,11 +1154,19 @@ export class FmbStorage implements IStorage {
     return await this.getTimeEntryById(id) as TimeEntry;
   }
 
-  async deleteTimeEntry(id: string): Promise<void> {
+  async deleteTimeEntry(id: string, userId?: string): Promise<boolean> {
     try {
+      console.log('🗑️ [FMB-STORAGE] Deleting time entry:', { id, userId });
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM time_entries WHERE id = @id');
+      
+      const result = await request.query('DELETE FROM time_entries WHERE id = @id');
+      
+      const deleted = result.rowsAffected[0] > 0;
+      console.log('✅ [FMB-STORAGE] Time entry deleted:', { id, deleted });
+      
+      return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting time entry:', error);
       throw error;
@@ -1262,11 +1326,26 @@ export class FmbStorage implements IStorage {
     return await this.getDepartmentById(id) as Department;
   }
 
-  async deleteDepartment(id: string): Promise<void> {
+  async deleteDepartment(id: string, userId?: string): Promise<boolean> {
     try {
+      console.log('🗑️ [FMB-STORAGE] Deleting department:', { id, userId });
+
+      // First check if department exists
+      const department = await this.getDepartmentById(id);
+      if (!department) {
+        console.log('❌ [FMB-STORAGE] Department not found for deletion:', id);
+        return false;
+      }
+
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), id);
-      await request.query('DELETE FROM departments WHERE id = @id');
+      
+      const result = await request.query('DELETE FROM departments WHERE id = @id');
+      
+      const deleted = result.rowsAffected[0] > 0;
+      console.log('✅ [FMB-STORAGE] Department deleted:', { id, deleted });
+      
+      return deleted;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error deleting department:', error);
       throw error;
@@ -1468,17 +1547,20 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async deleteOrganization(id: string): Promise<void> {
+  async deleteOrganization(id: string, userId?: string): Promise<boolean> {
     try {
       // Input validation
       if (!id || typeof id !== 'string') {
         throw new Error('Valid organization ID is required');
       }
 
+      console.log('🗑️ [FMB-STORAGE] Deleting organization:', { id, userId });
+
       // Check if organization exists
       const existingOrg = await this.getOrganizationById(id);
       if (!existingOrg) {
-        throw new Error('Organization not found');
+        console.log('❌ [FMB-STORAGE] Organization not found for deletion:', id);
+        return false;
       }
 
       this.storageLog('DELETE_ORG', 'Deleting organization', { id, name: existingOrg.name });
@@ -1510,7 +1592,9 @@ export class FmbStorage implements IStorage {
         const result = await transactionRequest.query('DELETE FROM organizations WHERE id = @id');
 
         if (result.rowsAffected[0] === 0) {
-          throw new Error('Organization not found or already deleted');
+          await transaction.rollback();
+          console.log('❌ [FMB-STORAGE] Organization not found or already deleted:', id);
+          return false;
         }
 
         await transaction.commit();
@@ -1519,6 +1603,8 @@ export class FmbStorage implements IStorage {
           id,
           name: existingOrg.name
         });
+        
+        return true;
       } catch (transactionError) {
         await transaction.rollback();
         throw transactionError;
@@ -1528,8 +1614,25 @@ export class FmbStorage implements IStorage {
         id,
         error: error.message
       });
-      throw new Error(`Failed to delete organization: ${error.message}`);
+      console.error('🔴 [FMB-STORAGE] Delete organization error:', error);
+      throw error;
     }
+  }
+
+  // Helper method to execute queries with proper parameter binding
+  private async executeQuery(query: string, params: Array<{ name: string; type: any; value: any }>): Promise<any> {
+    if (!this.pool) {
+      throw new Error('Database not connected. Call connect() first.');
+    }
+
+    const request = this.pool.request();
+    
+    // Bind parameters
+    params.forEach(param => {
+      request.input(param.name, param.type, param.value);
+    });
+
+    return await request.query(query);
   }
 
   // Helper method to get appropriate SQL type for different fields
