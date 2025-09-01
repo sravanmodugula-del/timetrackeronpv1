@@ -64,14 +64,27 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   // Create task mutation
   const createTask = useMutation({
     mutationFn: async (data: TaskFormData) => {
+      console.log("📝 Task form data received:", data);
+
+      // Validate required fields
+      if (!data.name?.trim()) {
+        throw new Error("Task name is required");
+      }
+      if (!data.project_id?.trim()) {
+        throw new Error("Project ID is required");
+      }
+
       const payload = {
-        name: data.name,
-        description: data.description || "",
-        status: data.status,
-        projectId: data.project_id
+        name: data.name.trim(),
+        description: data.description?.trim() || "",
+        status: data.status || "active",
+        projectId: data.project_id.trim()
       };
+
       console.log("🔧 Creating task with payload:", payload);
-      await apiRequest("/api/tasks", "POST", payload);
+      const response = await apiRequest("/api/tasks", "POST", payload);
+      console.log("✅ Task creation response:", response);
+      return response;
     },
     onSuccess: () => {
       toast({
@@ -83,6 +96,8 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       onSuccess();
     },
     onError: (error) => {
+      console.error("❌ Task creation error:", error);
+
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -94,9 +109,11 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         }, 500);
         return;
       }
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
         title: "Error",
-        description: "Failed to create task",
+        description: `Failed to create task: ${errorMessage}`,
         variant: "destructive",
       });
     },
@@ -136,10 +153,22 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   });
 
   const onSubmit = (data: TaskFormData) => {
-    if (isEditing) {
-      updateTask.mutate(data);
-    } else {
-      createTask.mutate(data);
+    console.log("🚀 Form submitted with data:", data);
+    console.log("📊 Form validation state:", {
+      isEditing,
+      hasProjectId: !!data.project_id,
+      hasName: !!data.name,
+      formValues: form.getValues()
+    });
+
+    try {
+      if (isEditing) {
+        updateTask.mutate(data);
+      } else {
+        createTask.mutate(data);
+      }
+    } catch (error) {
+      console.error("💥 Error in onSubmit:", error);
     }
   };
 

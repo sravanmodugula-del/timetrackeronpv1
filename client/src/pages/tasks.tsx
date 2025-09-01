@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,15 +41,38 @@ export default function Tasks() {
   }, [isAuthenticated, isLoading, toast]);
 
   // Fetch projects
-  const { data: projects } = useQuery<Project[]>({
+  const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
+    retry: 3,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Log projects data for debugging
+  React.useEffect(() => {
+    console.log("📊 Projects data updated:", {
+      projects: projects?.length || 0,
+      projectsLoading,
+      projectsError: projectsError?.message,
+      selectedProject
+    });
+  }, [projects, projectsLoading, projectsError, selectedProject]);
 
   // Fetch tasks for selected project
   const { data: tasks, isLoading: tasksLoading, refetch } = useQuery<Task[]>({
-    queryKey: ["/api/projects", selectedProject, "tasks"],
-    enabled: isAuthenticated && selectedProject !== "all",
+    queryKey: ["/api/tasks", { projectId: selectedProject }],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        projectId: selectedProject,
+      });
+      const response = await fetch(`/api/tasks?${params}`);
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: isAuthenticated,
   });
 
   // Delete task mutation
@@ -134,7 +157,13 @@ export default function Tasks() {
   };
 
   const handleCreateTask = () => {
-    console.log("🎯 Create task button clicked, selectedProject:", selectedProject);
+    console.log("🎯 Create task button clicked", {
+      selectedProject,
+      canCreateTasks,
+      projects: projects?.length || 0,
+      projectsData: projects
+    });
+
     if (selectedProject === "all") {
       toast({
         title: "Select a Project",
@@ -143,6 +172,27 @@ export default function Tasks() {
       });
       return;
     }
+
+    if (!projects || projects.length === 0) {
+      toast({
+        title: "No Projects Available",
+        description: "Please create a project first before adding tasks",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedProjectData = projects.find(p => p.id === selectedProject);
+    if (!selectedProjectData) {
+      toast({
+        title: "Invalid Project",
+        description: "Selected project not found. Please refresh and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("✅ Opening task modal for project:", selectedProjectData);
     setEditingTask(null);
     setIsTaskModalOpen(true);
   };
@@ -174,7 +224,7 @@ export default function Tasks() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Tasks</h2>
@@ -254,7 +304,7 @@ export default function Tasks() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tasks.map((task) => (
+            {(tasks || []).map((task) => (
               <Card key={task.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -277,13 +327,13 @@ export default function Tasks() {
                       {task.status}
                     </Badge>
                   </div>
-                  
+
                   {task.description && (
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                       {task.description}
                     </p>
                   )}
-                  
+
                   <div className="flex items-center space-x-2">
                     {canEditTasks && (
                       <Button
@@ -314,16 +364,18 @@ export default function Tasks() {
       </main>
 
       {/* Task Modal */}
-      {isTaskModalOpen && (
+      {isTaskModalOpen && selectedProject && selectedProject !== "all" && (
         <TaskModal
           task={editingTask}
           projectId={selectedProject}
           isOpen={isTaskModalOpen}
           onClose={() => {
+            console.log("🔒 Closing task modal");
             setIsTaskModalOpen(false);
             setEditingTask(null);
           }}
           onSuccess={() => {
+            console.log("✅ Task operation successful, refreshing data");
             refetch();
             setIsTaskModalOpen(false);
             setEditingTask(null);
