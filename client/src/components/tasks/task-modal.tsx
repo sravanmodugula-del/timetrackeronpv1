@@ -82,7 +82,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       };
 
       console.log("🔧 Creating task with payload:", payload);
-      const response = await apiRequest("/api/tasks", "POST", payload);
+      const response = await apiRequest("/api/projects/" + payload.projectId + "/tasks", "POST", payload);
       console.log("✅ Task creation response:", response);
       return response;
     },
@@ -92,7 +92,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "Task created successfully",
       });
       form.reset();
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
       onSuccess();
     },
     onError: (error) => {
@@ -129,7 +129,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         title: "Success",
         description: "Task updated successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
       onSuccess();
     },
     onError: (error) => {

@@ -46,6 +46,7 @@ export default function Tasks() {
     enabled: isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => Array.isArray(data) ? data : [],
   });
 
   // Log projects data for debugging
@@ -243,9 +244,15 @@ export default function Tasks() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Projects</SelectItem>
-                    {projects?.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                    {Array.isArray(projects) && projects.filter(project => 
+                      project?.id && 
+                      typeof project.id === 'string' && 
+                      project.id.trim() !== '' &&
+                      project.name &&
+                      project.name.trim() !== ''
+                    ).map(project => (
+                      <SelectItem key={project.id} value={project.id || 'unknown'}>
+                        {project.name || 'Unnamed Project'}
                       </SelectItem>
                     ))}
                   </SelectContent>

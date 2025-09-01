@@ -41,6 +41,9 @@ export default function TimeLog() {
   const { data: projects } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
+    retry: 3,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    select: (data) => Array.isArray(data) ? data : [],
   });
 
   // Calculate date filters
@@ -96,9 +99,11 @@ export default function TimeLog() {
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     },
     enabled: isAuthenticated,
+    select: (data) => Array.isArray(data) ? data : [],
   });
 
   const handleDeleteEntry = async (entryId: string) => {
@@ -283,7 +288,7 @@ export default function TimeLog() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {timeEntries.map((entry) => (
+                    {(timeEntries || []).map((entry) => (
                       <tr key={entry.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(entry.date)}
