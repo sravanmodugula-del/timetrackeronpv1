@@ -65,7 +65,7 @@ async function getUserById(userId: string) {
       }
     }
     return user;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error getting user ${userId}:`, error);
     return undefined;
   }
@@ -273,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate optional organization/department references if provided
       if (organizationId) {
-        const organization = await activeStorage.getOrganization(organizationId, userId);
+        const organization = await activeStorage.getOrganizationById(organizationId);
         if (!organization) {
           return res.status(404).json({
             message: "Organization not found or access denied",
@@ -1246,7 +1246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify organization exists and user has access
-      const organization = await activeStorage.getOrganization(organizationId, userId);
+      const organization = await activeStorage.getOrganizationById(organizationId);
       if (!organization) {
         return res.status(404).json({
           message: "Organization not found or access denied",
@@ -1268,10 +1268,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create department
       const departmentData = {
         name: name.trim(),
-        organizationId,
+        organization_id: organizationId,
         description: description?.trim() || null,
-        managerId: managerId || null,
-        userId
+        manager_id: managerId || null,
+        user_id: userId
       };
 
       console.log(`🏢 Creating department: "${departmentData.name}" in organization: ${organization.name} by user: ${user.email}`);

@@ -207,6 +207,14 @@ class StorageImplementation implements IStorage {
     return null;
   }
 
+  async getOrganizationsByUserId(userId: string): Promise<Organization[]> {
+    const db = await this.getDb();
+    if (typeof db.getOrganizationsByUserId === 'function') {
+      return await db.getOrganizationsByUserId(userId);
+    }
+    return [];
+  }
+
   async createOrganization(org: InsertOrganization): Promise<Organization> {
     const db = await this.getDb();
     if (typeof db.createOrganization === 'function') {
@@ -647,7 +655,7 @@ class StorageImplementation implements IStorage {
         // Handle different export patterns more safely
         return dbModule.default || dbModule;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [STORAGE] Failed to get database connection:', error);
       throw new Error(`Database connection failed: ${error?.message || 'Unknown error'}`);
     }
