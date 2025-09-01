@@ -37,11 +37,10 @@ interface TaskModalProps {
   onSuccess: () => void;
 }
 
-const taskFormSchema = insertTaskSchema.extend({
+const taskFormSchema = z.object({
   name: z.string().min(1, "Task name is required"),
   status: z.enum(["active", "completed", "archived"]).default("active"),
-  description: z.string().nullable().optional().transform(val => val || ""),
-  project_id: z.string().min(1, "Project ID is required"),
+  description: z.string().optional().transform(val => val || ""),
 });
 
 type TaskFormData = z.infer<typeof taskFormSchema>;
@@ -71,7 +70,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       // Reset form when opening for new task creation
       console.log("🔄 Resetting form for new task creation");
       form.reset({
-        project_id: projectId,
         name: "",
         description: "",
         status: "active",
@@ -85,7 +83,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
-      project_id: projectId,
       name: "",
       description: "",
       status: "active",
@@ -98,14 +95,12 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     if (isOpen) {
       if (isEditing && task) {
         form.reset({
-          project_id: projectId,
           name: task.name || "",
           description: task.description || "",
           status: (task.status as "active" | "completed" | "archived") || "active",
         });
       } else {
         form.reset({
-          project_id: projectId,
           name: "",
           description: "",
           status: "active",
@@ -125,7 +120,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       if (!data.name?.trim()) {
         throw new Error("Task name is required");
       }
-      if (!data.project_id?.trim()) {
+      if (!projectId?.trim()) {
         throw new Error("Project ID is required");
       }
 
@@ -137,13 +132,13 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
 
       console.log("🔧 Creating task with payload:", payload);
       console.log("🔧 API Request details:", {
-        endpoint: `/api/projects/${data.project_id.trim()}/tasks`,
+        endpoint: `/api/projects/${projectId}/tasks`,
         method: "POST",
         payload: payload
       });
       
       try {
-        const response = await apiRequest(`/api/projects/${data.project_id.trim()}/tasks`, "POST", payload);
+        const response = await apiRequest(`/api/projects/${projectId}/tasks`, "POST", payload);
         console.log("✅ Task creation response:", response);
         return response;
       } catch (error) {
@@ -218,12 +213,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   });
 
   const onSubmit = (data: TaskFormData) => {
-    console.log("🚀 Task form submitted:", { isEditing, data });
-
-    // Ensure project_id is set correctly
-    if (!data.project_id) {
-      data.project_id = projectId;
-    }
+    console.log("🚀 Task form submitted:", { isEditing, data, projectId });
 
     if (isEditing) {
       updateTask.mutate(data);
@@ -249,18 +239,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="project_id"
-              render={({ field }) => (
-                <FormItem style={{ display: 'none' }}>
-                  <FormControl>
-                    <Input type="hidden" {...field} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="name"
