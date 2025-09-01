@@ -79,6 +79,14 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     mode: "onChange",
   });
 
+  // Debug form state changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      console.log("📝 Form field changed:", { name, type, value, formState: form.formState });
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   // Create task mutation
   const createTask = useMutation({
     mutationFn: async (data: TaskFormData) => {
@@ -174,18 +182,37 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   const onSubmit = (data: TaskFormData) => {
     console.log("🚀 FORM SUBMITTED - Starting debug trace");
     console.log("📝 Form data received:", data);
-    console.log("📊 Form validation state:", {
+    console.log("📊 Complete form state:", {
       isEditing,
+      projectId,
       hasProjectId: !!data.project_id,
       hasName: !!data.name,
       formValues: form.getValues(),
       formState: {
         isValid: form.formState.isValid,
+        isValidating: form.formState.isValidating,
+        isSubmitting: form.formState.isSubmitting,
         errors: form.formState.errors,
-        isDirty: form.formState.isDirty
+        isDirty: form.formState.isDirty,
+        dirtyFields: form.formState.dirtyFields,
+        touchedFields: form.formState.touchedFields
       }
     });
 
+    // Manual validation check
+    if (!data.name || data.name.trim() === "") {
+      console.error("❌ Validation failed: Name is required");
+      form.setError("name", { message: "Task name is required" });
+      return;
+    }
+
+    if (!data.project_id || data.project_id.trim() === "") {
+      console.error("❌ Validation failed: Project ID is required");
+      form.setError("project_id", { message: "Project ID is required" });
+      return;
+    }
+
+    console.log("✅ Manual validation passed");
     console.log("🎯 Mutation selection:", {
       isEditing,
       willCallUpdateTask: isEditing,
@@ -296,7 +323,10 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
+                onClick={() => {
+                  console.log("🔙 Cancel button clicked");
+                  onClose();
+                }}
                 disabled={createTask.isPending || updateTask.isPending}
               >
                 Cancel
@@ -304,6 +334,18 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
               <Button
                 type="submit"
                 disabled={createTask.isPending || updateTask.isPending}
+                onClick={(e) => {
+                  console.log("🖱️ Submit button clicked - Debug info:");
+                  console.log("📊 Current form state:", {
+                    isValid: form.formState.isValid,
+                    errors: form.formState.errors,
+                    values: form.getValues(),
+                    isDirty: form.formState.isDirty
+                  });
+                  console.log("🎯 Button event:", e.type);
+                  
+                  // Don't prevent default here - let the form handle it
+                }}
               >
                 {createTask.isPending || updateTask.isPending ? "Saving..." : (isEditing ? "Update Task" : "Create Task")}
               </Button>
