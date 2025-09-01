@@ -28,6 +28,7 @@ import type {
 export class FmbStorage implements IStorage {
   private config: any;
   private pool: sql.ConnectionPool | null = null;
+  private userId: string | null = null; // Added to store the current user ID for context
 
   constructor(config: any) {
     this.config = config;
@@ -408,7 +409,7 @@ export class FmbStorage implements IStorage {
       console.log(`🎯 [CHECKPOINT-8-${requestId}] Checking for duplicate organization names...`);
       try {
         const duplicateCheck = await this.execute(
-          'SELECT id, name FROM organizations WHERE name = @param0 AND user_id = @param1', 
+          'SELECT id, name FROM organizations WHERE name = @param0 AND user_id = @param1',
           [sanitizedName, sanitizedUserId]
         );
         if (duplicateCheck.length > 0) {
@@ -554,20 +555,53 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Methods
-  async getProjects(userId?: string): Promise<Project[]> {
-    if (userId) {
-      const result = await this.getProjectsByUserId(userId);
-      return result;
+  async getProjects(): Promise<Project[]> {
+    try {
+      const result = await this.pool.request()
+        .input('user_id', this.userId)
+        .query(`
+          SELECT p.*, o.name as organization_name, d.name as department_name
+          FROM projects p
+          LEFT JOIN organizations o ON p.organization_id = o.id
+          LEFT JOIN departments d ON p.department_id = d.id
+          WHERE p.user_id = @user_id OR p.is_enterprise_wide = 1
+          ORDER BY p.created_at DESC
+        `);
+
+      return result.recordset.map(this.mapProjectFromDb);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching projects:', error);
+      throw error;
     }
-    const result = await this.execute('SELECT * FROM projects ORDER BY created_at DESC');
-    return result;
   }
 
+  async getProject(id: string, userId?: string): Promise<Project | null> {
+    try {
+      const result = await this.pool.request()
+        .input('project_id', id)
+        .input('user_id', userId || this.userId)
+        .query(`
+          SELECT p.*, o.name as organization_name, d.name as department_name
+          FROM projects p
+          LEFT JOIN organizations o ON p.organization_id = o.id
+          LEFT JOIN departments d ON p.department_id = d.id
+          WHERE p.id = @project_id
+            AND (p.user_id = @user_id OR p.is_enterprise_wide = 1)
+        `);
 
+      if (result.recordset.length === 0) {
+        return null;
+      }
+
+      return this.mapProjectFromDb(result.recordset[0]);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching project:', error);
+      throw error;
+    }
+  }
 
   async getProjectById(id: string): Promise<Project | null> {
-    const result = await this.execute('SELECT * FROM projects WHERE id = @param0', [id]);
-    return result[0] || null;
+    return this.getProject(id);
   }
 
   async getProjectsByUserId(userId: string): Promise<ProjectWithEmployees[]> {
@@ -675,62 +709,91 @@ export class FmbStorage implements IStorage {
   }
 
   // Task Methods
-  async getAllUserTasks(userId: string): Promise<Task[]> {
+  async getTasks(): Promise<Task[]> {
     try {
-      const request = this.pool!.request();
-      request.input('userId', sql.NVarChar(255), userId);
+      const result = await this.pool.request()
+        .input('user_id', this.userId)
+        .query(`
+          SELECT t.*, p.name as project_name
+          FROM tasks t
+          INNER JOIN projects p ON t.project_id = p.id
+          WHERE p.user_id = @user_id OR p.is_enterprise_wide = 1
+          ORDER BY t.created_at DESC
+        `);
 
-      const result = await request.query(`
-        SELECT t.*, p.name as project_name, p.color as project_color
-        FROM tasks t
-        INNER JOIN projects p ON t.project_id = p.id
-        WHERE p.user_id = @userId
-        ORDER BY t.created_at DESC
-      `);
-
-      return result.recordset.map(task => ({
-        id: task.id,
-        project_id: task.project_id,
-        name: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        assigned_to: task.assigned_to,
-        created_by: task.created_by,
-        due_date: task.due_date,
-        estimated_hours: task.estimated_hours,
-        actual_hours: task.actual_hours,
-        created_at: task.created_at,
-        updated_at: task.updated_at,
-        project: {
-          id: task.project_id,
-          name: task.project_name,
-          color: task.project_color
-        }
-      }));
+      return result.recordset.map(this.mapTaskFromDb);
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching all user tasks:', error);
+      console.error('🔴 [FMB-STORAGE] Error fetching tasks:', error);
       throw error;
     }
   }
 
-  async getTasks(projectId?: string): Promise<Task[]> {
-    const result = await this.execute(`
-      SELECT t.*, p.name as project_name
-      FROM tasks t
-      JOIN projects p ON t.project_id = p.id
-    `);
-    return result;
+  async getTask(id: string, userId?: string): Promise<Task | null> {
+    try {
+      const result = await this.pool.request()
+        .input('task_id', id)
+        .input('user_id', userId || this.userId)
+        .query(`
+          SELECT t.*, p.name as project_name
+          FROM tasks t
+          INNER JOIN projects p ON t.project_id = p.id
+          WHERE t.id = @task_id
+            AND (p.user_id = @user_id OR p.is_enterprise_wide = 1)
+        `);
+
+      if (result.recordset.length === 0) {
+        return null;
+      }
+
+      return this.mapTaskFromDb(result.recordset[0]);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching task:', error);
+      throw error;
+    }
   }
 
-  async getTasksByUserId(userId: string): Promise<Task[]> {
-    const result = await this.execute(`
-      SELECT t.*, p.name as project_name
-      FROM tasks t
-      JOIN projects p ON t.project_id = p.id
-      WHERE p.user_id = @param0
-    `, [userId]);
-    return result;
+  async getTaskById(id: string): Promise<Task | null> {
+    return this.getTask(id);
+  }
+
+  async getTasksByProjectId(projectId: string): Promise<Task[]> {
+    try {
+      const result = await this.pool.request()
+        .input('project_id', projectId)
+        .input('user_id', this.userId)
+        .query(`
+          SELECT t.*, p.name as project_name
+          FROM tasks t
+          INNER JOIN projects p ON t.project_id = p.id
+          WHERE t.project_id = @project_id
+            AND (p.user_id = @user_id OR p.is_enterprise_wide = 1)
+          ORDER BY t.created_at DESC
+        `);
+
+      return result.recordset.map(this.mapTaskFromDb);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching tasks by project:', error);
+      throw error;
+    }
+  }
+
+  async getAllUserTasks(userId: string): Promise<Task[]> {
+    try {
+      const result = await this.pool.request()
+        .input('user_id', userId)
+        .query(`
+          SELECT t.*, p.name as project_name
+          FROM tasks t
+          INNER JOIN projects p ON t.project_id = p.id
+          WHERE p.user_id = @user_id OR p.is_enterprise_wide = 1
+          ORDER BY t.created_at DESC
+        `);
+
+      return result.recordset.map(this.mapTaskFromDb);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching all user tasks:', error);
+      throw error;
+    }
   }
 
   async getTaskById(id: string): Promise<Task | null> {
@@ -784,7 +847,7 @@ export class FmbStorage implements IStorage {
 
       await request.query(`
         INSERT INTO tasks (
-          id, project_id, title, description, status, priority, 
+          id, project_id, title, description, status, priority,
           assigned_to, created_by, due_date, estimated_hours, actual_hours,
           created_at, updated_at
         ) VALUES (
@@ -843,32 +906,74 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntries(): Promise<TimeEntry[]> {
-    const result = await this.execute(`
-      SELECT te.*, p.name as project_name, t.title as task_name
-      FROM time_entries te
-      LEFT JOIN projects p ON te.project_id = p.id
-      LEFT JOIN tasks t ON te.task_id = t.id
-      ORDER BY te.date DESC, te.created_at DESC
-    `);
-    return result;
+  async getTimeEntries(userId?: string, filters?: any): Promise<TimeEntry[]> {
+    try {
+      let query = `
+        SELECT te.*, p.name as project_name, p.color as project_color, t.name as task_name
+        FROM time_entries te
+        LEFT JOIN projects p ON te.project_id = p.id
+        LEFT JOIN tasks t ON te.task_id = t.id
+        WHERE te.user_id = @user_id
+      `;
+
+      const request = this.pool.request()
+        .input('user_id', userId || this.userId);
+
+      if (filters?.projectId) {
+        query += ` AND te.project_id = @project_id`;
+        request.input('project_id', filters.projectId);
+      }
+
+      if (filters?.startDate) {
+        query += ` AND te.date >= @start_date`;
+        request.input('start_date', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        query += ` AND te.date <= @end_date`;
+        request.input('end_date', filters.endDate);
+      }
+
+      query += ` ORDER BY te.date DESC, te.created_at DESC`;
+
+      if (filters?.limit) {
+        query += ` OFFSET ${filters.offset || 0} ROWS FETCH NEXT ${filters.limit} ROWS ONLY`;
+      }
+
+      const result = await request.query(query);
+      return result.recordset.map(this.mapTimeEntryFromDb);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching time entries:', error);
+      throw error;
+    }
   }
 
-  async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
-    const result = await this.execute(`
-      SELECT te.*, p.name as project_name, t.title as task_name
-      FROM time_entries te
-      LEFT JOIN projects p ON te.project_id = p.id
-      LEFT JOIN tasks t ON te.task_id = t.id
-      WHERE te.user_id = @param0
-      ORDER BY te.date DESC, te.created_at DESC
-    `, [userId]);
-    return result;
+  async getTimeEntry(id: string, userId?: string): Promise<TimeEntry | null> {
+    try {
+      const result = await this.pool.request()
+        .input('entry_id', id)
+        .input('user_id', userId || this.userId)
+        .query(`
+          SELECT te.*, p.name as project_name, p.color as project_color, t.name as task_name
+          FROM time_entries te
+          LEFT JOIN projects p ON te.project_id = p.id
+          LEFT JOIN tasks t ON te.task_id = t.id
+          WHERE te.id = @entry_id AND te.user_id = @user_id
+        `);
+
+      if (result.recordset.length === 0) {
+        return null;
+      }
+
+      return this.mapTimeEntryFromDb(result.recordset[0]);
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching time entry:', error);
+      throw error;
+    }
   }
 
   async getTimeEntryById(id: string): Promise<TimeEntry | null> {
-    const result = await this.execute('SELECT * FROM time_entries WHERE id = @param0', [id]);
-    return result[0] || null;
+    return this.getTimeEntry(id);
   }
 
   async getTimeEntriesByProjectId(projectId: string): Promise<TimeEntry[]> {
@@ -1427,37 +1532,21 @@ export class FmbStorage implements IStorage {
 
   async getTasksByProjectId(projectId: string): Promise<Task[]> {
     try {
-      const request = this.pool!.request();
-      request.input('projectId', sql.NVarChar(255), projectId);
+      const result = await this.pool.request()
+        .input('project_id', projectId)
+        .input('user_id', this.userId)
+        .query(`
+          SELECT t.*, p.name as project_name
+          FROM tasks t
+          INNER JOIN projects p ON t.project_id = p.id
+          WHERE t.project_id = @project_id
+            AND (p.user_id = @user_id OR p.is_enterprise_wide = 1)
+          ORDER BY t.created_at DESC
+        `);
 
-      const result = await request.query(`
-        SELECT t.*, p.name as project_name
-        FROM tasks t
-        LEFT JOIN projects p ON t.project_id = p.id
-        WHERE t.project_id = @projectId
-        ORDER BY t.created_at DESC
-      `);
-
-      return result.recordset.map(task => ({
-        id: task.id,
-        project_id: task.project_id,
-        name: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        assigned_to: task.assigned_to,
-        created_by: task.created_by,
-        due_date: task.due_date,
-        estimated_hours: task.estimated_hours,
-        actual_hours: task.actual_hours,
-        created_at: task.created_at,
-        updated_at: task.updated_at,
-        project: {
-          name: task.project_name
-        }
-      }));
+      return result.recordset.map(this.mapTaskFromDb);
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching tasks by project ID:', error);
+      console.error('🔴 [FMB-STORAGE] Error fetching tasks by project:', error);
       throw error;
     }
   }
@@ -1571,12 +1660,13 @@ export class FmbStorage implements IStorage {
       end_date: row.end_date,
       budget: row.budget,
       project_number: row.project_number,
-      is_enterprise_wide: row.is_enterprise_wide,
-      is_template: row.is_template,
-      allow_time_tracking: row.allow_time_tracking,
-      require_task_selection: row.require_task_selection,
-      enable_budget_tracking: row.enable_budget_tracking,
-      enable_billing: row.enable_billing,
+      color: row.color || '#1976D2', // Provide default color if null
+      is_enterprise_wide: row.is_enterprise_wide || false,
+      is_template: row.is_template || false,
+      allow_time_tracking: row.allow_time_tracking !== false,
+      require_task_selection: row.require_task_selection || false,
+      enable_budget_tracking: row.enable_budget_tracking || false,
+      enable_billing: row.enable_billing || false,
       created_at: row.created_at,
       updated_at: row.updated_at
     };
@@ -1612,8 +1702,8 @@ export class FmbStorage implements IStorage {
 
       // Check if table exists
       const tableExists = await this.execute(`
-        SELECT TABLE_NAME 
-        FROM INFORMATION_SCHEMA.TABLES 
+        SELECT TABLE_NAME
+        FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_NAME = 'organizations'
       `);
 
@@ -1624,15 +1714,15 @@ export class FmbStorage implements IStorage {
 
       // Get column information
       const columns = await this.execute(`
-        SELECT 
+        SELECT
           COLUMN_NAME,
           DATA_TYPE,
           IS_NULLABLE,
           CHARACTER_MAXIMUM_LENGTH,
           COLUMN_DEFAULT,
           ORDINAL_POSITION
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = 'organizations' 
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_NAME = 'organizations'
         ORDER BY ORDINAL_POSITION
       `);
 
@@ -1640,7 +1730,7 @@ export class FmbStorage implements IStorage {
 
       // Check constraints
       const constraints = await this.execute(`
-        SELECT 
+        SELECT
           CONSTRAINT_NAME,
           CONSTRAINT_TYPE,
           COLUMN_NAME
@@ -1653,7 +1743,7 @@ export class FmbStorage implements IStorage {
 
       // Check foreign key references
       const foreignKeys = await this.execute(`
-        SELECT 
+        SELECT
           fk.name AS FK_NAME,
           tp.name AS PARENT_TABLE,
           cp.name AS PARENT_COLUMN,
@@ -1678,7 +1768,7 @@ export class FmbStorage implements IStorage {
         // Test if the constraint is causing issues
         try {
           const testUserExists = await this.execute(`
-            SELECT COUNT(*) as count FROM ${userIdConstraint.REFERENCED_TABLE} 
+            SELECT COUNT(*) as count FROM ${userIdConstraint.REFERENCED_TABLE}
             WHERE ${userIdConstraint.REFERENCED_COLUMN} = @param0
           `, ['admin-001']);
 
@@ -1832,7 +1922,7 @@ export class FmbStorage implements IStorage {
     const request = this.pool!.request();
     const result = await request.query(`
       SELECT id, email, first_name, last_name, role, profile_image_url, created_at, updated_at, is_active
-      FROM users 
+      FROM users
       ORDER BY created_at DESC
     `);
 
@@ -1865,7 +1955,7 @@ export class FmbStorage implements IStorage {
 
     // Update the employee record to link it to the user
     await updateRequest.query(`
-      UPDATE employees 
+      UPDATE employees
       SET user_id = @linkUserId, updated_at = GETDATE()
       WHERE id = @linkEmployeeId
     `);
