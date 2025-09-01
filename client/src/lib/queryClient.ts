@@ -5,14 +5,14 @@ function frontendLog(level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG', category: strin
   const timestamp = new Date().toISOString();
   const emoji = level === 'ERROR' ? '🔴' : level === 'WARN' ? '🟡' : level === 'INFO' ? '🔵' : '🟢';
   const logMessage = `${timestamp} ${emoji} [FRONTEND-${category}] ${message}`;
-  
+
   // Log to console
   if (data) {
     console.log(logMessage, data);
   } else {
     console.log(logMessage);
   }
-  
+
   // Send critical errors to backend for centralized logging
   if (level === 'ERROR' && typeof window !== 'undefined') {
     fetch('/api/log/frontend-error', {
@@ -36,16 +36,32 @@ function frontendLog(level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG', category: strin
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    
+    let errorMessage = `${res.status}: ${res.statusText}`;
+
+    try {
+      const errorText = await res.text();
+      if (errorText) {
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // If it's not JSON, use the text as is
+          errorMessage = errorText;
+        }
+      }
+    } catch {
+      // If we can't read the response body, use the status
+      errorMessage = `${res.status}: ${res.statusText}`;
+    }
+
     frontendLog('ERROR', 'API', `HTTP ${res.status} error on ${res.url}`, {
       status: res.status,
       statusText: res.statusText,
-      responseText: text,
+      errorMessage: errorMessage,
       url: res.url
     });
-    
-    throw new Error(`${res.status}: ${text}`);
+
+    throw new Error(errorMessage);
   }
 }
 
@@ -55,14 +71,14 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<any> {
   const requestId = Math.random().toString(36).substr(2, 9);
-  
+
   frontendLog('DEBUG', 'API', `Request ${requestId}: ${method} ${url}`, {
     requestId,
     method,
     url,
     data: method !== 'GET' ? data : undefined
   });
-  
+
   try {
     const startTime = performance.now();
     const res = await fetch(url, {
@@ -71,26 +87,26 @@ export async function apiRequest(
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });
-    
+
     const duration = Math.round(performance.now() - startTime);
-    
+
     frontendLog('DEBUG', 'API', `Response ${requestId}: ${res.status} (${duration}ms)`, {
       requestId,
       status: res.status,
       statusText: res.statusText,
       duration: `${duration}ms`
     });
-    
+
     if (!res.ok) {
       const errorText = await res.text();
-      
+
       let errorData;
       try {
         errorData = JSON.parse(errorText);
       } catch {
         errorData = { message: errorText || res.statusText };
       }
-      
+
       frontendLog('ERROR', 'API', `Request ${requestId} failed`, {
         requestId,
         method,
@@ -99,7 +115,7 @@ export async function apiRequest(
         error: errorData,
         duration: `${duration}ms`
       });
-      
+
       const error = new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
       (error as any).status = res.status;
       (error as any).response = { data: errorData };
@@ -107,16 +123,36 @@ export async function apiRequest(
       throw error;
     }
 
-    const result = await res.json();
-    frontendLog('INFO', 'API', `Request ${requestId} successful`, {
-      requestId,
-      method,
-      url,
-      duration: `${duration}ms`,
-      responseSize: JSON.stringify(result).length
-    });
-    
-    return result;
+    // Handle successful response
+    const contentType = res.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      const text = await res.text();
+      if (!text || text.trim() === '') {
+        // Return null for empty responses
+        frontendLog('DEBUG', 'API', `Empty response for ${method} ${url}`, { requestId });
+        return null;
+      }
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        frontendLog('ERROR', 'API', `JSON parse error for ${method} ${url}`, {
+          requestId,
+          responseText: text.substring(0, 200),
+          error: error instanceof Error ? error.message : 'Unknown parse error'
+        });
+        throw new Error('Invalid JSON response from server');
+      }
+    }
+
+    // Handle non-JSON responses
+    const textResponse = await res.text();
+    if (!textResponse || textResponse.trim() === '') {
+      frontendLog('DEBUG', 'API', `Empty text response for ${method} ${url}`, { requestId });
+      return null;
+    }
+
+    return textResponse;
+
   } catch (error) {
     frontendLog('ERROR', 'API', `Request ${requestId} exception`, {
       requestId,
@@ -147,7 +183,24 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+
+    // Handle successful response
+    const contentType = res.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      const text = await res.text();
+      if (!text || text.trim() === '') {
+        return null;
+      }
+      try {
+        return JSON.parse(text);
+      } catch (error) {
+        console.warn('Failed to parse JSON response for query:', queryKey, 'Response:', text.substring(0, 200));
+        throw new Error('Invalid JSON response from server');
+      }
+    }
+
+    const textResponse = await res.text();
+    return textResponse || null;
   };
 
 export const queryClient = new QueryClient({

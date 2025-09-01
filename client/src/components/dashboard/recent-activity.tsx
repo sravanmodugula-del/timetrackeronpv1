@@ -30,15 +30,9 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
     },
   });
 
-  const getProjectColor = (project: { color?: string | null }) => {
-    const colors: { [key: string]: string } = {
-      '#1976D2': 'bg-primary',
-      '#388E3C': 'bg-green-500',
-      '#F57C00': 'bg-orange-500',
-      '#D32F2F': 'bg-red-500',
-    };
-    // Access color from the project object, provide default if null/undefined
-    return colors[project.color || '#1976D2'] || 'bg-gray-500';
+  const getProjectColor = () => {
+    // Default to primary color since project color is not available in this context
+    return 'bg-primary';
   };
 
   const formatDate = (dateString: string) => {
@@ -116,7 +110,7 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
         <div className="space-y-4">
           {activities.map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className={`w-2 h-2 ${getProjectColor(activity.project)} rounded-full mt-2`}></div>
+              <div className={`w-2 h-2 ${getProjectColor()} rounded-full mt-2`}></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">{activity.project.name}</p>
                 <p className="text-xs text-gray-600">

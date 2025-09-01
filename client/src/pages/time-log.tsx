@@ -125,11 +125,22 @@ export default function TimeLog() {
         }, 500);
         return;
       }
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isNotFound = errorMessage.includes('404');
+      
       toast({
         title: "Error",
-        description: "Failed to delete time entry",
+        description: isNotFound 
+          ? "Time entry not found or already deleted" 
+          : `Failed to delete time entry: ${errorMessage}`,
         variant: "destructive",
       });
+      
+      // Refresh the list even if delete failed (item might already be gone)
+      if (isNotFound) {
+        refetch();
+      }
     }
   };
 
@@ -192,7 +203,12 @@ export default function TimeLog() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Projects</SelectItem>
-                      {projects?.map(project => (
+                      {projects?.filter(project => 
+                        project?.id && 
+                        typeof project.id === 'string' && 
+                        project.id.trim() !== '' &&
+                        project.name
+                      ).map(project => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
                         </SelectItem>
