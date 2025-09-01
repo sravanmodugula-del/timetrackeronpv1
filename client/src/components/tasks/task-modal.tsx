@@ -66,7 +66,21 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       taskExists: !!task,
       isEditing
     });
-  }, [isOpen, projectId, task, isEditing]);
+    
+    if (isOpen && !isEditing) {
+      // Reset form when opening for new task creation
+      console.log("🔄 Resetting form for new task creation");
+      form.reset({
+        project_id: projectId,
+        name: "",
+        description: "",
+        status: "active",
+      });
+      
+      // Clear any previous errors
+      form.clearErrors();
+    }
+  }, [isOpen, projectId, task, isEditing, form]);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
@@ -109,10 +123,20 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       };
 
       console.log("🔧 Creating task with payload:", payload);
-      console.log("🔧 Using correct API endpoint: /api/tasks");
-      const response = await apiRequest("/api/tasks", "POST", payload);
-      console.log("✅ Task creation response:", response);
-      return response;
+      console.log("🔧 API Request details:", {
+        endpoint: "/api/tasks",
+        method: "POST",
+        payload: payload
+      });
+      
+      try {
+        const response = await apiRequest("/api/tasks", "POST", payload);
+        console.log("✅ Task creation response:", response);
+        return response;
+      } catch (error) {
+        console.error("❌ API Request failed:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -217,7 +241,11 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     console.log("🎯 Mutation selection:", {
       isEditing,
       willCallUpdateTask: isEditing,
-      willCallCreateTask: !isEditing
+      willCallCreateTask: !isEditing,
+      mutationStates: {
+        createTaskPending: createTask.isPending,
+        updateTaskPending: updateTask.isPending
+      }
     });
 
     try {
@@ -226,6 +254,11 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         updateTask.mutate(data);
       } else {
         console.log("📤 Calling createTask.mutate with data:", data);
+        console.log("🔄 CreateTask mutation state before call:", {
+          isPending: createTask.isPending,
+          isError: createTask.isError,
+          error: createTask.error
+        });
         createTask.mutate(data);
       }
     } catch (error) {
