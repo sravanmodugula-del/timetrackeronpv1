@@ -675,7 +675,44 @@ export class FmbStorage implements IStorage {
   }
 
   // Task Methods
-  async getTasks(): Promise<Task[]> {
+  async getAllUserTasks(userId: string): Promise<Task[]> {
+    try {
+      const request = this.pool!.request();
+      request.input('userId', sql.NVarChar(255), userId);
+
+      const result = await request.query(`
+        SELECT DISTINCT t.*, p.name as project_name
+        FROM tasks t
+        INNER JOIN projects p ON t.project_id = p.id
+        WHERE p.user_id = @userId OR t.created_by = @userId
+        ORDER BY t.created_at DESC
+      `);
+
+      return result.recordset.map(row => ({
+        id: row.id,
+        title: row.title || row.name,
+        name: row.name || row.title,
+        description: row.description,
+        project_id: row.project_id,
+        projectId: row.project_id,
+        status: row.status || 'active',
+        priority: row.priority || 'medium',
+        assigned_to: row.assigned_to,
+        created_by: row.created_by,
+        due_date: row.due_date,
+        estimated_hours: row.estimated_hours,
+        actual_hours: row.actual_hours,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        project_name: row.project_name
+      }));
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching all user tasks:', error);
+      throw error;
+    }
+  }
+
+  async getTasks(projectId?: string): Promise<Task[]> {
     const result = await this.execute(`
       SELECT t.*, p.name as project_name
       FROM tasks t
@@ -1775,7 +1812,7 @@ export class FmbStorage implements IStorage {
     // Fetch and return the updated employee with a fresh request
     const fetchRequest = this.pool!.request();
     fetchRequest.input('fetchEmployeeId', sql.NVarChar(255), employeeId);
-    
+
     const result = await fetchRequest.query(`
       SELECT * FROM employees WHERE id = @fetchEmployeeId
     `);

@@ -1041,11 +1041,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create employee
       const employeeData = {
-        employeeId: employeeId.trim(),
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        employee_id: employeeId.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         department: department.trim(),
-        userId
+        email: email?.trim() || null,
+        phone: phone?.trim() || null,
+        position: position?.trim() || null,
+        user_id: userId
       };
 
       console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId}) by user: ${user.email} (${userRole})`);

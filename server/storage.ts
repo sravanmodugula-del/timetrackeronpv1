@@ -312,6 +312,18 @@ class StorageImplementation implements IStorage {
     return null;
   }
 
+  async getTimeEntry(id: string, userId?: string): Promise<TimeEntry | null> {
+    const db = await this.getDb();
+    if (typeof db.getTimeEntry === 'function') {
+      return await db.getTimeEntry(id, userId);
+    }
+    // Fallback to getTimeEntryById
+    if (typeof db.getTimeEntryById === 'function') {
+      return await db.getTimeEntryById(id);
+    }
+    return null;
+  }
+
   async getTimeEntriesByUserId(userId: string): Promise<TimeEntry[]> {
     const db = await this.getDb();
     if (typeof db.getTimeEntriesByUserId === 'function') {
