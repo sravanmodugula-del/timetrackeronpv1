@@ -598,15 +598,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const taskName = name || title;
-      const taskProjectId = project_id || projectId;
+      const taskProjectId = projectId || project_id;
 
       // Validate required fields
       if (!taskName || !taskProjectId) {
         return res.status(400).json({
-          message: "Name/title and project_id are required fields",
+          message: "Name and projectId are required fields",
           received: { 
             name: !!taskName, 
-            project_id: !!taskProjectId 
+            projectId: !!taskProjectId 
           }
         });
       }
@@ -627,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: taskName.trim(),
         description: description?.trim() || '',
         status: status || 'active',
-        project_id: taskProjectId.trim()
+        projectId: taskProjectId.trim()
       };
 
       const task = await activeStorage.createTask(taskData, userId);
