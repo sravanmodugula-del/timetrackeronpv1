@@ -80,26 +80,41 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       // Clear any previous errors
       form.clearErrors();
     }
-  }, [isOpen, projectId, task, isEditing, form]);
+  }, [isOpen, projectId, task, isEditing]);
 
   const form = useForm<TaskFormData>({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       project_id: projectId,
-      name: task?.name || "",
-      description: task?.description || "",
-      status: (task?.status as "active" | "completed" | "archived") || "active",
+      name: "",
+      description: "",
+      status: "active",
     },
     mode: "onChange",
   });
 
-  // Debug form state changes
+  // Initialize form values when modal opens or task changes
   useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      console.log("📝 Form field changed:", { name, type, value, formState: form.formState });
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
+    if (isOpen) {
+      if (isEditing && task) {
+        form.reset({
+          project_id: projectId,
+          name: task.name || "",
+          description: task.description || "",
+          status: (task.status as "active" | "completed" | "archived") || "active",
+        });
+      } else {
+        form.reset({
+          project_id: projectId,
+          name: "",
+          description: "",
+          status: "active",
+        });
+      }
+    }
+  }, [isOpen, isEditing, task, projectId, form]);
+
+  
 
   // Create task mutation
   const createTask = useMutation({
@@ -119,7 +134,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: data.description?.trim() || "",
         status: data.status || "active",
         projectId: data.project_id.trim(),
-        project_id: data.project_id.trim()
       };
 
       console.log("🔧 Creating task with payload:", payload);
@@ -205,84 +219,21 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   });
 
   const onSubmit = (data: TaskFormData) => {
-    console.log("🚀 FORM SUBMITTED - Starting debug trace");
-    console.log("📝 Form data received:", data);
-    console.log("📊 Complete form state:", {
-      isEditing,
-      projectId,
-      hasProjectId: !!data.project_id,
-      hasName: !!data.name,
-      formValues: form.getValues(),
-      formState: {
-        isValid: form.formState.isValid,
-        isValidating: form.formState.isValidating,
-        isSubmitting: form.formState.isSubmitting,
-        errors: form.formState.errors,
-        isDirty: form.formState.isDirty,
-        dirtyFields: form.formState.dirtyFields,
-        touchedFields: form.formState.touchedFields
-      }
-    });
+    console.log("🚀 Task form submitted:", { isEditing, data });
 
-    // Manual validation check
-    if (!data.name || data.name.trim() === "") {
-      console.error("❌ Validation failed: Name is required");
-      form.setError("name", { message: "Task name is required" });
-      return;
+    // Ensure project_id is set correctly
+    if (!data.project_id) {
+      data.project_id = projectId;
     }
 
-    if (!data.project_id || data.project_id.trim() === "") {
-      console.error("❌ Validation failed: Project ID is required");
-      form.setError("project_id", { message: "Project ID is required" });
-      return;
-    }
-
-    console.log("✅ Manual validation passed");
-    console.log("🎯 Mutation selection:", {
-      isEditing,
-      willCallUpdateTask: isEditing,
-      willCallCreateTask: !isEditing,
-      mutationStates: {
-        createTaskPending: createTask.isPending,
-        updateTaskPending: updateTask.isPending
-      }
-    });
-
-    try {
-      if (isEditing) {
-        console.log("📤 Calling updateTask.mutate with data:", data);
-        updateTask.mutate(data);
-      } else {
-        console.log("📤 Calling createTask.mutate with data:", data);
-        console.log("🔄 CreateTask mutation state before call:", {
-          isPending: createTask.isPending,
-          isError: createTask.isError,
-          error: createTask.error
-        });
-        createTask.mutate(data);
-      }
-    } catch (error) {
-      console.error("💥 Error in onSubmit:", error);
+    if (isEditing) {
+      updateTask.mutate(data);
+    } else {
+      createTask.mutate(data);
     }
   };
 
-  // Force submission handler
-  const handleForceSubmit = () => {
-    console.log("🔥 FORCE SUBMIT TRIGGERED");
-    const currentValues = form.getValues();
-    console.log("🔥 Current form values:", currentValues);
-    
-    // Force validation first
-    form.trigger().then((isValid) => {
-      console.log("🔥 Force validation result:", isValid);
-      if (isValid) {
-        console.log("🔥 Calling onSubmit directly");
-        onSubmit(currentValues);
-      } else {
-        console.log("🔥 Force validation failed:", form.formState.errors);
-      }
-    });
-  };
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -375,42 +326,17 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  console.log("🔙 Cancel button clicked");
-                  onClose();
-                }}
+                onClick={onClose}
                 disabled={createTask.isPending || updateTask.isPending}
               >
                 Cancel
               </Button>
-              <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  disabled={createTask.isPending || updateTask.isPending}
-                  onClick={(e) => {
-                    console.log("🖱️ Submit button clicked - Debug info:");
-                    console.log("📊 Current form state:", {
-                      isValid: form.formState.isValid,
-                      errors: form.formState.errors,
-                      values: form.getValues(),
-                      isDirty: form.formState.isDirty
-                    });
-                    console.log("🎯 Button event:", e.type);
-                    
-                    // Don't prevent default here - let the form handle it
-                  }}
-                >
-                  {createTask.isPending || updateTask.isPending ? "Saving..." : (isEditing ? "Update Task" : "Create Task")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleForceSubmit}
-                  disabled={createTask.isPending || updateTask.isPending}
-                >
-                  Force Submit
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                disabled={createTask.isPending || updateTask.isPending}
+              >
+                {createTask.isPending || updateTask.isPending ? "Saving..." : (isEditing ? "Update Task" : "Create Task")}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
