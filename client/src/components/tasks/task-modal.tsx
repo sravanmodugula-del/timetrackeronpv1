@@ -39,7 +39,7 @@ interface TaskModalProps {
 
 const taskFormSchema = z.object({
   name: z.string().min(1, "Task name is required"),
-  status: z.enum(["active", "completed", "archived"]).default("active"),
+  status: z.enum(["pending", "in_progress", "completed", "archived"]).default("pending"),
   description: z.string().optional().transform(val => val || ""),
 });
 
@@ -72,7 +72,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       form.reset({
         name: "",
         description: "",
-        status: "active",
+        status: "pending",
       });
       
       // Clear any previous errors
@@ -103,7 +103,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         form.reset({
           name: "",
           description: "",
-          status: "active",
+          status: "pending",
         });
       }
     }
@@ -127,7 +127,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       const payload = {
         name: data.name.trim(),
         description: data.description?.trim() || "",
-        status: data.status || "active",
+        status: data.status || "pending",
       };
 
       console.log("🔧 Creating task with payload:", payload);
@@ -289,7 +289,8 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
