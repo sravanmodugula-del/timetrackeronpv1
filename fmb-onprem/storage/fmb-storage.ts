@@ -2108,20 +2108,19 @@ export class FmbStorage implements IStorage {
 
       console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
 
-      // Now get the project breakdown with a simplified query
+      // Now get the project breakdown with a more robust query
       const result = await request.query(`
         SELECT
           p.id,
           p.name,
-          p.color,
-          SUM(COALESCE(te.hours, 0)) as total_hours,
+          COALESCE(p.color, '#1976D2') as color,
+          COALESCE(SUM(te.hours), 0) as total_hours,
           COUNT(te.id) as entry_count
-        FROM time_entries te
-        INNER JOIN projects p ON te.project_id = p.id
-        WHERE te.user_id = @userId ${dateFilter}
+        FROM projects p
+        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId ${dateFilter}
+        WHERE p.user_id = @userId
         GROUP BY p.id, p.name, p.color
-        HAVING SUM(COALESCE(te.hours, 0)) > 0
-        ORDER BY total_hours DESC
+        ORDER BY COALESCE(SUM(te.hours), 0) DESC
       `);
 
       console.log('📊 [FMB-STORAGE] Raw breakdown query result:', result.recordset);
