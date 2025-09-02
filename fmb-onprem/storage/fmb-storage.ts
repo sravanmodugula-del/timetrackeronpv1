@@ -2119,7 +2119,9 @@ export class FmbStorage implements IStorage {
           color: row.color || '#1976D2'
         },
         totalHours: parseFloat(row.total_hours || 0),
+        total_hours: parseFloat(row.total_hours || 0), // Add snake_case for compatibility
         entryCount: parseInt(row.entry_count || 0),
+        entry_count: parseInt(row.entry_count || 0), // Add snake_case for compatibility
         percentage: totalHours > 0 ? Math.round((parseFloat(row.total_hours || 0) / totalHours) * 100) : 0
       }));
 
