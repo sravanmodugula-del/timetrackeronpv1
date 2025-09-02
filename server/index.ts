@@ -33,6 +33,19 @@ function enhancedLog(level: keyof typeof LOG_LEVELS, category: string, message: 
   }
 }
 
+// Enhanced authentication logging
+function authLog(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  const emoji = level === 'ERROR' ? '🔴' : level === 'WARN' ? '🟡' : level === 'INFO' ? '🔵' : '🟢';
+  const logMessage = `${timestamp} ${emoji} [AUTH-MIDDLEWARE] ${message}`;
+
+  if (data) {
+    console.log(logMessage, typeof data === 'object' ? JSON.stringify(data, null, 2) : data);
+  } else {
+    console.log(logMessage);
+  }
+}
+
 // Global error handlers
 process.on('uncaughtException', (error) => {
   enhancedLog('ERROR', 'PROCESS', 'Uncaught Exception:', {
@@ -86,12 +99,12 @@ process.on('unhandledRejection', (reason, promise) => {
 // Enterprise-grade session configuration for FMB on-premises
 async function getSession() {
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   // Enterprise session configuration
-  const sessionTtl = isProduction 
+  const sessionTtl = isProduction
     ? 8 * 60 * 60 * 1000  // 8 hours for production (business day)
     : 7 * 24 * 60 * 60 * 1000; // 7 days for development
-  
+
   const inactivityTimeout = 2 * 60 * 60 * 1000; // 2 hours inactivity timeout
 
   // Validate FMB session secret
@@ -120,13 +133,13 @@ async function getSession() {
       sameSite: 'strict' as const // Enhanced CSRF protection
     },
     name: 'fmb.timetracker.sid',
-    
+
     // Enterprise session configuration
     genid: (req: any) => {
       // Generate cryptographically secure session IDs
       return crypto.randomBytes(32).toString('hex');
     },
-    
+
     // Custom session validation
     proxy: isProduction, // Trust proxy headers in production
     unset: 'destroy' // Destroy session when unset
@@ -137,12 +150,12 @@ async function getSession() {
     // Only use MS SQL session store in production on-premises environment
     if (process.env.FMB_DEPLOYMENT === 'onprem' && isProduction) {
       enhancedLog('INFO', 'SESSION', 'Initializing MS SQL session store for production');
-      
+
       // Initialize custom MS SQL session store
       const { CustomMSSQLStore } = await import('./session-store.js');
       const sessionStore = new CustomMSSQLStore();
       sessionConfig.store = sessionStore;
-      
+
       enhancedLog('INFO', 'SESSION', 'Custom MS SQL session store initialized successfully');
     } else {
       enhancedLog('INFO', 'SESSION', 'Using memory session store for development/testing');
@@ -154,7 +167,7 @@ async function getSession() {
       message: error?.message || 'Unknown error',
       stack: error?.stack?.split('\n')[0] || 'NO_STACK'
     });
-    
+
     // Continue with memory store - don't throw error
     enhancedLog('INFO', 'SESSION', 'Using memory session store as fallback');
   }
@@ -273,8 +286,28 @@ async function createServer() {
   await registerRoutes(app);
 
   // Setup frontend serving
-  if (process.env.NODE_ENV === 'production') {
-    serveStatic(app);
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction) {
+    const staticPath = path.join(__dirname, 'public');
+    app.use(express.static(staticPath));
+
+    // Root route with authentication check
+    app.get('/', (req, res) => {
+      if (!req.session?.isAuthenticated) {
+        authLog('INFO', 'Unauthenticated access to root, redirecting to login');
+        return res.redirect('/api/login');
+      }
+      res.sendFile(path.join(staticPath, 'index.html'));
+    });
+
+    // Catch-all handler for SPA routing (authenticated routes)
+    app.get('*', (req, res) => {
+      if (!req.session?.isAuthenticated && !req.path.startsWith('/api/') && !req.path.startsWith('/login-error')) {
+        authLog('INFO', 'Unauthenticated access to protected route, redirecting to login', { path: req.path });
+        return res.redirect('/api/login');
+      }
+      res.sendFile(path.join(staticPath, 'index.html'));
+    });
   } else {
     await setupVite(app);
   }
@@ -328,14 +361,14 @@ async function createServer() {
 createServer().catch((error) => {
   enhancedLog('ERROR', 'SERVER', 'Critical server startup failure:', {
     message: error?.message || 'Unknown startup error',
-    name: error?.name || 'UnknownError', 
+    name: error?.name || 'UnknownError',
     code: error?.code || 'NO_CODE',
     stack: error?.stack?.split('\n').slice(0, 10).join('\n') || 'NO_STACK',
     errorType: typeof error,
     errorConstructor: error?.constructor?.name || 'Unknown',
     serializedError: JSON.stringify(error, Object.getOwnPropertyNames(error))
   });
-  
+
   // Give time for logging before exit
   setTimeout(() => {
     enhancedLog('ERROR', 'SERVER', 'Exiting due to startup failure');

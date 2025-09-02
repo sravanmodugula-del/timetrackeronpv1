@@ -198,48 +198,36 @@ export async function setupFmbSamlAuth(app: Express) {
         return res.redirect('/login-error?reason=no_user');
       }
 
-      // Regenerate session ID after successful SAML authentication (security best practice)
-      req.session.regenerate((regenerateErr) => {
-        if (regenerateErr) {
-          authLog('ERROR', 'Session regeneration failed', { error: regenerateErr.message });
+      // Log the user in directly without regenerating session
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          authLog('ERROR', 'Login failed after SAML validation', { error: loginErr.message });
           return res.redirect('/login-error');
         }
 
-        // Log the user in
-        req.logIn(user, (loginErr) => {
-          if (loginErr) {
-            authLog('ERROR', 'Login failed after SAML validation', { error: loginErr.message });
-            return res.redirect('/login-error');
-          }
+        // Set user in session for authentication state
+        req.session.user = {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          organization_id: user.organization_id,
+          department: user.department,
+          is_active: user.is_active
+        };
 
-          // Set user in session for authentication state
-          req.session.user = {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role,
-            organization_id: user.organization_id,
-            department: user.department,
-            is_active: user.is_active
-          };
+        // Mark session as authenticated
+        req.session.isAuthenticated = true;
+        req.session.authTime = Date.now();
 
-          // Mark session as authenticated
-          req.session.isAuthenticated = true;
-          req.session.authTime = Date.now();
-
-          // Save session explicitly
-          req.session.save((err) => {
-            if (err) {
-              console.log('🔴 [FMB-SAML] Session save error:', err);
-            } else {
-              console.log('🔵 [FMB-SAML] User session established and saved:', user.email);
-            }
-
-            // Redirect to root application after successful authentication
-            res.redirect('/');
-          });
+        authLog('INFO', 'SAML authentication successful, redirecting to dashboard', { 
+          email: user.email,
+          sessionId: req.sessionID 
         });
+
+        // Redirect to dashboard after successful authentication
+        res.redirect('/dashboard');
       });
     })(req, res, next);
   });
