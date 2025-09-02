@@ -976,7 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/time-entries', isAuthenticated, async (req: any, res) => {
+  app.post("/api/time-entries", isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
