@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import {
@@ -127,7 +127,7 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
     mutationFn: async (data: CloneFormData) => {
       // Clone all selected tasks
       const clonePromises = data.taskIds.map(taskId => 
-        apiRequest(`/api/tasks/${taskId}/clone`, "POST", {
+        request(`/api/tasks/${taskId}/clone`, "POST", {
           targetProjectId: data.targetProjectId,
         })
       );

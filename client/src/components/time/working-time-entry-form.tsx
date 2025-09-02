@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 
 interface Project {
   id: string;
@@ -112,10 +112,10 @@ export default function WorkingTimeEntryForm() {
   // Fetch tasks for the selected project
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
-    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/tasks`),
+    queryFn: () => request(`/api/projects/${selectedProjectId}/tasks`),
     enabled: !!selectedProjectId && selectedProjectId !== "all",
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results
   });
 
   // Filter tasks to show active and completed tasks for time entry
@@ -125,13 +125,13 @@ export default function WorkingTimeEntryForm() {
       console.log("⚠️ Working Time Entry - No tasks or invalid format");
       return [];
     }
-    
+
     const filtered = tasks.filter(task => {
       const isValidStatus = task.status === "active" || task.status === "completed";
       console.log(`📋 Working Time Entry - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
       return isValidStatus;
     });
-    
+
     console.log("✅ Working Time Entry - Available tasks:", filtered.length, filtered);
     return filtered;
   }, [tasks]);
@@ -169,7 +169,7 @@ export default function WorkingTimeEntryForm() {
   // Create time entry mutation
   const createTimeEntry = useMutation({
     mutationFn: async (data: TimeEntryFormData) => {
-      return apiRequest("/api/time-entries", "POST", data);
+      return request("/api/time-entries", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -233,7 +233,7 @@ export default function WorkingTimeEntryForm() {
         startTime: data.startTime,
         endTime: data.endTime,
         hours: parseFloat(hours.toFixed(2)),
-        duration: parseFloat(hours.toFixed(2)),
+        duration: hours.toFixed(2),
       };
 
       createTimeEntry.mutate(submissionData);
@@ -253,7 +253,7 @@ export default function WorkingTimeEntryForm() {
         description: data.description || "",
         date: data.date,
         hours: parseFloat(data.duration),
-        duration: parseFloat(data.duration),
+        duration: data.duration,
       };
 
       createTimeEntry.mutate(submissionData);

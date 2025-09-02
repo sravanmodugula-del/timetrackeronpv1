@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { insertTaskSchema } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import {
@@ -141,7 +141,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       });
 
       try {
-        const response = await apiRequest(`/api/projects/${projectId}/tasks`, "POST", payload);
+        const response = await request(`/api/projects/${projectId}/tasks`, "POST", payload);
         console.log("✅ Task creation response:", response);
         return response;
       } catch (error) {
@@ -191,7 +191,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
   // Update task mutation
   const updateTask = useMutation({
     mutationFn: async (data: TaskFormData) => {
-      await apiRequest(`/api/tasks/${task!.id}`, "PUT", data);
+      await request(`/api/tasks/${task!.id}`, "PUT", data);
     },
     onSuccess: () => {
       toast({

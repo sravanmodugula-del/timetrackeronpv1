@@ -1,4 +1,3 @@
-
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Enhanced frontend error logging
@@ -51,21 +50,21 @@ async function throwIfResNotOk(res: Response) {
     } catch {
       errorMessage = `${res.status}: ${res.statusText}`;
     }
-    
+
     frontendLog('ERROR', 'API', `HTTP ${res.status} error on ${res.url}`, {
       status: res.status,
       statusText: res.statusText,
       errorMessage,
       url: res.url
     });
-    
+
     throw new Error(errorMessage);
   }
 }
 
 export async function request(url: string, method = 'GET', data?: any): Promise<any> {
   const requestId = Math.random().toString(36).substr(2, 9);
-  
+
   frontendLog('DEBUG', 'API', `Request ${requestId}: ${method} ${url}`, {
     requestId,
     method,
@@ -81,9 +80,9 @@ export async function request(url: string, method = 'GET', data?: any): Promise<
       body: data ? JSON.stringify(data) : undefined,
       credentials: 'include',
     });
-    
+
     const duration = Math.round(performance.now() - startTime);
-    
+
     frontendLog('DEBUG', 'API', `Response ${requestId}: ${res.status} (${duration}ms)`, {
       requestId,
       status: res.status,
@@ -106,7 +105,7 @@ export async function request(url: string, method = 'GET', data?: any): Promise<
       }
       try {
         const parsedData = JSON.parse(text);
-        
+
         // Enhanced debugging for dashboard endpoints
         if (url.includes('/api/dashboard/')) {
           frontendLog('DEBUG', 'DASHBOARD-API', `Response data structure for ${url}`, {
@@ -117,7 +116,7 @@ export async function request(url: string, method = 'GET', data?: any): Promise<
             firstItem: Array.isArray(parsedData) ? parsedData[0] : null
           });
         }
-        
+
         return parsedData;
       } catch (error) {
         frontendLog('ERROR', 'API', `JSON parse error for ${method} ${url}`, {
@@ -185,11 +184,5 @@ queryClient.setMutationDefaults(['mutation'], {
   }
 });
 
-queryClient.setQueryDefaults(['query'], {
-  onError: (error) => {
-    frontendLog('ERROR', 'QUERY', 'Uncaught query error', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+// Query defaults configuration
+// Note: Global error handling is now done through individual query configurations

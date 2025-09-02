@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { Users, Link, UserCheck, Clock, Mail } from "lucide-react";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
@@ -80,7 +80,7 @@ export default function UserManagement() {
   // Link user to employee mutation
   const linkUserMutation = useMutation({
     mutationFn: async ({ employeeId, userId }: { employeeId: string; userId: string }) => {
-      return apiRequest(`/api/admin/employees/${employeeId}/link-user`, "POST", { userId });
+      return request(`/api/admin/employees/${employeeId}/link-user`, "POST", { userId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -108,7 +108,7 @@ export default function UserManagement() {
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
       console.log("🔄 Frontend: Updating role for user:", userId, "to role:", role);
       try {
-        const result = await apiRequest(`/api/admin/users/${userId}/role`, "POST", { role });
+        const result = await request(`/api/admin/users/${userId}/role`, "POST", { role });
         console.log("✅ Frontend: Role update successful:", result);
         return result;
       } catch (error) {

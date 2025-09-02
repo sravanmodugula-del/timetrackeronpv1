@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { insertProjectSchema, type Project, type Employee, type ProjectWithEmployees } from "@shared/schema";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -121,11 +121,11 @@ export default function Projects() {
         is_enterprise_wide: data.isEnterpriseWide,
       };
 
-      const project = await apiRequest("/api/projects", "POST", formattedData);
+      const project = await request("/api/projects", "POST", formattedData);
 
       // If project is restricted and has assigned employees, assign them
       if (!data.isEnterpriseWide && assignedEmployeeIds && assignedEmployeeIds.length > 0) {
-        await apiRequest(`/api/projects/${project.id}/employees`, "POST", { employeeIds: assignedEmployeeIds });
+        await request(`/api/projects/${project.id}/employees`, "POST", { employeeIds: assignedEmployeeIds });
       }
 
       return project;
@@ -185,13 +185,13 @@ export default function Projects() {
         is_enterprise_wide: data.isEnterpriseWide,
       };
 
-      const project = await apiRequest(`/api/projects/${editingProject.id}`, "PUT", formattedData);
+      const project = await request(`/api/projects/${editingProject.id}`, "PUT", formattedData);
 
       // Update employee assignments for restricted projects
       if (!data.isEnterpriseWide) {
         console.log("Attempting to assign employees:", assignedEmployeeIds);
         try {
-          const employeeResponse = await apiRequest(`/api/projects/${editingProject.id}/employees`, "POST", {
+          const employeeResponse = await request(`/api/projects/${editingProject.id}/employees`, "POST", {
             employeeIds: assignedEmployeeIds || []
           });
           console.log("Employee assignment successful:", employeeResponse);
@@ -251,7 +251,7 @@ export default function Projects() {
 
   const deleteProject = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/projects/${id}`, "DELETE");
+      await request(`/api/projects/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -306,7 +306,7 @@ export default function Projects() {
     let projectWithEmployees: ProjectWithEmployees = project as ProjectWithEmployees; // Cast to ProjectWithEmployees
     if (!project.is_enterprise_wide) {
       try {
-        const assignedEmployees = await apiRequest(`/api/projects/${project.id}/employees`, "GET");
+        const assignedEmployees = await request(`/api/projects/${project.id}/employees`, "GET");
         projectWithEmployees = { ...project, assignedEmployees };
       } catch (error) {
         console.error("Failed to fetch project employees:", error);

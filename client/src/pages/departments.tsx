@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { insertDepartmentSchema, type DepartmentWithManager, type Employee, type Organization } from "@shared/schema";
 import Header from "@/components/layout/header";
@@ -91,7 +91,7 @@ export default function Departments() {
   // Create department mutation
   const createDepartment = useMutation({
     mutationFn: async (data: DepartmentFormData) => {
-      return apiRequest("/api/departments", "POST", data);
+      return request("/api/departments", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -126,7 +126,7 @@ export default function Departments() {
   const updateDepartment = useMutation({
     mutationFn: async (data: DepartmentFormData) => {
       if (!editingDepartment) throw new Error("No department selected for editing");
-      return apiRequest(`/api/departments/${editingDepartment.id}`, "PUT", data);
+      return request(`/api/departments/${editingDepartment.id}`, "PUT", data);
     },
     onSuccess: () => {
       toast({
@@ -161,7 +161,7 @@ export default function Departments() {
   // Delete department mutation
   const deleteDepartment = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/departments/${id}`, "DELETE");
+      await request(`/api/departments/${id}`, "DELETE");
     },
     onSuccess: () => {
       toast({
@@ -193,7 +193,7 @@ export default function Departments() {
   // Assign manager mutation
   const assignManager = useMutation({
     mutationFn: async ({ departmentId, managerId }: { departmentId: string; managerId: string | null }) => {
-      await apiRequest("POST", `/api/departments/${departmentId}/manager`, { managerId });
+      await request(`/api/departments/${departmentId}/manager`, "POST", { managerId });
     },
     onSuccess: () => {
       toast({

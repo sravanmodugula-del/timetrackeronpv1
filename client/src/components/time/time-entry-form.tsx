@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
+import { request } from "@/lib/queryClient";
 import { insertTimeEntrySchema, type Project, type Task } from "@shared/schema";
 import { getActiveProjects } from "@/lib/projectUtils";
 import { z } from "zod";
@@ -26,17 +26,24 @@ import { Badge } from "@/components/ui/badge";
 import { Save, X, Clock, Timer } from "lucide-react";
 
 // Schema for start/end time mode
-const timeRangeSchema = insertTimeEntrySchema.extend({
+const timeRangeSchema = z.object({
+  projectId: z.string().min(1, "Project is required"),
+  taskId: z.string().min(1, "Task is required"),
+  description: z.string().optional(),
   date: z.string().min(1, "Date is required"),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
-  taskId: z.string().min(1, "Task is required"),
-}).omit({ userId: true, duration: true });
+  duration: z.string().optional(),
+});
+
+type TimeRangeFormData = z.infer<typeof timeRangeSchema>;
 
 // Schema for manual duration mode
-const manualDurationSchema = insertTimeEntrySchema.extend({
-  date: z.string().min(1, "Date is required"),
+const manualDurationSchema = z.object({
+  projectId: z.string().min(1, "Project is required"),
   taskId: z.string().min(1, "Task is required"),
+  description: z.string().optional(),
+  date: z.string().min(1, "Date is required"),
   duration: z.string().min(1, "Duration is required").refine(
     (val) => {
       const num = parseFloat(val);
@@ -44,9 +51,10 @@ const manualDurationSchema = insertTimeEntrySchema.extend({
     },
     "Duration must be a number between 0.1 and 24 hours"
   ),
-}).omit({ userId: true });
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+});
 
-type TimeRangeFormData = z.infer<typeof timeRangeSchema>;
 type ManualDurationFormData = z.infer<typeof manualDurationSchema>;
 
 // Input mode type
@@ -113,7 +121,7 @@ export default function TimeEntryForm() {
       if (!selectedProjectId) return [];
       console.log("🔍 Time Entry Form - Fetching tasks for project:", selectedProjectId);
       try {
-        const response = await apiRequest(`/api/projects/${selectedProjectId}/tasks`);
+        const response = await request(`/api/projects/${selectedProjectId}/tasks`);
         console.log("📋 Time Entry Form - Received tasks:", response?.length || 0, response);
         return Array.isArray(response) ? response : [];
       } catch (error) {
@@ -123,7 +131,7 @@ export default function TimeEntryForm() {
     },
     enabled: !!selectedProjectId,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results
   });
 
   // Filter tasks to show active and completed tasks for time entry
@@ -133,13 +141,13 @@ export default function TimeEntryForm() {
       console.log("⚠️ Time Entry Form - No tasks or invalid format");
       return [];
     }
-    
+
     const filtered = tasks.filter(task => {
       const isValidStatus = task.status === "active" || task.status === "completed";
       console.log(`📋 Time Entry Form - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
       return isValidStatus;
     });
-    
+
     console.log("✅ Time Entry Form - Available tasks:", filtered.length, filtered);
     return filtered;
   }, [tasks]);
@@ -202,7 +210,7 @@ export default function TimeEntryForm() {
         taskId: string;
         description?: string;
         date: string;
-        duration: string;
+        duration: number;
       };
 
       if (inputMode === "timeRange") {
@@ -216,7 +224,6 @@ export default function TimeEntryForm() {
           taskId: timeData.taskId,
           description: timeData.description,
           date: timeData.date,
-          hours: parseFloat(duration.toFixed(2)),
           duration: parseFloat(duration.toFixed(2)),
         };
       } else {
@@ -226,12 +233,11 @@ export default function TimeEntryForm() {
           taskId: manualData.taskId,
           description: manualData.description,
           date: manualData.date,
-          hours: parseFloat(manualData.duration),
           duration: parseFloat(manualData.duration),
         };
       }
 
-      return await apiRequest("/api/time-entries", "POST", entryData);
+      return await request("/api/time-entries", "POST", entryData);
     },
     onSuccess: () => {
       toast({
