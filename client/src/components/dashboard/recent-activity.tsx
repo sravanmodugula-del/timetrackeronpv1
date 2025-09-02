@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History } from "lucide-react";
 import type { TimeEntryWithProject } from "@shared/schema";
+import { Clock } from "lucide-react";
 
 interface RecentActivityProps {
   dateRange: {
@@ -98,31 +99,43 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
     );
   }
 
+  // Filter out invalid activities and provide safe defaults
+  const safeActivities = (activities || []).filter(activity => 
+    activity && typeof activity === 'object'
+  );
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <History className="w-5 h-5 mr-2 text-primary" />
+          <Clock className="w-5 h-5 mr-2" />
           Recent Activity
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-              <div className={`w-2 h-2 ${getProjectColor()} rounded-full mt-2`}></div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{activity.project.name}</p>
-                <p className="text-xs text-gray-600">
-                  {activity.description || "No description"}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatDate(typeof activity.date === 'string' ? activity.date : activity.date.toString())} • {activity.duration} hours
-                </p>
+        {safeActivities && safeActivities.length > 0 ? (
+          <div className="space-y-4">
+            {safeActivities.map((activity, index) => (
+              <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className={`w-2 h-2 ${getProjectColor()} rounded-full mt-2`}></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{activity.project.name}</p>
+                  <p className="text-xs text-gray-600">
+                    {activity.description || "No description"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatDate(typeof activity.date === 'string' ? activity.date : activity.date.toString())} • {activity.duration} hours
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No recent activity</p>
+            <p className="text-sm text-muted-foreground mt-1">Start logging time to see recent entries</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
