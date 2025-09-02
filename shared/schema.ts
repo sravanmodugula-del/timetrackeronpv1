@@ -52,22 +52,34 @@ export const insertTaskSchema = z.object({
 });
 
 export const insertTimeEntrySchema = z.object({
-  userId: z.string().min(1, "User ID is required"),
+  userId: z.string().min(1, "User ID is required").optional(),
+  user_id: z.string().min(1, "User ID is required").optional(),
   projectId: z.string().optional(),
+  project_id: z.string().optional(),
   taskId: z.string().optional(),
+  task_id: z.string().optional(),
   description: z.string().optional(),
   hours: z.number().min(0).max(24),
   duration: z.number().min(0),
   date: z.string().min(1, "Date is required"),
   startTime: z.string().optional(),
+  start_time: z.string().optional(),
   endTime: z.string().optional(),
-  status: z.enum(['draft', 'submitted', 'approved', 'rejected']).default('draft'),
+  end_time: z.string().optional(),
+  status: z.enum(["draft", "submitted", "approved", "rejected"]).default("draft"),
   billable: z.boolean().default(false),
   isBillable: z.boolean().default(false),
+  is_billable: z.boolean().default(false),
   isApproved: z.boolean().default(false),
+  is_approved: z.boolean().default(false),
   isManualEntry: z.boolean().default(true),
+  is_manual_entry: z.boolean().default(true),
   isTimerEntry: z.boolean().default(false),
+  is_timer_entry: z.boolean().default(false),
   isTemplate: z.boolean().default(false),
+  is_template: z.boolean().default(false)
+}).refine((data) => data.userId || data.user_id, {
+  message: "Either userId or user_id is required",
 });
 
 export const insertEmployeeSchema = z.object({
@@ -383,6 +395,7 @@ export interface InsertProjectEmployee {
 // =============================================================================
 // Validation Schemas (Basic validation - can be enhanced with Zod if needed)
 // =============================================================================
+
 export const ProjectStatus = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
