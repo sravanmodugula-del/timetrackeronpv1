@@ -102,7 +102,7 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
   const filteredTasks = uniqueTasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.project.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (task.project?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const isDuplicate = existingTaskNames.has(task.name.toLowerCase());
     const isFromTargetProject = task.project_id === targetProject;
@@ -114,7 +114,7 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
   const duplicatesCount = uniqueTasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.project.name.toLowerCase().includes(searchTerm.toLowerCase());
+      (task.project?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const isDuplicate = existingTaskNames.has(task.name.toLowerCase());
     const isFromTargetProject = task.project_id === targetProject;
@@ -339,10 +339,10 @@ export default function TaskCloneModal({ isOpen, onClose, onSuccess, targetProje
                                     <div className="flex items-center gap-2">
                                       <div
                                         className="w-3 h-3 rounded-full"
-                                        style={{ backgroundColor: task.project.color || '#1976D2' }}
+                                        style={{ backgroundColor: task.project?.color || '#1976D2' }}
                                       />
                                       <span className="text-xs text-muted-foreground">
-                                        {task.project.name}
+                                        {task.project?.name || 'Unknown Project'}
                                       </span>
                                     </div>
                                   </div>

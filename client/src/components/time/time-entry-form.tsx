@@ -112,13 +112,14 @@ export default function TimeEntryForm() {
     queryFn: async () => {
       if (!selectedProjectId) return [];
       console.log("🔍 Time Entry Form - Fetching tasks for project:", selectedProjectId);
-      const response = await fetch(`/api/projects/${selectedProjectId}/tasks`);
-      if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
+      try {
+        const response = await apiRequest(`/api/projects/${selectedProjectId}/tasks`);
+        console.log("📋 Time Entry Form - Received tasks:", response?.length || 0, response);
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        console.error("❌ Time Entry Form - Failed to fetch tasks:", error);
+        return [];
       }
-      const data = await response.json();
-      console.log("📋 Time Entry Form - Received tasks:", data?.length || 0, data);
-      return Array.isArray(data) ? data : [];
     },
     enabled: !!selectedProjectId,
   });
