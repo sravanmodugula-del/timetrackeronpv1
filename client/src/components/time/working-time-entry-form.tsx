@@ -114,13 +114,27 @@ export default function WorkingTimeEntryForm() {
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
     queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/tasks`),
     enabled: !!selectedProjectId && selectedProjectId !== "all",
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
-  // Use all tasks for time entry selection (don't filter by status)
-  const availableTasks = tasks?.filter(task =>
-    task.status === "active" || task.status === "completed"
-  ) || [];
+  // Filter tasks to show active and completed tasks for time entry
+  const availableTasks = React.useMemo(() => {
+    console.log("🔍 Working Time Entry - Raw tasks:", tasks);
+    if (!tasks || !Array.isArray(tasks)) {
+      console.log("⚠️ Working Time Entry - No tasks or invalid format");
+      return [];
+    }
+    
+    const filtered = tasks.filter(task => {
+      const isValidStatus = task.status === "active" || task.status === "completed";
+      console.log(`📋 Working Time Entry - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
+      return isValidStatus;
+    });
+    
+    console.log("✅ Working Time Entry - Available tasks:", filtered.length, filtered);
+    return filtered;
+  }, [tasks]);
 
   // Calculate duration for time range mode
   const calculateDuration = (startTime?: string, endTime?: string) => {

@@ -122,12 +122,27 @@ export default function TimeEntryForm() {
       }
     },
     enabled: !!selectedProjectId,
+    staleTime: 0, // Always fetch fresh data
+    cacheTime: 0, // Don't cache results
   });
 
   // Filter tasks to show active and completed tasks for time entry
-  const availableTasks = tasks?.filter(task => 
-    task.status === "active" || task.status === "completed"
-  ) || [];
+  const availableTasks = React.useMemo(() => {
+    console.log("🔍 Time Entry Form - Raw tasks:", tasks);
+    if (!tasks || !Array.isArray(tasks)) {
+      console.log("⚠️ Time Entry Form - No tasks or invalid format");
+      return [];
+    }
+    
+    const filtered = tasks.filter(task => {
+      const isValidStatus = task.status === "active" || task.status === "completed";
+      console.log(`📋 Time Entry Form - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
+      return isValidStatus;
+    });
+    
+    console.log("✅ Time Entry Form - Available tasks:", filtered.length, filtered);
+    return filtered;
+  }, [tasks]);
 
   // Debug logging
   React.useEffect(() => {
