@@ -39,7 +39,7 @@ interface TaskModalProps {
 
 const taskFormSchema = z.object({
   name: z.string().min(1, "Task name is required"),
-  status: z.enum(["pending", "in_progress", "completed", "archived"]).default("pending"),
+  status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
   description: z.string().optional().transform(val => val || ""),
 });
 
@@ -97,7 +97,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         form.reset({
           name: task.name || "",
           description: task.description || "",
-          status: (task.status as "pending" | "in_progress" | "completed" | "archived") || "pending",
+          status: (task.status as "pending" | "in_progress" | "completed") || "pending",
         });
       } else {
         form.reset({
@@ -314,7 +314,6 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

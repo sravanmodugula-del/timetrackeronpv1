@@ -266,6 +266,7 @@ export default function Tasks() {
       case "pending":
         return "bg-blue-100 text-blue-700";
       case "in_progress":
+      case "active": // Handle both frontend and backend status names
         return "bg-orange-100 text-orange-700";
       case "archived":
         return "bg-gray-100 text-gray-700";
@@ -456,7 +457,7 @@ export default function Tasks() {
                         )}
                       </button>
                       <h3 className={`font-semibold ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {task.name}
+                        {task.name || task.title || "Untitled Task"}
                       </h3>
                     </div>
                     <Badge className={getStatusColor(task.status)}>
