@@ -585,19 +585,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tasks = await activeStorage.getTasksByProjectId(projectId);
       console.log("📋 [API] Raw tasks result:", tasks);
       console.log("📋 [API] Found tasks for project:", tasks?.length || 0);
-      console.log("📋 [API] Task details:", tasks?.map(t => ({ 
-        id: t.id, 
-        name: t.name, 
-        status: t.status,
-        project_id: t.project_id 
-      })));
+
+      if (tasks && tasks.length > 0) {
+        console.log("📋 [API] Task details:", tasks.map(t => ({ 
+          id: t.id, 
+          name: t.name, 
+          status: t.status,
+          project_id: t.project_id 
+        })));
+      }
 
       const finalTasks = Array.isArray(tasks) ? tasks : [];
-      console.log("📋 [API] Returning tasks:", finalTasks.length);
-      res.json(finalTasks);
+      console.log("📋 [API] Returning tasks count:", finalTasks.length);
+
+      // Set proper headers
+      res.setHeader('Content-Type', 'application/json');
+      res.status(200).json(finalTasks);
     } catch (error) {
       console.error("❌ [API] Error fetching project tasks:", error);
-      res.status(500).json({ message: "Failed to fetch tasks" });
+      res.status(500).json({ message: "Failed to fetch tasks", error: error.message });
     }
   });
 
@@ -632,12 +638,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found or access denied" });
       }
 
+      // Define valid task statuses based on database constraints
+      const validStatuses = ['pending', 'active', 'completed', 'archived'];
+      let taskStatus = status || 'pending'; // Default to 'pending' if not provided
+
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
+          code: "INVALID_STATUS"
+        });
+      }
+
       const taskData = {
         project_id: projectId,
         name: name.trim(),
         title: name.trim(), // Also set title for database compatibility
         description: description?.trim() || "",
-        status: status || "pending", // Use 'pending' as default since frontend expects this
+        status: taskStatus, // Use the validated or default status
         priority: "medium",
         assigned_to: userId,
         created_by: userId
@@ -666,32 +683,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
 
-      console.log("📋 Fetching all user tasks for user:", userId);
+      console.log("📋 [API] Fetching all user tasks for user:", userId);
 
       try {
         const tasks = await activeStorage.getAllUserTasks(userId);
-        console.log("✅ Found tasks:", tasks?.length || 0);
-        res.json(Array.isArray(tasks) ? tasks : []);
+        console.log("✅ [API] Found tasks via getAllUserTasks:", tasks?.length || 0);
+
+        if (tasks && tasks.length > 0) {
+          console.log("📋 [API] Task details:", tasks.map(t => ({ 
+            id: t.id, 
+            name: t.name, 
+            status: t.status,
+            project_id: t.project_id 
+          })));
+        }
+
+        const finalTasks = Array.isArray(tasks) ? tasks : [];
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).json(finalTasks);
       } catch (error) {
-        console.error("❌ Error in getAllUserTasks, trying fallback method:", error);
+        console.error("❌ [API] Error in getAllUserTasks, trying fallback method:", error);
         // Fallback: get all projects and their tasks
         try {
           const projects = await activeStorage.getProjectsByUserId(userId);
+          console.log("📋 [API] Fallback: Found projects:", projects?.length || 0);
+
           const allTasks = [];
           for (const project of projects) {
             const projectTasks = await activeStorage.getTasksByProjectId(project.id);
-            allTasks.push(...projectTasks);
+            if (projectTasks && projectTasks.length > 0) {
+              allTasks.push(...projectTasks);
+            }
           }
-          console.log("✅ Fallback method found tasks:", allTasks.length);
-          res.json(allTasks);
+          console.log("✅ [API] Fallback method found tasks:", allTasks.length);
+          res.setHeader('Content-Type', 'application/json');
+          res.status(200).json(allTasks);
         } catch (fallbackError) {
-          console.error("❌ Fallback method also failed:", fallbackError);
-          res.json([]);
+          console.error("❌ [API] Fallback method also failed:", fallbackError);
+          res.status(200).json([]);
         }
       }
     } catch (error) {
-      console.error("❌ Error fetching all tasks:", error);
-      res.status(500).json({ message: "Failed to fetch tasks" });
+      console.error("❌ [API] Error fetching all tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks", error: error.message });
     }
   });
 
@@ -752,12 +786,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Define valid task statuses based on database constraints
+      const validStatuses = ['pending', 'active', 'completed', 'archived'];
+      let taskStatus = status || 'pending'; // Default to 'pending' if not provided
+
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
+          code: "INVALID_STATUS"
+        });
+      }
+
       const taskData = {
         project_id: taskProjectId.trim(),
         name: taskName.trim(),
         title: taskName.trim(),
         description: description?.trim() || '',
-        status: status || 'active',
+        status: taskStatus, // Use the validated or default status
         priority: 'medium',
         assigned_to: userId,
         created_by: userId
@@ -876,7 +921,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectId: targetProjectId,
         name: originalTask.name,
         description: originalTask.description,
-        status: "active", // Reset status to active for cloned tasks
+        status: "pending", // Reset status to pending for cloned tasks
       });
 
       res.status(201).json(clonedTask);
