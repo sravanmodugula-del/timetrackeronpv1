@@ -1064,17 +1064,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { startDate, endDate } = req.query;
       const activeStorage = getStorage();
-      
+
       console.log("📊 [DASHBOARD-STATS] Request:", { userId, startDate, endDate });
-      
+
       const stats = await activeStorage.getDashboardStats(
         userId,
         startDate as string,
         endDate as string
       );
-      
+
       console.log("📊 [DASHBOARD-STATS] Response:", stats);
-      
+
       // Ensure we return valid numbers for all stats
       const safeStats = {
         todayHours: Number(stats?.todayHours || 0),
@@ -1082,11 +1082,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         monthHours: Number(stats?.monthHours || 0),
         activeProjects: Number(stats?.activeProjects || 0)
       };
-      
+
       res.json(safeStats);
     } catch (error) {
       console.error("❌ [DASHBOARD-STATS] Error fetching dashboard stats:", error);
-      
+
       // Return safe defaults on error
       res.json({
         todayHours: 0,
@@ -1102,26 +1102,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { startDate, endDate } = req.query;
       const activeStorage = getStorage();
-      
+
       console.log("📊 [PROJECT-BREAKDOWN] Request:", { userId, startDate, endDate });
-      
+
       const breakdown = await activeStorage.getProjectTimeBreakdown(
         userId,
         startDate as string,
         endDate as string
       );
-      
-      console.log("📊 [PROJECT-BREAKDOWN] Response:", breakdown);
-      
+
+      console.log("📊 [PROJECT-BREAKDOWN] Response:", breakdown?.length, "projects");
+
       // Ensure we return a valid array
       const safeBreakdown = Array.isArray(breakdown) ? breakdown : [];
-      
+
       res.json(safeBreakdown);
     } catch (error) {
-      console.error("❌ [PROJECT-BREAKDOWN] Error fetching project breakdown:", error);
-      
-      // Return empty array on error
-      res.json([]);
+      console.error("❌ [PROJECT-BREAKDOWN] Error:", error);
+      res.status(500).json({ message: "Failed to fetch project breakdown" });
     }
   });
 
@@ -1130,25 +1128,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { limit, startDate, endDate } = req.query;
       const activeStorage = getStorage();
-      
+
       console.log("📊 [RECENT-ACTIVITY] Request:", { userId, limit, startDate, endDate });
-      
+
       const activity = await activeStorage.getRecentActivity(
         userId,
         limit ? parseInt(limit as string) : undefined,
         startDate as string,
         endDate as string
       );
-      
+
       console.log("📊 [RECENT-ACTIVITY] Response:", activity);
-      
+
       // Ensure we return a valid array
       const safeActivity = Array.isArray(activity) ? activity : [];
-      
+
       res.json(safeActivity);
     } catch (error) {
       console.error("❌ [RECENT-ACTIVITY] Error fetching recent activity:", error);
-      
+
       // Return empty array on error
       res.json([]);
     }
