@@ -127,7 +127,7 @@ export default function TimeEntryForm() {
   // Filter tasks to show active and completed tasks for time entry
   const availableTasks = tasks?.filter(task => 
     task.status === "active" || task.status === "completed"
-  ) || [];s || [];
+  ) || [];
 
   // Debug logging
   React.useEffect(() => {

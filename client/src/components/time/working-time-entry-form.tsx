@@ -109,10 +109,12 @@ export default function WorkingTimeEntryForm() {
   // Watch project selection
   const selectedProjectId = form.watch("projectId");
 
-  // Fetch tasks for selected project
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery<Task[]>({
+  // Fetch tasks for the selected project
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
-    enabled: !!selectedProjectId,
+    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/tasks`),
+    enabled: !!selectedProjectId && selectedProjectId !== "all",
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Use all tasks for time entry selection (don't filter by status)
