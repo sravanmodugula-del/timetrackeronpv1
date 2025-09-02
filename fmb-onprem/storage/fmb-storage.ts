@@ -633,53 +633,33 @@ export class FmbStorage implements IStorage {
   async createProject(projectData: InsertProject): Promise<Project> {
     const projectId = `proj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Handle both camelCase and snake_case field names
-    const mappedData = {
-      name: projectData.name,
-      description: projectData.description || null,
-      status: projectData.status || 'active',
-      organization_id: projectData.organization_id || (projectData as any).organizationId || null,
-      department_id: projectData.department_id || (projectData as any).departmentId || null,
-      manager_id: projectData.manager_id || (projectData as any).managerId || null,
-      user_id: projectData.user_id || (projectData as any).userId,
-      start_date: projectData.start_date || (projectData as any).startDate || null,
-      end_date: projectData.end_date || (projectData as any).endDate || null,
-      budget: projectData.budget || null,
-      project_number: projectData.project_number || (projectData as any).projectNumber || null,
-      is_enterprise_wide: projectData.is_enterprise_wide ?? (projectData as any).isEnterpriseWide ?? false,
-      is_template: projectData.is_template ?? (projectData as any).isTemplate ?? false,
-      allow_time_tracking: projectData.allow_time_tracking ?? (projectData as any).allowTimeTracking ?? true,
-      require_task_selection: projectData.require_task_selection ?? (projectData as any).requireTaskSelection ?? false,
-      enable_budget_tracking: projectData.enable_budget_tracking ?? (projectData as any).enableBudgetTracking ?? false,
-      enable_billing: projectData.enable_billing ?? (projectData as any).enableBilling ?? false
-    };
-
     // Log the projectData to debug
-    this.storageLog('CREATE_PROJECT', 'Creating project with mapped data', {
+    this.storageLog('CREATE_PROJECT', 'Creating project with data', {
       projectId,
-      originalData: projectData,
-      mappedData
+      name: projectData.name,
+      user_id: projectData.user_id,
+      organization_id: projectData.organization_id
     });
 
     const request = this.pool!.request();
     request.input('id', sql.NVarChar(255), projectId);
-    request.input('name', sql.NVarChar(255), mappedData.name);
-    request.input('description', sql.NVarChar(sql.MAX), mappedData.description);
-    request.input('status', sql.NVarChar(50), mappedData.status);
-    request.input('organizationId', sql.NVarChar(255), mappedData.organization_id);
-    request.input('departmentId', sql.NVarChar(255), mappedData.department_id);
-    request.input('managerId', sql.NVarChar(255), mappedData.manager_id);
-    request.input('userId', sql.NVarChar(255), mappedData.user_id);
-    request.input('startDate', sql.Date, mappedData.start_date ? new Date(mappedData.start_date) : null);
-    request.input('endDate', sql.Date, mappedData.end_date ? new Date(mappedData.end_date) : null);
-    request.input('budget', sql.Decimal(18, 2), mappedData.budget);
-    request.input('projectNumber', sql.NVarChar(50), mappedData.project_number);
-    request.input('isEnterpriseWide', sql.Bit, mappedData.is_enterprise_wide);
-    request.input('isTemplate', sql.Bit, mappedData.is_template);
-    request.input('allowTimeTracking', sql.Bit, mappedData.allow_time_tracking);
-    request.input('requireTaskSelection', sql.Bit, mappedData.require_task_selection);
-    request.input('enableBudgetTracking', sql.Bit, mappedData.enable_budget_tracking);
-    request.input('enableBilling', sql.Bit, mappedData.enable_billing);
+    request.input('name', sql.NVarChar(255), projectData.name);
+    request.input('description', sql.NVarChar(sql.MAX), projectData.description || null);
+    request.input('status', sql.NVarChar(50), projectData.status || 'active');
+    request.input('organizationId', sql.NVarChar(255), projectData.organization_id || null);
+    request.input('departmentId', sql.NVarChar(255), projectData.department_id || null);
+    request.input('managerId', sql.NVarChar(255), projectData.manager_id || null);
+    request.input('userId', sql.NVarChar(255), projectData.user_id);
+    request.input('startDate', sql.Date, projectData.start_date || null);
+    request.input('endDate', sql.Date, projectData.end_date || null);
+    request.input('budget', sql.Decimal(18, 2), projectData.budget || null);
+    request.input('projectNumber', sql.NVarChar(50), projectData.project_number || null);
+    request.input('isEnterpriseWide', sql.Bit, projectData.is_enterprise_wide || false);
+    request.input('isTemplate', sql.Bit, projectData.is_template || false);
+    request.input('allowTimeTracking', sql.Bit, projectData.allow_time_tracking !== false);
+    request.input('requireTaskSelection', sql.Bit, projectData.require_task_selection || false);
+    request.input('enableBudgetTracking', sql.Bit, projectData.enable_budget_tracking || false);
+    request.input('enableBilling', sql.Bit, projectData.enable_billing || false);
 
     await request.query(`
       INSERT INTO projects (id, name, description, status, organization_id, department_id,
@@ -880,50 +860,37 @@ export class FmbStorage implements IStorage {
     try {
       const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Handle both camelCase and snake_case field names
-      const mappedData = {
-        project_id: taskData.project_id || taskData.projectId,
-        name: taskData.name || taskData.title,
-        title: taskData.title || taskData.name,
-        description: taskData.description || '',
-        status: taskData.status || 'active',
-        priority: taskData.priority || 'medium',
-        assigned_to: taskData.assigned_to || taskData.assignedTo || null,
-        created_by: userId || taskData.created_by || taskData.createdBy || null,
-        due_date: taskData.due_date || taskData.dueDate || null,
-        estimated_hours: taskData.estimated_hours || taskData.estimatedHours || null,
-        actual_hours: taskData.actual_hours || taskData.actualHours || 0
-      };
-
-      console.log('📝 [FMB-STORAGE] Creating task with mapped data:', {
+      console.log('📝 [FMB-STORAGE] Creating task with data:', {
         taskId,
-        originalData: taskData,
-        mappedData,
-        userId
+        taskData,
+        userId,
+        project_id: taskData.project_id || taskData.projectId
       });
 
-      if (!mappedData.project_id) {
+      // Handle both project_id and projectId formats
+      const projectId = taskData.project_id || taskData.projectId;
+      if (!projectId) {
         throw new Error('project_id is required for task creation');
       }
 
       // Verify project exists first
-      const projectExists = await this.execute('SELECT id FROM projects WHERE id = @param0', [mappedData.project_id]);
+      const projectExists = await this.execute('SELECT id FROM projects WHERE id = @param0', [projectId]);
       if (!projectExists || projectExists.length === 0) {
-        throw new Error(`Project with ID ${mappedData.project_id} does not exist`);
+        throw new Error(`Project with ID ${projectId} does not exist`);
       }
 
       const request = this.pool!.request();
       request.input('id', sql.NVarChar(255), taskId);
-      request.input('project_id', sql.NVarChar(255), mappedData.project_id);
-      request.input('title', sql.NVarChar(500), mappedData.title);
-      request.input('description', sql.NText, mappedData.description);
-      request.input('status', sql.NVarChar(50), mappedData.status);
-      request.input('priority', sql.NVarChar(50), mappedData.priority);
-      request.input('assigned_to', sql.NVarChar(255), mappedData.assigned_to);
-      request.input('created_by', sql.NVarChar(255), mappedData.created_by);
-      request.input('due_date', sql.DateTime, mappedData.due_date ? new Date(mappedData.due_date) : null);
-      request.input('estimated_hours', sql.Decimal(10, 2), mappedData.estimated_hours);
-      request.input('actual_hours', sql.Decimal(10, 2), mappedData.actual_hours);
+      request.input('project_id', sql.NVarChar(255), projectId);
+      request.input('title', sql.NVarChar(500), taskData.name || taskData.title);
+      request.input('description', sql.NText, taskData.description || '');
+      request.input('status', sql.NVarChar(50), taskData.status || 'active');
+      request.input('priority', sql.NVarChar(50), taskData.priority || 'medium');
+      request.input('assigned_to', sql.NVarChar(255), taskData.assigned_to || taskData.assignedTo || null);
+      request.input('created_by', sql.NVarChar(255), userId || taskData.created_by || taskData.createdBy || null);
+      request.input('due_date', sql.DateTime, taskData.due_date || taskData.dueDate ? new Date(taskData.due_date || taskData.dueDate) : null);
+      request.input('estimated_hours', sql.Decimal(10, 2), taskData.estimated_hours || taskData.estimatedHours || null);
+      request.input('actual_hours', sql.Decimal(10, 2), taskData.actual_hours || taskData.actualHours || 0);
 
       console.log('📝 [FMB-STORAGE] Task SQL parameters bound:', {
         id: taskId,
