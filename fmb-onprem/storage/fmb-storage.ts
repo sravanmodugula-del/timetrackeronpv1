@@ -782,59 +782,53 @@ export class FmbStorage implements IStorage {
 
   // Get all tasks for a user across all their projects
   async getAllUserTasks(userId: string): Promise<Task[]> {
-    console.log("📋 [FMB-STORAGE] Fetching all tasks for user:", userId);
-
     try {
+      console.log(`🔍 [FMB-STORAGE] Fetching all tasks for user: ${userId}`);
+
       const request = this.pool.request();
       request.input('userId', sql.NVarChar, userId);
 
-      const result = await request.query(`
-        SELECT DISTINCT
+      const result = await this.executeQuery(request, `
+        SELECT 
           t.id,
           t.project_id,
-          t.name,
           t.title,
           t.description,
           t.status,
           t.priority,
           t.assigned_to,
           t.created_by,
-          t.due_date,
-          t.estimated_hours,
-          t.actual_hours,
           t.created_at,
-          t.updated_at
+          t.updated_at,
+          p.name as project_name
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
-        WHERE p.user_id = @userId
+        WHERE t.assigned_to = @userId OR t.created_by = @userId
         ORDER BY t.created_at DESC
       `);
 
-      console.log("📋 [FMB-STORAGE] Found all user tasks:", result.recordset.length);
-      console.log("📋 [FMB-STORAGE] All user task details:", result.recordset.map(r => ({
-        id: r.id,
-        name: r.name || r.title,
-        project_id: r.project_id,
-        status: r.status
-      })));
+      console.log(`✅ [FMB-STORAGE] Found ${result.recordset.length} tasks for user ${userId}`);
 
-      return result.recordset.map(row => ({
-        id: row.id,
-        project_id: row.project_id,
-        name: row.name || row.title, // Use title as fallback if name is null
-        description: row.description,
-        status: row.status,
-        priority: row.priority,
-        assigned_to: row.assigned_to,
-        created_by: row.created_by,
-        due_date: row.due_date,
-        estimated_hours: row.estimated_hours,
-        actual_hours: row.actual_hours,
-        created_at: row.created_at,
-        updated_at: row.updated_at
+      // Map database status back to frontend status
+      const statusMapping = {
+        'active': 'in_progress',
+        'pending': 'pending',
+        'completed': 'completed'
+      };
+
+      return result.recordset.map(task => ({
+        ...task,
+        name: task.title || task.name || 'Untitled Task', // Ensure name is never null
+        title: task.title || task.name || 'Untitled Task',
+        status: statusMapping[task.status] || task.status,
+        projectId: task.project_id,
+        project: {
+          id: task.project_id,
+          name: task.project_name
+        }
       }));
     } catch (error) {
-      console.error("❌ [FMB-STORAGE] Error fetching all user tasks:", error);
+      console.error(`❌ [FMB-STORAGE] Error fetching all tasks for user ${userId}:`, error);
       throw error;
     }
   }
@@ -1625,17 +1619,10 @@ export class FmbStorage implements IStorage {
   }
 
   // Helper method to execute queries with proper parameter binding
-  private async executeQuery(query: string, params: Array<{ name: string; type: any; value: any }>): Promise<any> {
+  private async executeQuery(request: sql.Request, query: string): Promise<any> {
     if (!this.pool) {
       throw new Error('Database not connected. Call connect() first.');
     }
-
-    const request = this.pool.request();
-
-    // Bind parameters
-    params.forEach(param => {
-      request.input(param.name, param.type, param.value);
-    });
 
     return await request.query(query);
   }
@@ -1687,67 +1674,47 @@ export class FmbStorage implements IStorage {
 
   // Get tasks by project ID
   async getTasksByProjectId(projectId: string): Promise<Task[]> {
-    console.log("📋 [FMB-STORAGE] Fetching tasks for project:", projectId);
-
     try {
+      console.log(`🔍 [FMB-STORAGE] Fetching tasks for project: ${projectId}`);
+
       const request = this.pool.request();
       request.input('projectId', sql.NVarChar, projectId);
 
-      const result = await request.query(`
-        SELECT
+      const result = await this.executeQuery(request, `
+        SELECT 
           id,
           project_id,
-          name,
           title,
           description,
           status,
           priority,
           assigned_to,
           created_by,
-          due_date,
-          estimated_hours,
-          actual_hours,
           created_at,
           updated_at
-        FROM tasks
+        FROM tasks 
         WHERE project_id = @projectId
         ORDER BY created_at DESC
       `);
 
-      console.log("📋 [FMB-STORAGE] Raw tasks query result:", result.recordset.length, "records");
-      console.log("📋 [FMB-STORAGE] Raw task records:", result.recordset.map(r => ({
-        id: r.id,
-        name: r.name || r.title,
-        project_id: r.project_id,
-        status: r.status
-      })));
+      console.log(`✅ [FMB-STORAGE] Found ${result.recordset.length} tasks for project ${projectId}`);
 
-      const tasks = result.recordset.map(row => ({
-        id: row.id,
-        project_id: row.project_id,
-        name: row.name || row.title, // Use title as fallback if name is null
-        description: row.description,
-        status: row.status,
-        priority: row.priority,
-        assigned_to: row.assigned_to,
-        created_by: row.created_by,
-        due_date: row.due_date,
-        estimated_hours: row.estimated_hours,
-        actual_hours: row.actual_hours,
-        created_at: row.created_at,
-        updated_at: row.updated_at
+      // Map database status back to frontend status
+      const statusMapping = {
+        'active': 'in_progress',
+        'pending': 'pending',
+        'completed': 'completed'
+      };
+
+      return result.recordset.map(task => ({
+        ...task,
+        name: task.title || task.name || 'Untitled Task', // Ensure name is never null
+        title: task.title || task.name || 'Untitled Task',
+        status: statusMapping[task.status] || task.status,
+        projectId: task.project_id
       }));
-
-      console.log("📋 [FMB-STORAGE] Processed tasks for project:", tasks.length);
-      console.log("📋 [FMB-STORAGE] Task details:", tasks.map(t => ({
-        id: t.id,
-        name: t.name,
-        status: t.status
-      })));
-
-      return tasks;
     } catch (error) {
-      console.error("❌ [FMB-STORAGE] Error fetching tasks by project ID:", error);
+      console.error(`❌ [FMB-STORAGE] Error fetching tasks for project ${projectId}:`, error);
       throw error;
     }
   }

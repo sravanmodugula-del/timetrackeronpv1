@@ -638,23 +638,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found or access denied" });
       }
 
-      // Define valid task statuses based on database constraints
-      const validStatuses = ['pending', 'active', 'completed', 'archived'];
+      // Define valid task statuses based on database constraints and frontend expectations
+      const validStatuses = ['pending', 'in_progress', 'completed'];
       let taskStatus = status || 'pending'; // Default to 'pending' if not provided
 
-      if (status && !validStatuses.includes(status)) {
+      // Map frontend statuses to database-compatible statuses
+      const statusMapping = {
+        'pending': 'pending',
+        'in_progress': 'active', // Map in_progress to active for database
+        'completed': 'completed',
+        'archived': 'completed' // Map archived to completed for database compatibility
+      };
+
+      if (status && !validStatuses.includes(status) && status !== 'archived') {
         return res.status(400).json({
-          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}, archived.`,
           code: "INVALID_STATUS"
         });
       }
+
+      // Use mapped status for database operations
+      const dbStatus = statusMapping[taskStatus] || taskStatus;
 
       const taskData = {
         project_id: projectId,
         name: name.trim(),
         title: name.trim(), // Also set title for database compatibility
         description: description?.trim() || "",
-        status: taskStatus, // Use the validated or default status
+        status: dbStatus, // Use the validated or default status
         priority: "medium",
         assigned_to: userId,
         created_by: userId
@@ -786,23 +797,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Define valid task statuses based on database constraints
-      const validStatuses = ['pending', 'active', 'completed', 'archived'];
+      // Define valid task statuses based on database constraints and frontend expectations
+      const validStatuses = ['pending', 'in_progress', 'completed'];
       let taskStatus = status || 'pending'; // Default to 'pending' if not provided
 
-      if (status && !validStatuses.includes(status)) {
+      // Map frontend statuses to database-compatible statuses
+      const statusMapping = {
+        'pending': 'pending',
+        'in_progress': 'active', // Map in_progress to active for database
+        'completed': 'completed',
+        'archived': 'completed' // Map archived to completed for database compatibility
+      };
+
+      if (status && !validStatuses.includes(status) && status !== 'archived') {
         return res.status(400).json({
-          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}, archived.`,
           code: "INVALID_STATUS"
         });
       }
+
+      // Use mapped status for database operations
+      const dbStatus = statusMapping[taskStatus] || taskStatus;
+
 
       const taskData = {
         project_id: taskProjectId.trim(),
         name: taskName.trim(),
         title: taskName.trim(),
         description: description?.trim() || '',
-        status: taskStatus, // Use the validated or default status
+        status: dbStatus, // Use the validated or default status
         priority: 'medium',
         assigned_to: userId,
         created_by: userId
