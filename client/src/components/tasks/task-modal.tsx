@@ -159,7 +159,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Also invalidate projects cache
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      // Also invalidate the specific project tasks query
+      queryClient.refetchQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
@@ -200,7 +202,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Also invalidate projects cache
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      // Also refetch the specific project tasks query
+      queryClient.refetchQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {

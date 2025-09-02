@@ -22,7 +22,7 @@ export default function Tasks() {
   const { canCreateTasks, canEditTasks } = usePermissions();
   const queryClient = useQueryClient();
   const [selectedProject, setSelectedProject] = useState<string>(() => {
-    const initial = "all";
+    const initial = "";
     console.log("🎯 Initial selectedProject state:", initial);
     return initial;
   });
@@ -88,7 +88,7 @@ export default function Tasks() {
     });
 
     // Auto-select first project if none selected and projects are available
-    if (projects && projects.length > 0 && selectedProject === "all" && !projectsLoading) {
+    if (projects && projects.length > 0 && !selectedProject && !projectsLoading) {
       console.log("🎯 Auto-selecting first project:", projects[0].id);
       setSelectedProject(projects[0].id);
     }
@@ -103,13 +103,15 @@ export default function Tasks() {
         const result = await apiRequest("/api/tasks/all", "GET");
         console.log("📋 Tasks/all API result:", result);
         return result;
-      } else {
+      } else if (selectedProject) {
         const result = await apiRequest(`/api/projects/${selectedProject}/tasks`, "GET");
         console.log("📋 Project tasks API result:", result);
         return result;
+      } else {
+        return [];
       }
     },
-    enabled: isAuthenticated && selectedProject !== "",
+    enabled: isAuthenticated && selectedProject !== "" && selectedProject !== null,
     retry: 3,
     staleTime: 1000,
     select: (data) => {
@@ -212,7 +214,7 @@ export default function Tasks() {
       editingTask
     });
 
-    if (selectedProject === "all" || !selectedProject) {
+    if (selectedProject === "all" || !selectedProject || selectedProject.trim() === "") {
       console.log("❌ Selected project is 'all' or empty, showing error toast");
       toast({
         title: "Select a Project",
@@ -343,7 +345,7 @@ export default function Tasks() {
                   console.log("🔍 Create task button render check:", {
                     canCreateTasks,
                     selectedProject,
-                    isDisabled: selectedProject === "all"
+                    isDisabled: selectedProject === "all" || !selectedProject || selectedProject === ""
                   });
                   
                   return canCreateTasks && (
@@ -354,8 +356,8 @@ export default function Tasks() {
                         e.stopPropagation();
                         handleCreateTask();
                       }}
-                      disabled={selectedProject === "all"}
-                      title={selectedProject === "all" ? "Please select a project first" : "Create a new task"}
+                      disabled={selectedProject === "all" || !selectedProject || selectedProject === ""}
+                      title={selectedProject === "all" || !selectedProject || selectedProject === "" ? "Please select a project first" : "Create a new task"}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Add Task
@@ -378,11 +380,26 @@ export default function Tasks() {
             projects: projects?.length || 0
           });
 
-          if (selectedProject === "all") {
+          if (!selectedProject || selectedProject === "") {
             return (
               <Card>
                 <CardContent className="p-8 text-center">
                   <p className="text-muted-foreground">Select a project to view and manage its tasks.</p>
+                  {projects && projects.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You have {projects.length} project{projects.length !== 1 ? 's' : ''} available
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }
+
+          if (selectedProject === "all") {
+            return (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">Select a specific project to view and manage its tasks.</p>
                   {projects && projects.length > 0 && (
                     <p className="text-sm text-muted-foreground mt-2">
                       You have {projects.length} project{projects.length !== 1 ? 's' : ''} available
@@ -412,7 +429,7 @@ export default function Tasks() {
                   <p className="text-muted-foreground mb-4">
                     No tasks found for project: {selectedProjectData?.name || selectedProject}
                   </p>
-                  {canCreateTasks && selectedProject && selectedProject !== "all" && (
+                  {canCreateTasks && selectedProject && selectedProject !== "all" && selectedProject !== "" && (
                     <Button onClick={handleCreateTask}>
                       <Plus className="w-4 h-4 mr-2" />
                       Create Your First Task
@@ -491,10 +508,10 @@ export default function Tasks() {
           isTaskModalOpen,
           selectedProject,
           isSelectedProjectNotAll: selectedProject !== "all",
-          shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all"
+          shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== ""
         });
         
-        return (isTaskModalOpen && selectedProject && selectedProject !== "all") ? (
+        return (isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== "") ? (
           <TaskModal
             task={editingTask}
             projectId={selectedProject}
