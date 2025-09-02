@@ -638,34 +638,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found or access denied" });
       }
 
-      // Define valid task statuses based on database constraints and frontend expectations
-      const validStatuses = ['pending', 'in_progress', 'completed'];
-      let taskStatus = status || 'pending'; // Default to 'pending' if not provided
+      // Define valid task statuses
+      const validStatuses = ['active', 'completed', 'archived'];
+      let taskStatus = status || 'active'; // Default to 'active' if not provided
 
-      // Map frontend statuses to database-compatible statuses
-      const statusMapping = {
-        'pending': 'pending',
-        'in_progress': 'active', // Map in_progress to active for database
-        'completed': 'completed',
-        'archived': 'completed' // Map archived to completed for database compatibility
-      };
-
-      if (status && !validStatuses.includes(status) && status !== 'archived') {
+      if (status && !validStatuses.includes(status)) {
         return res.status(400).json({
-          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}, archived.`,
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
           code: "INVALID_STATUS"
         });
       }
-
-      // Use mapped status for database operations
-      const dbStatus = statusMapping[taskStatus] || taskStatus;
 
       const taskData = {
         project_id: projectId,
         name: name.trim(),
         title: name.trim(), // Also set title for database compatibility
         description: description?.trim() || "",
-        status: dbStatus, // Use the validated or default status
+        status: taskStatus, // Use the validated or default status
         priority: "medium",
         assigned_to: userId,
         created_by: userId
@@ -694,45 +683,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
 
-      console.log("📋 [API] Fetching all user tasks for user:", userId);
+      console.log("📋 [API] Fetching all user tasks with project info for user:", userId);
 
       try {
-        const tasks = await activeStorage.getAllUserTasks(userId);
-        console.log("✅ [API] Found tasks via getAllUserTasks:", tasks?.length || 0);
+        // Get all projects first
+        const projects = await activeStorage.getProjectsByUserId(userId);
+        console.log("📋 [API] Found projects:", projects?.length || 0);
 
-        if (tasks && tasks.length > 0) {
-          console.log("📋 [API] Task details:", tasks.map(t => ({ 
+        const allTasksWithProjects = [];
+
+        for (const project of projects || []) {
+          const projectTasks = await activeStorage.getTasksByProjectId(project.id);
+          if (projectTasks && projectTasks.length > 0) {
+            // Add project info to each task
+            const tasksWithProject = projectTasks.map(task => ({
+              ...task,
+              project: {
+                id: project.id,
+                name: project.name,
+                color: project.color || '#1976D2'
+              }
+            }));
+            allTasksWithProjects.push(...tasksWithProject);
+          }
+        }
+
+        console.log("✅ [API] Found tasks with project info:", allTasksWithProjects.length);
+
+        if (allTasksWithProjects.length > 0) {
+          console.log("📋 [API] Task details with projects:", allTasksWithProjects.map(t => ({ 
             id: t.id, 
             name: t.name, 
             status: t.status,
-            project_id: t.project_id 
+            project_id: t.project_id,
+            project_name: t.project?.name
           })));
         }
 
-        const finalTasks = Array.isArray(tasks) ? tasks : [];
         res.setHeader('Content-Type', 'application/json');
-        res.status(200).json(finalTasks);
+        res.status(200).json(allTasksWithProjects);
       } catch (error) {
-        console.error("❌ [API] Error in getAllUserTasks, trying fallback method:", error);
-        // Fallback: get all projects and their tasks
-        try {
-          const projects = await activeStorage.getProjectsByUserId(userId);
-          console.log("📋 [API] Fallback: Found projects:", projects?.length || 0);
-
-          const allTasks = [];
-          for (const project of projects) {
-            const projectTasks = await activeStorage.getTasksByProjectId(project.id);
-            if (projectTasks && projectTasks.length > 0) {
-              allTasks.push(...projectTasks);
-            }
-          }
-          console.log("✅ [API] Fallback method found tasks:", allTasks.length);
-          res.setHeader('Content-Type', 'application/json');
-          res.status(200).json(allTasks);
-        } catch (fallbackError) {
-          console.error("❌ [API] Fallback method also failed:", fallbackError);
-          res.status(200).json([]);
-        }
+        console.error("❌ [API] Error fetching tasks with project info:", error);
+        res.status(200).json([]);
       }
     } catch (error) {
       console.error("❌ [API] Error fetching all tasks:", error);
@@ -797,27 +789,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Define valid task statuses based on database constraints and frontend expectations
-      const validStatuses = ['pending', 'in_progress', 'completed'];
-      let taskStatus = status || 'pending'; // Default to 'pending' if not provided
+      // Define valid task statuses
+      const validStatuses = ['active', 'completed', 'archived'];
+      let taskStatus = status || 'active'; // Default to 'active' if not provided
 
-      // Map frontend statuses to database-compatible statuses
-      const statusMapping = {
-        'pending': 'pending',
-        'in_progress': 'active', // Map in_progress to active for database
-        'completed': 'completed',
-        'archived': 'completed' // Map archived to completed for database compatibility
-      };
-
-      if (status && !validStatuses.includes(status) && status !== 'archived') {
+      if (status && !validStatuses.includes(status)) {
         return res.status(400).json({
-          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}, archived.`,
+          message: `Invalid status '${status}'. Valid statuses are: ${validStatuses.join(', ')}.`,
           code: "INVALID_STATUS"
         });
       }
-
-      // Use mapped status for database operations
-      const dbStatus = statusMapping[taskStatus] || taskStatus;
 
 
       const taskData = {
@@ -825,7 +806,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: taskName.trim(),
         title: taskName.trim(),
         description: description?.trim() || '',
-        status: dbStatus, // Use the validated or default status
+        status: taskStatus, // Use the validated or default status
         priority: 'medium',
         assigned_to: userId,
         created_by: userId
@@ -944,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectId: targetProjectId,
         name: originalTask.name,
         description: originalTask.description,
-        status: "pending", // Reset status to pending for cloned tasks
+        status: "active", // Reset status to active for cloned tasks
       });
 
       res.status(201).json(clonedTask);

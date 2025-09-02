@@ -35,7 +35,7 @@ export const insertTaskSchema = z.object({
   name: z.string().min(1, "Task name is required"),
   title: z.string().optional(),
   description: z.string().optional(),
-  status: z.enum(['active', 'pending', 'in_progress', 'completed', 'archived', 'cancelled']).default('active'),
+  status: z.enum(['active', 'completed', 'archived']).default('active'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignedTo: z.string().optional(),
   assigned_to: z.string().optional(),
@@ -391,10 +391,9 @@ export const ProjectStatus = {
 } as const;
 
 export const TaskStatus = {
-  PENDING: 'pending',
-  IN_PROGRESS: 'in_progress',
+  ACTIVE: 'active',
   COMPLETED: 'completed',
-  CANCELLED: 'cancelled'
+  ARCHIVED: 'archived'
 } as const;
 
 export const TaskPriority = {
