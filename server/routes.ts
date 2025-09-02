@@ -568,7 +568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId } = req.params;
+      const {projectId } = req.params;
       const activeStorage = getStorage();
 
       console.log("📋 [API] Fetching tasks for project:", projectId, "user:", userId);
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId } = req.params;
+      const {projectId } = req.params;
       const { name, description, status } = req.body;
 
       console.log("📝 Project Task Creation Request:", { 
@@ -2063,7 +2063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Health check endpoint
-  app.get('/api/health', async (req, res) => {
+  app.get('/health', async (req, res) => {
     try {
       const dbHealthy = await checkDatabaseHealth();
 
@@ -2087,6 +2087,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: error?.message || 'Unknown error'
       });
     }
+  });
+
+  // User authentication endpoint for frontend
+  app.get('/api/auth/user', (req, res) => {
+    if (!req.session?.isAuthenticated || !req.session?.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const user = req.session.user;
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      isActive: user.is_active,
+      authContext: {
+        role: user.role,
+        permissions: [], // Add permissions logic as needed
+        departmentId: user.department,
+        organizationId: user.organization_id
+      }
+    });
   });
 
   // Register SAML debug routes

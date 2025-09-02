@@ -302,10 +302,24 @@ async function createServer() {
 
     // Catch-all handler for SPA routing (authenticated routes)
     app.get('*', (req, res) => {
-      if (!req.session?.isAuthenticated && !req.path.startsWith('/api/') && !req.path.startsWith('/login-error')) {
-        authLog('INFO', 'Unauthenticated access to protected route, redirecting to login', { path: req.path });
+      // Allow static assets and API routes to pass through
+      if (req.path.startsWith('/api/') || req.path.startsWith('/login-error') || req.path.startsWith('/assets/')) {
+        return res.sendFile(path.join(staticPath, 'index.html'));
+      }
+
+      // Check if user is authenticated via session
+      const isAuthenticated = req.session?.isAuthenticated === true && req.session?.user;
+      
+      if (!isAuthenticated) {
+        authLog('INFO', 'Unauthenticated access to protected route, redirecting to login', { 
+          path: req.path,
+          hasSession: !!req.session,
+          sessionAuth: req.session?.isAuthenticated,
+          sessionUser: !!req.session?.user
+        });
         return res.redirect('/api/login');
       }
+      
       res.sendFile(path.join(staticPath, 'index.html'));
     });
   } else {
