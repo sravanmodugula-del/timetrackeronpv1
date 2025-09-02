@@ -1666,31 +1666,74 @@ export class FmbStorage implements IStorage {
 
   // Dashboard Stats
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
-    let dateFilter = '';
-    const params = [userId];
+    try {
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
 
-    if (startDate && endDate) {
-      dateFilter = 'AND date >= @param1 AND date <= @param2';
-      params.push(startDate, endDate);
-    } else {
-      dateFilter = 'AND date >= DATEADD(month, -1, GETDATE())';
+      // Get today's date for filtering
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Get start of week (Monday)
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+      const weekStartStr = startOfWeek.toISOString().split('T')[0];
+      
+      // Get start of month
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthStartStr = startOfMonth.toISOString().split('T')[0];
+
+      let dateFilter = '';
+      if (startDate && endDate) {
+        request.input('startDate', sql.Date, startDate);
+        request.input('endDate', sql.Date, endDate);
+        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+      }
+
+      // Get various time period stats
+      const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
+        request.query(`
+          SELECT COALESCE(SUM(hours), 0) as total_hours
+          FROM time_entries te
+          WHERE te.user_id = @userId AND te.date = '${todayStr}'
+        `),
+        request.query(`
+          SELECT COALESCE(SUM(hours), 0) as total_hours
+          FROM time_entries te
+          WHERE te.user_id = @userId AND te.date >= '${weekStartStr}'
+        `),
+        request.query(`
+          SELECT COALESCE(SUM(hours), 0) as total_hours
+          FROM time_entries te
+          WHERE te.user_id = @userId AND te.date >= '${monthStartStr}'
+        `),
+        request.query(`
+          SELECT COUNT(DISTINCT p.id) as count
+          FROM projects p
+          LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
+          WHERE p.user_id = @userId AND p.status = 'active'
+        `)
+      ]);
+
+      const stats = {
+        todayHours: parseFloat(todayResult.recordset[0]?.total_hours || 0),
+        weekHours: parseFloat(weekResult.recordset[0]?.total_hours || 0),
+        monthHours: parseFloat(monthResult.recordset[0]?.total_hours || 0),
+        activeProjects: parseInt(projectsResult.recordset[0]?.count || 0)
+      };
+
+      console.log('📊 [FMB-STORAGE] Dashboard stats result:', stats);
+
+      return stats;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error getting dashboard stats:', error);
+      return {
+        todayHours: 0,
+        weekHours: 0,
+        monthHours: 0,
+        activeProjects: 0
+      };
     }
-
-    const [hoursResult, projectsResult, employeesResult] = await Promise.all([
-      this.execute(`
-        SELECT COALESCE(SUM(hours), 0) as total_hours
-        FROM time_entries
-        WHERE user_id = @param0 ${dateFilter}
-      `, params),
-      this.execute('SELECT COUNT(*) as total_projects FROM projects WHERE user_id = @param0', [userId]),
-      this.execute('SELECT COUNT(*) as total_employees FROM employees WHERE user_id = @param0', [userId])
-    ]);
-
-    return {
-      totalHours: hoursResult[0]?.total_hours || 0,
-      totalProjects: projectsResult[0]?.total_projects || 0,
-      totalEmployees: employeesResult[0]?.total_employees || 0
-    };
   }
 
 
@@ -2037,28 +2080,56 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async getProjectTimeBreakdown(userId: string): Promise<any[]> {
+  async getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
     try {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
+
+      let dateFilter = '';
+      if (startDate && endDate) {
+        request.input('startDate', sql.Date, startDate);
+        request.input('endDate', sql.Date, endDate);
+        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+      }
 
       const result = await request.query(`
         SELECT
           p.id,
           p.name,
-          '#1976D2' as color,
+          p.color,
           COALESCE(SUM(te.hours), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
+        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId ${dateFilter}
         WHERE p.user_id = @userId OR p.id IN (
-          SELECT DISTINCT project_id FROM time_entries WHERE user_id = @userId
+          SELECT DISTINCT project_id FROM time_entries WHERE user_id = @userId ${dateFilter}
         )
-        GROUP BY p.id, p.name
+        GROUP BY p.id, p.name, p.color
+        HAVING COALESCE(SUM(te.hours), 0) > 0
         ORDER BY total_hours DESC
       `);
 
-      return result.recordset;
+      // Transform to camelCase and calculate percentages
+      const totalHours = result.recordset.reduce((sum, item) => sum + parseFloat(item.total_hours || 0), 0);
+
+      const breakdown = result.recordset.map(row => ({
+        project: {
+          id: row.id,
+          name: row.name,
+          color: row.color || '#1976D2'
+        },
+        totalHours: parseFloat(row.total_hours || 0),
+        entryCount: parseInt(row.entry_count || 0),
+        percentage: totalHours > 0 ? Math.round((parseFloat(row.total_hours || 0) / totalHours) * 100) : 0
+      }));
+
+      console.log('📊 [FMB-STORAGE] Project breakdown result:', {
+        totalRecords: breakdown.length,
+        totalHours,
+        breakdown: breakdown.slice(0, 3) // Log first 3 for debugging
+      });
+
+      return breakdown;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting project breakdown:', error);
       throw error;
