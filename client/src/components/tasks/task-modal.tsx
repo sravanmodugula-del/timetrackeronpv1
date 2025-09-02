@@ -113,7 +113,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
 
   // Create task mutation
   const createTask = useMutation({
-    mutationFn: async (data: TaskFormData) => {
+    mutationFn: async (data: TaskFormData & { project_id?: string; projectId?: string }) => {
       console.log("📝 Task form data received:", data);
 
       // Validate required fields
@@ -126,8 +126,11 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
 
       const payload = {
         name: data.name.trim(),
+        title: data.name.trim(),
         description: data.description?.trim() || "",
-        status: data.status || "pending",
+        status: data.status || "active",
+        project_id: projectId,
+        projectId: projectId,
       };
 
       console.log("🔧 Creating task with payload:", payload);
@@ -156,6 +159,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Also invalidate projects cache
       onSuccess();
     },
     onError: (error) => {
@@ -196,6 +200,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] }); // Also invalidate projects cache
       onSuccess();
     },
     onError: (error) => {
@@ -224,7 +229,14 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     if (isEditing) {
       updateTask.mutate(data);
     } else {
-      createTask.mutate(data);
+      // Ensure we have the correct payload structure
+      const taskPayload = {
+        ...data,
+        project_id: projectId,
+        projectId: projectId
+      };
+      console.log("🚀 Creating task with payload:", taskPayload);
+      createTask.mutate(taskPayload);
     }
   };
 

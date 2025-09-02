@@ -69,6 +69,7 @@ export default function Tasks() {
     enabled: isAuthenticated,
     retry: 3,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
     select: (data) => {
       console.log("📊 Projects query select function called with data:", data);
       const result = Array.isArray(data) ? data : [];
@@ -77,7 +78,7 @@ export default function Tasks() {
     },
   });
 
-  // Log projects data for debugging
+  // Log projects data for debugging and auto-select first project
   React.useEffect(() => {
     console.log("📊 Projects data updated:", {
       projects: projects?.length || 0,
@@ -85,21 +86,37 @@ export default function Tasks() {
       projectsError: projectsError?.message,
       selectedProject
     });
+
+    // Auto-select first project if none selected and projects are available
+    if (projects && projects.length > 0 && selectedProject === "all" && !projectsLoading) {
+      console.log("🎯 Auto-selecting first project:", projects[0].id);
+      setSelectedProject(projects[0].id);
+    }
   }, [projects, projectsLoading, projectsError, selectedProject]);
 
   // Fetch tasks for selected project
   const { data: tasks, isLoading: tasksLoading, refetch } = useQuery<Task[]>({
     queryKey: selectedProject === "all" ? ["/api/tasks/all"] : ["/api/projects", selectedProject, "tasks"],
     queryFn: async () => {
+      console.log("🔄 Fetching tasks for project:", selectedProject);
       if (selectedProject === "all") {
-        return await apiRequest("/api/tasks/all", "GET");
+        const result = await apiRequest("/api/tasks/all", "GET");
+        console.log("📋 Tasks/all API result:", result);
+        return result;
       } else {
-        return await apiRequest(`/api/projects/${selectedProject}/tasks`, "GET");
+        const result = await apiRequest(`/api/projects/${selectedProject}/tasks`, "GET");
+        console.log("📋 Project tasks API result:", result);
+        return result;
       }
     },
     enabled: isAuthenticated && selectedProject !== "",
+    retry: 3,
+    staleTime: 1000,
     select: (data) => {
-      return Array.isArray(data) ? data : [];
+      console.log("📋 Tasks select function called with:", data);
+      const result = Array.isArray(data) ? data : [];
+      console.log("📋 Tasks select returning:", result);
+      return result;
     },
   });
 
@@ -195,8 +212,8 @@ export default function Tasks() {
       editingTask
     });
 
-    if (selectedProject === "all") {
-      console.log("❌ Selected project is 'all', showing error toast");
+    if (selectedProject === "all" || !selectedProject) {
+      console.log("❌ Selected project is 'all' or empty, showing error toast");
       toast({
         title: "Select a Project",
         description: "Please select a specific project to create a task",
@@ -240,14 +257,20 @@ export default function Tasks() {
   };
 
   const getStatusColor = (status: string) => {
+    console.log("🎨 Getting status color for:", status);
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-700";
       case "active":
         return "bg-blue-100 text-blue-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "in_progress":
+        return "bg-orange-100 text-orange-700";
       case "archived":
         return "bg-gray-100 text-gray-700";
       default:
+        console.log("⚠️ Unknown status:", status);
         return "bg-gray-100 text-gray-700";
     }
   };
@@ -345,36 +368,66 @@ export default function Tasks() {
         </Card>
 
         {/* Tasks Display */}
-        {selectedProject === "all" ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">Select a project to view and manage its tasks.</p>
-            </CardContent>
-          </Card>
-        ) : tasksLoading ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading tasks...</p>
-            </CardContent>
-          </Card>
-        ) : !tasks || tasks.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground mb-4">No tasks found for this project.</p>
-              {canCreateTasks && (
-                <Button onClick={handleCreateTask}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Your First Task
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(tasks || []).map((task) => (
-              <Card key={task.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
+        {(() => {
+          console.log("🔍 Task display render check:", {
+            selectedProject,
+            tasksLoading,
+            tasksData: tasks,
+            tasksLength: tasks?.length,
+            isTasksArray: Array.isArray(tasks),
+            projects: projects?.length || 0
+          });
+
+          if (selectedProject === "all") {
+            return (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground">Select a project to view and manage its tasks.</p>
+                  {projects && projects.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You have {projects.length} project{projects.length !== 1 ? 's' : ''} available
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }
+
+          if (tasksLoading) {
+            return (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading tasks...</p>
+                </CardContent>
+              </Card>
+            );
+          }
+
+          if (!tasks || tasks.length === 0) {
+            const selectedProjectData = projects?.find(p => p.id === selectedProject);
+            return (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    No tasks found for project: {selectedProjectData?.name || selectedProject}
+                  </p>
+                  {canCreateTasks && selectedProject && selectedProject !== "all" && (
+                    <Button onClick={handleCreateTask}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Task
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tasks.map((task) => (
+                <Card key={task.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-2">
                       <button
@@ -425,10 +478,11 @@ export default function Tasks() {
                     )}
                   </div>
                 </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </Card>
+              ))}
+            </div>
+          );
+        })()}
       </main>
 
       {/* Task Modal */}
@@ -440,7 +494,7 @@ export default function Tasks() {
           shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all"
         });
         
-        return isTaskModalOpen && selectedProject && selectedProject !== "all" ? (
+        return (isTaskModalOpen && selectedProject && selectedProject !== "all") ? (
           <TaskModal
             task={editingTask}
             projectId={selectedProject}
@@ -452,6 +506,9 @@ export default function Tasks() {
             }}
             onSuccess={() => {
               console.log("✅ Task operation successful, refreshing data");
+              // Use the refetch function and also invalidate the cache
+              queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProject, "tasks"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
               refetch();
               setIsTaskModalOpen(false);
               setEditingTask(null);
