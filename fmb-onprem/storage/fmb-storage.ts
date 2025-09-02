@@ -1982,22 +1982,55 @@ export class FmbStorage implements IStorage {
   }
 
   // Dashboard Methods
-  async getRecentActivity(userId: string, limit: number = 10): Promise<any[]> {
+  async getRecentActivity(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<any[]> {
     try {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
-      request.input('limit', sql.Int, limit);
+
+      let limitClause = '';
+      if (limit) {
+        limitClause = `TOP ${limit}`;
+      }
+
+      let dateFilter = '';
+      if (startDate && endDate) {
+        request.input('startDate', sql.Date, startDate);
+        request.input('endDate', sql.Date, endDate);
+        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+      }
 
       const result = await request.query(`
-        SELECT TOP (@limit) 'time_entry' as type, te.description, te.date as created_at, te.hours,
-               p.name as project_name
+        SELECT ${limitClause}
+          te.id,
+          'time_entry' as type,
+          te.description,
+          te.date as created_at,
+          te.hours,
+          te.duration,
+          p.id as project_id,
+          p.name as project_name
         FROM time_entries te
-        LEFT JOIN projects p ON te.project_id = p.id
-        WHERE te.user_id = @userId
-        ORDER BY te.date DESC, te.created_at DESC
+        INNER JOIN projects p ON te.project_id = p.id
+        WHERE te.user_id = @userId ${dateFilter}
+        ORDER BY te.created_at DESC, te.date DESC
       `);
 
-      return result.recordset;
+      // Transform the results to match the expected frontend structure
+      const activities = result.recordset.map(row => ({
+        id: row.id,
+        type: row.type,
+        description: row.description || '',
+        created_at: row.created_at,
+        date: row.created_at,
+        hours: row.hours,
+        duration: row.duration || row.hours,
+        project: {
+          id: row.project_id,
+          name: row.project_name
+        }
+      }));
+
+      return activities;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting recent activity:', error);
       throw error;
