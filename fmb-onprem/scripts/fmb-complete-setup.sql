@@ -182,7 +182,7 @@ CREATE TABLE tasks (
     title NVARCHAR(255) NOT NULL,
     name NVARCHAR(255),
     description NVARCHAR(MAX),
-    status NVARCHAR(50) NOT NULL DEFAULT 'pending',
+    status NVARCHAR(50) NOT NULL DEFAULT 'active',
     priority NVARCHAR(50) NOT NULL DEFAULT 'medium',
     assigned_to NVARCHAR(255),
     created_by NVARCHAR(255),
@@ -191,7 +191,7 @@ CREATE TABLE tasks (
     actual_hours DECIMAL(5,2) DEFAULT 0,
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     updated_at DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT CHK_tasks_status CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    CONSTRAINT CHK_tasks_status CHECK (status IN ('active', 'completed', 'archived')),
     CONSTRAINT CHK_tasks_priority CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
     CONSTRAINT CHK_tasks_hours CHECK (estimated_hours IS NULL OR estimated_hours >= 0)
 );

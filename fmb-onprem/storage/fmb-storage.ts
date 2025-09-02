@@ -781,55 +781,78 @@ export class FmbStorage implements IStorage {
   }
 
   // Get all tasks for a user across all their projects
-  async getAllUserTasks(userId: string): Promise<Task[]> {
+  async getAllUserTasks(userId: string): Promise<TaskWithProject[]> {
+    const executeId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+
     try {
-      console.log(`🔍 [FMB-STORAGE] Fetching all tasks for user: ${userId}`);
+      console.log("📋 [FMB-STORAGE] Fetching all tasks with project info for user:", userId);
 
       const request = this.pool.request();
-      request.input('userId', sql.NVarChar, userId);
+      request.input('userId', this.sql.NVarChar, userId);
 
-      const result = await this.executeQuery(request, `
+      const result = await this.executeWithRetry(
+        request,
+        `
         SELECT 
           t.id,
           t.project_id,
+          t.name,
           t.title,
           t.description,
           t.status,
           t.priority,
           t.assigned_to,
           t.created_by,
+          t.due_date,
+          t.estimated_hours,
+          t.actual_hours,
           t.created_at,
           t.updated_at,
-          p.name as project_name
+          p.name as project_name,
+          p.color as project_color
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
-        WHERE t.assigned_to = @userId OR t.created_by = @userId
+        WHERE p.user_id = @userId
         ORDER BY t.created_at DESC
-      `);
+        `,
+        executeId
+      );
 
-      console.log(`✅ [FMB-STORAGE] Found ${result.recordset.length} tasks for user ${userId}`);
-
-      // Map database status back to frontend status
-      const statusMapping = {
-        'active': 'in_progress',
-        'pending': 'pending',
-        'completed': 'completed'
-      };
-
-      return result.recordset.map(task => ({
-        ...task,
-        name: task.title || task.name || 'Untitled Task', // Ensure name is never null
-        title: task.title || task.name || 'Untitled Task',
-        status: statusMapping[task.status] || task.status,
-        projectId: task.project_id,
+      const tasks = result.recordset.map((row: any) => ({
+        id: row.id,
+        project_id: row.project_id,
+        name: row.name || row.title,
+        title: row.title || row.name,
+        description: row.description || '',
+        status: row.status,
+        priority: row.priority,
+        assigned_to: row.assigned_to,
+        created_by: row.created_by,
+        due_date: row.due_date,
+        estimated_hours: row.estimated_hours,
+        actual_hours: row.actual_hours || 0,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
         project: {
-          id: task.project_id,
-          name: task.project_name
+          id: row.project_id,
+          name: row.project_name,
+          color: row.project_color || '#1976D2'
         }
       }));
-    } catch (error) {
-      console.error(`❌ [FMB-STORAGE] Error fetching all tasks for user ${userId}:`, error);
-      throw error;
+
+      console.log("📋 [FMB-STORAGE] Found all user tasks with project info:", tasks.length);
+      console.log("📋 [FMB-STORAGE] All user task details:", tasks.map(t => ({
+        id: t.id,
+        name: t.name,
+        project_id: t.project_id,
+        status: t.status,
+        project_name: t.project?.name
+      })));
+
+      return tasks;
+    } catch (error: any) {
+      console.error(`❌ [FMB-STORAGE] Error in getAllUserTasks:`, error);
+      throw new Error(`Failed to fetch all user tasks: ${error.message}`);
     }
   }
 
