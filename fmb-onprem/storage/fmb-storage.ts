@@ -2082,6 +2082,8 @@ export class FmbStorage implements IStorage {
 
   async getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
     try {
+      console.log('📊 [FMB-STORAGE] Starting project breakdown query for user:', userId, 'dateRange:', { startDate, endDate });
+
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
@@ -2090,24 +2092,44 @@ export class FmbStorage implements IStorage {
         request.input('startDate', sql.Date, startDate);
         request.input('endDate', sql.Date, endDate);
         dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+        console.log('📊 [FMB-STORAGE] Using date filter:', dateFilter);
       }
 
+      // First, let's check if there are any time entries for this user
+      const timeEntriesCheck = await request.query(`
+        SELECT COUNT(*) as total_entries, 
+               COUNT(DISTINCT project_id) as unique_projects,
+               MIN(date) as earliest_date,
+               MAX(date) as latest_date,
+               SUM(hours) as total_hours
+        FROM time_entries 
+        WHERE user_id = @userId
+      `);
+
+      console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
+
+      // Now get the project breakdown with a simplified query
       const result = await request.query(`
         SELECT
           p.id,
           p.name,
           p.color,
-          COALESCE(SUM(te.hours), 0) as total_hours,
+          SUM(COALESCE(te.hours, 0)) as total_hours,
           COUNT(te.id) as entry_count
-        FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId ${dateFilter}
-        WHERE p.user_id = @userId OR p.id IN (
-          SELECT DISTINCT project_id FROM time_entries WHERE user_id = @userId ${dateFilter}
-        )
+        FROM time_entries te
+        INNER JOIN projects p ON te.project_id = p.id
+        WHERE te.user_id = @userId ${dateFilter}
         GROUP BY p.id, p.name, p.color
-        HAVING COALESCE(SUM(te.hours), 0) > 0
+        HAVING SUM(COALESCE(te.hours, 0)) > 0
         ORDER BY total_hours DESC
       `);
+
+      console.log('📊 [FMB-STORAGE] Raw breakdown query result:', result.recordset);
+
+      if (!result.recordset || result.recordset.length === 0) {
+        console.log('📊 [FMB-STORAGE] No project breakdown data found');
+        return [];
+      }
 
       // Transform to camelCase and calculate percentages
       const totalHours = result.recordset.reduce((sum, item) => sum + parseFloat(item.total_hours || 0), 0);
@@ -2128,7 +2150,7 @@ export class FmbStorage implements IStorage {
       console.log('📊 [FMB-STORAGE] Project breakdown result:', {
         totalRecords: breakdown.length,
         totalHours,
-        breakdown: breakdown.slice(0, 3) // Log first 3 for debugging
+        breakdown: breakdown
       });
 
       return breakdown;
