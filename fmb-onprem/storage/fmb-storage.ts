@@ -1107,25 +1107,25 @@ export class FmbStorage implements IStorage {
   }
 
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
-    const insertData = {
-      id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      user_id: timeEntryData.user_id,
-      project_id: timeEntryData.project_id,
-      task_id: timeEntryData.task_id,
-      description: timeEntryData.description,
-      hours: timeEntryData.hours,
-      duration: timeEntryData.duration || timeEntryData.hours,
-      date: timeEntryData.date,
-      start_time: timeEntryData.start_time,
-      end_time: timeEntryData.end_time,
-      status: timeEntryData.status || 'draft',
-      billable: timeEntryData.billable || false,
-      is_billable: timeEntryData.is_billable || false,
-      is_approved: timeEntryData.is_approved || false,
-      is_manual_entry: timeEntryData.is_manual_entry !== false,
-      is_timer_entry: timeEntryData.is_timer_entry || false,
-      is_template: timeEntryData.is_template || false
-    };
+      const insertData = {
+        id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        user_id: timeEntryData.userId || timeEntryData.user_id,
+        project_id: timeEntryData.projectId || timeEntryData.project_id,
+        task_id: timeEntryData.taskId || timeEntryData.task_id,
+        description: timeEntryData.description,
+        hours: timeEntryData.hours,
+        duration: timeEntryData.duration || timeEntryData.hours,
+        date: timeEntryData.date,
+        start_time: timeEntryData.startTime || timeEntryData.start_time,
+        end_time: timeEntryData.endTime || timeEntryData.end_time,
+        status: timeEntryData.status || 'draft',
+        billable: timeEntryData.billable || false,
+        is_billable: timeEntryData.isBillable || timeEntryData.is_billable || false,
+        is_approved: timeEntryData.isApproved || timeEntryData.is_approved || false,
+        is_manual_entry: timeEntryData.isManualEntry !== false && timeEntryData.is_manual_entry !== false,
+        is_timer_entry: timeEntryData.isTimerEntry || timeEntryData.is_timer_entry || false,
+        is_template: timeEntryData.isTemplate || timeEntryData.is_template || false
+      };
     await this.execute(`
       INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours,
                                duration, date, start_time, end_time, status, billable,
@@ -1981,7 +1981,7 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  // Dashboard Analytics Methods
+  // Dashboard Methods
   async getRecentActivity(userId: string, limit: number = 10): Promise<any[]> {
     try {
       const request = this.pool.request();
