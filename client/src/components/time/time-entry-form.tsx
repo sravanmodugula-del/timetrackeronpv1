@@ -109,6 +109,15 @@ export default function TimeEntryForm() {
   // Fetch tasks for selected project
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
+    queryFn: async () => {
+      if (!selectedProjectId) return [];
+      const response = await fetch(`/api/projects/${selectedProjectId}/tasks`);
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
     enabled: !!selectedProjectId,
   });
 

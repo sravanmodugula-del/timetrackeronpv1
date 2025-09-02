@@ -152,9 +152,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "Task created successfully",
       });
       form.reset();
-      // Invalidate the specific project tasks query
+      // Invalidate queries to match the exact keys used in tasks page
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {
@@ -191,9 +191,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         title: "Success",
         description: "Task updated successfully",
       });
-      // Invalidate the specific project tasks query
+      // Invalidate queries to match the exact keys used in tasks page
       queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       onSuccess();
     },
     onError: (error) => {

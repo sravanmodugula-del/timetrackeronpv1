@@ -107,7 +107,7 @@ export default function Tasks() {
         return Array.isArray(data) ? data : [];
       }
     },
-    enabled: isAuthenticated && selectedProject !== "all",
+    enabled: isAuthenticated && selectedProject !== "",
   });
 
   // Delete task mutation
