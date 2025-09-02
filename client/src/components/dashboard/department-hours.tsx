@@ -24,36 +24,15 @@ export default function DepartmentHours({ startDate, endDate }: DepartmentHoursP
   const url = `/api/dashboard/department-hours?startDate=${startDate}&endDate=${endDate}`;
   const { data: departmentHoursRaw = [], isLoading, error } = useQuery<any[]>({
     queryKey: [url],
-    retry: (failureCount, error) => {
-      if (error instanceof Error && error.message.includes('401')) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 30000,
+    retry: false,
   });
 
-  // Convert string hours to numbers for proper calculations with safe parsing
-  const departmentHours: DepartmentHours[] = (departmentHoursRaw || []).map(dept => {
-    if (!dept || typeof dept !== 'object') {
-      return {
-        departmentId: '',
-        departmentName: 'Unknown Department',
-        totalHours: 0,
-        employeeCount: 0,
-      };
-    }
-    
-    const totalHours = dept?.totalHours != null ? Number(dept.totalHours) : 0;
-    const employeeCount = dept?.employeeCount != null ? Number(dept.employeeCount) : 0;
-    
-    return {
-      departmentId: dept?.departmentId || '',
-      departmentName: dept?.departmentName || 'Unknown Department',
-      totalHours: isNaN(totalHours) ? 0 : totalHours,
-      employeeCount: isNaN(employeeCount) ? 0 : employeeCount,
-    };
-  });
+  // Convert string hours to numbers for proper calculations
+  const departmentHours: DepartmentHours[] = departmentHoursRaw.map(dept => ({
+    ...dept,
+    totalHours: typeof dept.totalHours === 'string' ? parseFloat(dept.totalHours) : dept.totalHours,
+    employeeCount: typeof dept.employeeCount === 'string' ? parseInt(dept.employeeCount) : dept.employeeCount,
+  }));
 
   const formatHours = (hours: number) => {
     return hours.toFixed(1);
@@ -90,28 +69,6 @@ export default function DepartmentHours({ startDate, endDate }: DepartmentHoursP
     );
   }
 
-  // Handle errors
-  if (error) {
-    console.error('🔴 [DEPARTMENT-HOURS] Error loading department data:', error);
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Building2 className="w-5 h-5 mr-2" />
-            Department Hours Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-red-500">
-            <Building2 className="w-12 h-12 mx-auto mb-3 text-red-300" />
-            <p>Unable to load department data</p>
-            <p className="text-sm">{error instanceof Error ? error.message : 'Unknown error'}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (departmentHours.length === 0) {
     return (
       <Card>
@@ -125,7 +82,9 @@ export default function DepartmentHours({ startDate, endDate }: DepartmentHoursP
           <div className="text-center py-8 text-gray-500">
             <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>No department data available</p>
-            <p className="text-sm">No employee assignments found for this period</p>
+            <p className="text-sm">
+              {error ? `Error: ${error.message}` : 'No employee assignments found for this period'}
+            </p>
           </div>
         </CardContent>
       </Card>

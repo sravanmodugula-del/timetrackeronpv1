@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Project {
   id: string;
@@ -150,7 +150,7 @@ export default function SimpleTimeEntryForm() {
   // Create time entry mutation
   const createTimeEntry = useMutation({
     mutationFn: async (data: TimeEntryFormData) => {
-      return request("/api/time-entries", "POST", data);
+      return apiRequest("/api/time-entries", "POST", data);
     },
     onSuccess: () => {
       toast({

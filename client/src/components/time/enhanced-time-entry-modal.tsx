@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { insertTimeEntrySchema, type Project, type Task, type TimeEntryWithProject } from "@shared/schema";
 import { getActiveProjects } from "@/lib/projectUtils";
 import { z } from "zod";
@@ -132,7 +132,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
   // Update time entry mutation
   const updateTimeEntry = useMutation({
     mutationFn: async (data: TimeEntryFormData) => {
-      return request(`/api/time-entries/${entry.id}`, "PUT", data);
+      return apiRequest(`/api/time-entries/${entry.id}`, "PUT", data);
     },
     onSuccess: () => {
       toast({

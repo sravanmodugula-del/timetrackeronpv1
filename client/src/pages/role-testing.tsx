@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { UserCog, Shield, Users, Eye, RefreshCw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 
 interface TestUser {
   id: string;
@@ -105,7 +105,7 @@ export default function RoleTesting() {
   // Create test users mutation
   const createTestUsersMutation = useMutation({
     mutationFn: async () => {
-      return await request("/api/admin/create-test-users", "POST", {});
+      return await apiRequest("/api/admin/create-test-users", "POST", {});
     },
     onSuccess: () => {
       toast({
@@ -132,7 +132,7 @@ export default function RoleTesting() {
   // Simple role change mutation - works with basic /api/users/change-role endpoint
   const testRoleMutation = useMutation({
     mutationFn: async (testRole: string) => {
-      return await request("/api/users/change-role", "POST", { role: testRole });
+      return await apiRequest("/api/users/change-role", "POST", { role: testRole });
     },
     onSuccess: (data) => {
       toast({
@@ -162,7 +162,7 @@ export default function RoleTesting() {
   // Restore admin role mutation
   const restoreRoleMutation = useMutation({
     mutationFn: async () => {
-      return await request("/api/admin/restore-role", "POST", {});
+      return await apiRequest("/api/admin/restore-role", "POST", {});
     },
     onSuccess: (data) => {
       toast({

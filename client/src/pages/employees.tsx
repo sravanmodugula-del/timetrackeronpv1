@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { insertEmployeeSchema, type Employee, type Department, type Organization } from "@shared/schema";
 import Header from "@/components/layout/header";
@@ -85,7 +85,7 @@ export default function Employees() {
   // Create employee mutation
   const createEmployee = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
-      return request("/api/employees", "POST", data);
+      return apiRequest("/api/employees", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -120,7 +120,7 @@ export default function Employees() {
   const updateEmployee = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
       if (!editingEmployee) throw new Error("No employee selected for editing");
-      return request(`/api/employees/${editingEmployee.id}`, "PUT", data);
+      return apiRequest(`/api/employees/${editingEmployee.id}`, "PUT", data);
     },
     onSuccess: () => {
       toast({
@@ -155,7 +155,7 @@ export default function Employees() {
   // Delete employee mutation
   const deleteEmployee = useMutation({
     mutationFn: async (id: string) => {
-      await request(`/api/employees/${id}`, "DELETE");
+      await apiRequest(`/api/employees/${id}`, "DELETE");
     },
     onSuccess: () => {
       toast({

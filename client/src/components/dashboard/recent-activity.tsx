@@ -14,7 +14,7 @@ interface RecentActivityProps {
 
 
 export default function RecentActivity({ dateRange }: RecentActivityProps) {
-  const { data: activities, isLoading, error } = useQuery<TimeEntryWithProject[]>({
+  const { data: activities, isLoading } = useQuery<TimeEntryWithProject[]>({
     queryKey: ["/api/dashboard/recent-activity", dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -28,61 +28,27 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
       }
       return response.json();
     },
-    retry: 3,
-    staleTime: 30000,
   });
-
-  // Handle errors
-  if (error) {
-    console.error('🔴 [RECENT-ACTIVITY] Error loading activities:', error);
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <History className="w-5 h-5 mr-2 text-primary" />
-            Recent Activity
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-red-500">
-            <p>Unable to load recent activity</p>
-            <p className="text-sm mt-1">{error instanceof Error ? error.message : 'Unknown error'}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const getProjectColor = () => {
     // Default to primary color since project color is not available in this context
     return 'bg-primary';
   };
 
-  const formatDate = (dateString: string | Date) => {
-    try {
-      const dateStr = typeof dateString === 'string' ? dateString : dateString.toString();
-      const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
-      
-      if (isNaN(date.getTime())) {
-        return "Unknown date";
-      }
-      
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + 'T00:00:00');
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-      if (date.toDateString() === today.toDateString()) {
-        return "Today";
-      } else if (date.toDateString() === yesterday.toDateString()) {
-        return "Yesterday";
-      } else {
-        const diffTime = Math.abs(today.getTime() - date.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return `${diffDays} days ago`;
-      }
-    } catch (error) {
-      console.error('🔴 [RECENT-ACTIVITY] Date formatting error:', error);
-      return "Unknown date";
+    if (date.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      const diffTime = Math.abs(today.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return `${diffDays} days ago`;
     }
   };
 
@@ -146,14 +112,12 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
             <div key={activity.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
               <div className={`w-2 h-2 ${getProjectColor()} rounded-full mt-2`}></div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">
-                  {activity?.project?.name || 'Unknown Project'}
-                </p>
+                <p className="text-sm font-medium text-gray-900">{activity.project.name}</p>
                 <p className="text-xs text-gray-600">
-                  {activity?.description || "No description"}
+                  {activity.description || "No description"}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatDate(activity?.date || new Date().toISOString())} • {Number(activity?.duration || 0).toFixed(1)} hours
+                  {formatDate(typeof activity.date === 'string' ? activity.date : activity.date.toString())} • {activity.duration} hours
                 </p>
               </div>
             </div>

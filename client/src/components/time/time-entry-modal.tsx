@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 import type { Project, Task, TimeEntry } from "@shared/schema";
 import { insertTimeEntrySchema, type TimeEntryWithProject } from "@shared/schema";
@@ -32,14 +32,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
-const timeEntryFormSchema = z.object({
-  projectId: z.string().min(1, "Project is required"),
-  taskId: z.string().min(1, "Task is required"),
-  description: z.string().optional(),
+const timeEntryFormSchema = insertTimeEntrySchema.extend({
   date: z.string().min(1, "Date is required"),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
-});
+  taskId: z.string().min(1, "Task is required"),
+}).omit({ userId: true, duration: true });
 
 type TimeEntryFormData = z.infer<typeof timeEntryFormSchema>;
 
@@ -126,7 +124,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
         duration: duration.toFixed(2),
       };
 
-      return await request(`/api/time-entries/${entry.id}`, "PUT", entryData);
+      return await apiRequest(`/api/time-entries/${entry.id}`, "PUT", entryData);
     },
     onSuccess: () => {
       toast({

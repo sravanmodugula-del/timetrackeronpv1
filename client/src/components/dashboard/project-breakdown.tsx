@@ -24,7 +24,7 @@ const CHART_COLORS = [
 ];
 
 export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
-  const { data: breakdown, isLoading, error } = useQuery<ProjectBreakdownItem[]>({
+  const { data: breakdown, isLoading } = useQuery<ProjectBreakdownItem[]>({
     queryKey: ["/api/dashboard/project-breakdown", dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -37,30 +37,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       }
       return response.json();
     },
-    retry: 3,
-    staleTime: 30000,
   });
-
-  // Handle errors
-  if (error) {
-    console.error('🔴 [PROJECT-BREAKDOWN] Error loading breakdown:', error);
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <PieChart className="w-5 h-5 mr-2 text-primary" />
-            Project Time Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-red-500">
-            <p>Unable to load project breakdown</p>
-            <p className="text-sm mt-1">{error instanceof Error ? error.message : 'Unknown error'}</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   
 
@@ -114,18 +91,10 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
 
   const projectData = breakdown?.map((item: any, index: number) => {
     const colors = CHART_COLORS[index % CHART_COLORS.length] || CHART_COLORS[0];
-    
-    // Safe parsing with proper null checks
-    const totalHours = item?.totalHours != null ? Number(item.totalHours) : 0;
-    const percentage = item?.percentage != null ? Number(item.percentage) : 0;
-    
-    // Enhanced null safety for project object
-    const projectName = item?.project?.name || item?.projectName || 'Unknown Project';
-    
     return {
-      name: projectName,
-      hours: isNaN(totalHours) ? 0 : totalHours,
-      percentage: isNaN(percentage) ? 0 : percentage,
+      name: item.project?.name || 'Unknown Project',
+      hours: parseFloat(item.totalHours?.toString() || '0') || 0,
+      percentage: parseFloat(item.percentage?.toString() || '0') || 0,
       color: colors?.color || '#8884d8',
       bg: colors?.bg || 'bg-blue-500',
       border: colors?.border || 'border-blue-500'

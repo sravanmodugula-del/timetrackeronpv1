@@ -12,7 +12,7 @@ import { Pencil, Trash2, Download, Plus } from "lucide-react";
 import { Link } from "wouter";
 import type { TimeEntryWithProject, Project } from "@shared/schema";
 import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
 
 export default function TimeLog() {
@@ -112,7 +112,7 @@ export default function TimeLog() {
     }
 
     try {
-      await request(`/api/time-entries/${entryId}`, 'DELETE');
+      await apiRequest(`/api/time-entries/${entryId}`, 'DELETE');
       toast({
         title: "Success",
         description: "Time entry deleted successfully",

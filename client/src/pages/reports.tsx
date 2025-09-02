@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +68,7 @@ export default function Reports() {
   const { data: timeEntries = [], isLoading: timeEntriesLoading, refetch } = useQuery<TimeEntryWithEmployee[]>({
     queryKey: ["/api/reports/project-time-entries", selectedProject],
     queryFn: async () => {
-      return await request(`/api/reports/project-time-entries/${selectedProject}`, "GET");
+      return await apiRequest(`/api/reports/project-time-entries/${selectedProject}`, "GET");
     },
     enabled: isAuthenticated && canAccessReports && !!selectedProject,
   });

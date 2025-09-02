@@ -17,75 +17,46 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ dateRange }: StatsCardsProps) {
-  const { data: stats, isLoading, error } = useQuery<DashboardStats>({
+  const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats", dateRange],
     queryFn: async () => {
       const params = new URLSearchParams({
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
       });
-      const response = await fetch(`/api/dashboard/stats?${params}`, {
-        credentials: 'include'
-      });
+      const response = await fetch(`/api/dashboard/stats?${params}`);
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-      const data = await response.json();
-      // Ensure all values are properly defined
-      return {
-        todayHours: data?.todayHours || 0,
-        weekHours: data?.weekHours || 0,
-        monthHours: data?.monthHours || 0,
-        activeProjects: data?.activeProjects || 0
-      };
+      return response.json();
     },
-    retry: 3,
-    staleTime: 30000,
   });
-
-  // Handle errors
-  if (error) {
-    console.error('🔴 [STATS-CARDS] Error loading stats:', error);
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i} className="border-red-200">
-            <CardContent className="p-6">
-              <div className="text-center text-red-500">
-                <p className="text-sm">Unable to load stats</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
 
   const statCards = [
     {
       title: "Today's Hours",
-      value: (stats?.todayHours != null ? Number(stats.todayHours).toFixed(1) : "0.0"),
+      value: stats?.todayHours?.toFixed(1) || "0.0",
       icon: Clock,
       color: "text-primary",
       bgColor: "bg-primary bg-opacity-10",
     },
     {
       title: "This Week",
-      value: (stats?.weekHours != null ? Number(stats.weekHours).toFixed(1) : "0.0"),
+      value: stats?.weekHours?.toFixed(1) || "0.0",
       icon: Calendar,
       color: "text-green-600",
       bgColor: "bg-green-100",
     },
     {
       title: "Active Projects",
-      value: (stats?.activeProjects != null ? Number(stats.activeProjects).toString() : "0"),
+      value: stats?.activeProjects?.toString() || "0",
       icon: BarChart3,
       color: "text-orange-600",
       bgColor: "bg-orange-100",
     },
     {
       title: "This Month",
-      value: (stats?.monthHours != null ? Number(stats.monthHours).toFixed(1) : "0.0"),
+      value: stats?.monthHours?.toFixed(1) || "0.0",
       icon: CalendarDays,
       color: "text-primary",
       bgColor: "bg-primary bg-opacity-10",

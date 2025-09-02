@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { request } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,11 +100,11 @@ export default function Tasks() {
     queryFn: async () => {
       console.log("🔄 Fetching tasks for project:", selectedProject);
       if (selectedProject === "all") {
-        const result = await request("/api/tasks/all", "GET");
+        const result = await apiRequest("/api/tasks/all", "GET");
         console.log("📋 Tasks/all API result:", result);
         return result;
       } else if (selectedProject) {
-        const result = await request(`/api/projects/${selectedProject}/tasks`, "GET");
+        const result = await apiRequest(`/api/projects/${selectedProject}/tasks`, "GET");
         console.log("📋 Project tasks API result:", result);
         return result;
       } else {
@@ -125,7 +125,7 @@ export default function Tasks() {
   // Delete task mutation
   const deleteTask = useMutation({
     mutationFn: async (taskId: string) => {
-      await request(`/api/tasks/${taskId}`, "DELETE");
+      await apiRequest(`/api/tasks/${taskId}`, "DELETE");
     },
     onSuccess: () => {
       toast({
@@ -157,7 +157,7 @@ export default function Tasks() {
   // Toggle task status mutation
   const toggleTaskStatus = useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      await request(`/api/tasks/${taskId}`, "PUT", { status });
+      await apiRequest(`/api/tasks/${taskId}`, "PUT", { status });
     },
     onSuccess: () => {
       toast({
@@ -454,7 +454,7 @@ export default function Tasks() {
                         )}
                       </button>
                       <h3 className={`font-semibold ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {task.name || "Untitled Task"}
+                        {task.name || task.title || "Untitled Task"}
                       </h3>
                     </div>
                     <Badge className={getStatusColor(task.status)}>
