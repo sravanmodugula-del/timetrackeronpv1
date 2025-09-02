@@ -232,7 +232,8 @@ export default function WorkingTimeEntryForm() {
         date: data.date,
         startTime: data.startTime,
         endTime: data.endTime,
-        duration: hours.toFixed(2),
+        hours: parseFloat(hours.toFixed(2)),
+        duration: parseFloat(hours.toFixed(2)),
       };
 
       createTimeEntry.mutate(submissionData);
@@ -251,7 +252,8 @@ export default function WorkingTimeEntryForm() {
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        duration: data.duration,
+        hours: parseFloat(data.duration),
+        duration: parseFloat(data.duration),
       };
 
       createTimeEntry.mutate(submissionData);

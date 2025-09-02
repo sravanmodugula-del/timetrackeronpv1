@@ -216,7 +216,8 @@ export default function TimeEntryForm() {
           taskId: timeData.taskId,
           description: timeData.description,
           date: timeData.date,
-          duration: duration.toFixed(2),
+          hours: parseFloat(duration.toFixed(2)),
+          duration: parseFloat(duration.toFixed(2)),
         };
       } else {
         const manualData = data as ManualDurationFormData;
@@ -225,7 +226,8 @@ export default function TimeEntryForm() {
           taskId: manualData.taskId,
           description: manualData.description,
           date: manualData.date,
-          duration: manualData.duration,
+          hours: parseFloat(manualData.duration),
+          duration: parseFloat(manualData.duration),
         };
       }
 
