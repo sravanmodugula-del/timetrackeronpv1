@@ -133,13 +133,13 @@ export default function TimeEntryForm() {
       console.log("⚠️ Time Entry Form - No tasks or invalid format");
       return [];
     }
-    
+
     const filtered = tasks.filter(task => {
       const isValidStatus = task.status === "active" || task.status === "completed";
       console.log(`📋 Time Entry Form - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
       return isValidStatus;
     });
-    
+
     console.log("✅ Time Entry Form - Available tasks:", filtered.length, filtered);
     return filtered;
   }, [tasks]);
@@ -236,7 +236,7 @@ export default function TimeEntryForm() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Time entry created successfully",
+        description: "Time entry saved successfully",
       });
 
       // Reset both forms
@@ -258,10 +258,15 @@ export default function TimeEntryForm() {
       });
 
       setCalculatedDuration("");
+
+      // Invalidate all dashboard-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/time-entries"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/recent-activity"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/project-breakdown"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/department-hours"] });
+
+      console.log("✅ [TIME-ENTRY] Successfully created entry and invalidated dashboard queries");
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

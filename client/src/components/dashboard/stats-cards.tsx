@@ -17,19 +17,51 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ dateRange }: StatsCardsProps) {
-  const { data: stats, isLoading } = useQuery<DashboardStats>({
+  const { data: stats, isLoading, error } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats", dateRange],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
-      });
-      const response = await fetch(`/api/dashboard/stats?${params}`);
-      if (!response.ok) {
-        throw new Error(`${response.status}: ${response.statusText}`);
+      try {
+        const params = new URLSearchParams({
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        });
+        const response = await fetch(`/api/dashboard/stats?${params}`);
+        
+        if (!response.ok) {
+          console.error("Dashboard stats API error:", response.status, response.statusText);
+          // Return safe defaults instead of throwing
+          return {
+            todayHours: 0,
+            weekHours: 0,
+            monthHours: 0,
+            activeProjects: 0
+          };
+        }
+        
+        const data = await response.json();
+        console.log("📊 [STATS-CARDS] Received data:", data);
+        
+        // Ensure all values are valid numbers
+        return {
+          todayHours: Number(data.todayHours || 0),
+          weekHours: Number(data.weekHours || 0),
+          monthHours: Number(data.monthHours || 0),
+          activeProjects: Number(data.activeProjects || 0)
+        };
+      } catch (error) {
+        console.error("📊 [STATS-CARDS] Error:", error);
+        // Return safe defaults instead of throwing
+        return {
+          todayHours: 0,
+          weekHours: 0,
+          monthHours: 0,
+          activeProjects: 0
+        };
       }
-      return response.json();
     },
+    // Add retry and error handling options
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const statCards = [

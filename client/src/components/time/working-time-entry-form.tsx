@@ -125,13 +125,13 @@ export default function WorkingTimeEntryForm() {
       console.log("⚠️ Working Time Entry - No tasks or invalid format");
       return [];
     }
-    
+
     const filtered = tasks.filter(task => {
       const isValidStatus = task.status === "active" || task.status === "completed";
       console.log(`📋 Working Time Entry - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
       return isValidStatus;
     });
-    
+
     console.log("✅ Working Time Entry - Available tasks:", filtered.length, filtered);
     return filtered;
   }, [tasks]);
@@ -168,8 +168,8 @@ export default function WorkingTimeEntryForm() {
 
   // Create time entry mutation
   const createTimeEntry = useMutation({
-    mutationFn: async (data: TimeEntryFormData) => {
-      return apiRequest("/api/time-entries", "POST", data);
+    mutationFn: async (entryData: TimeEntryFormData) => {
+      return await apiRequest("/api/time-entries", "POST", entryData);
     },
     onSuccess: () => {
       toast({
