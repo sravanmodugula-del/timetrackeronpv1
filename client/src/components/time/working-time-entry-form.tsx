@@ -58,8 +58,8 @@ type TimeEntryFormData = TimeEntryForm;
 
 function getCurrentLocalDate(): string {
   const now = new Date();
-  return now.toLocaleDateString('en-CA', { 
-    timeZone: 'America/Los_Angeles' 
+  return now.toLocaleDateString('en-CA', {
+    timeZone: 'America/Los_Angeles'
   });
 }
 
@@ -68,13 +68,13 @@ function getActiveProjects(projects: Project[]): Project[] {
   return projects.filter(project => {
     const startDate = project.startDate;
     const endDate = project.endDate;
-    
+
     // If project has a start date in the future, exclude it
     if (startDate && now < startDate) return false;
-    
+
     // If project has an end date in the past, exclude it
     if (endDate && now > endDate) return false;
-    
+
     // Project is active (started and not ended)
     return true;
   });
@@ -103,7 +103,7 @@ export default function WorkingTimeEntryForm() {
   const { data: allProjects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-  
+
   const projects = getActiveProjects(allProjects);
 
   // Watch project selection
@@ -115,7 +115,10 @@ export default function WorkingTimeEntryForm() {
     enabled: !!selectedProjectId,
   });
 
-  const activeTasks = tasks.filter(task => task.status === "active");
+  // Use all tasks for time entry selection (don't filter by status)
+  const availableTasks = tasks?.filter(task =>
+    task.status === "active" || task.status === "completed"
+  ) || [];
 
   // Calculate duration for time range mode
   const calculateDuration = (startTime?: string, endTime?: string) => {
@@ -126,7 +129,7 @@ export default function WorkingTimeEntryForm() {
 
     const start = new Date(`2000-01-01T${startTime}:00`);
     const end = new Date(`2000-01-01T${endTime}:00`);
-    
+
     if (end <= start) {
       setCalculatedDuration("Invalid time range");
       return;
@@ -190,10 +193,10 @@ export default function WorkingTimeEntryForm() {
         });
         return;
       }
-      
+
       const start = new Date(`2000-01-01T${data.startTime}:00`);
       const end = new Date(`2000-01-01T${data.endTime}:00`);
-      
+
       if (end <= start) {
         toast({
           title: "Error",
@@ -202,10 +205,10 @@ export default function WorkingTimeEntryForm() {
         });
         return;
       }
-      
+
       const diffMs = end.getTime() - start.getTime();
       const hours = diffMs / (1000 * 60 * 60);
-      
+
       const submissionData = {
         projectId: data.projectId,
         taskId: data.taskId,
@@ -215,7 +218,7 @@ export default function WorkingTimeEntryForm() {
         endTime: data.endTime,
         duration: hours.toFixed(2),
       };
-      
+
       createTimeEntry.mutate(submissionData);
     } else {
       if (!data.duration) {
@@ -226,7 +229,7 @@ export default function WorkingTimeEntryForm() {
         });
         return;
       }
-      
+
       const submissionData = {
         projectId: data.projectId,
         taskId: data.taskId,
@@ -234,7 +237,7 @@ export default function WorkingTimeEntryForm() {
         date: data.date,
         duration: data.duration,
       };
-      
+
       createTimeEntry.mutate(submissionData);
     }
   };
@@ -321,21 +324,21 @@ export default function WorkingTimeEntryForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Project *</FormLabel>
-                      <Select 
+                      <Select
                         onValueChange={(value) => {
                           field.onChange(value);
                           form.setValue("taskId", "");
-                        }} 
+                        }}
                         value={field.value || ""}
                         disabled={projectsLoading}
                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
-                              projectsLoading 
-                                ? "Loading projects..." 
-                                : projects.length === 0 
-                                  ? "No active projects" 
+                              projectsLoading
+                                ? "Loading projects..."
+                                : projects.length === 0
+                                  ? "No active projects"
                                   : "Select a project"
                             } />
                           </SelectTrigger>
@@ -344,8 +347,8 @@ export default function WorkingTimeEntryForm() {
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
+                                <div
+                                  className="w-3 h-3 rounded-full"
                                   style={{ backgroundColor: project.color || "#1976D2" }}
                                 />
                                 {project.name}
@@ -366,26 +369,25 @@ export default function WorkingTimeEntryForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Task *</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value || ""}
                         disabled={!selectedProjectId || tasksLoading}
                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
-                              !selectedProjectId 
-                                ? "Select a project first" 
+                              !selectedProjectId
+                                ? "Select a project first"
                                 : tasksLoading
                                   ? "Loading tasks..."
-                                  : activeTasks.length === 0 
-                                    ? "No tasks available" 
+                                  : availableTasks.length === 0 ? "No tasks available"
                                     : "Select a task"
                             } />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {activeTasks.map((task) => (
+                          {availableTasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
                               {task.name}
                             </SelectItem>
@@ -409,8 +411,8 @@ export default function WorkingTimeEntryForm() {
                       Date *
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="date" 
+                      <Input
+                        type="date"
                         {...field}
                         max={getCurrentLocalDate()} // Prevent future dates
                         className="w-full"
@@ -501,11 +503,11 @@ export default function WorkingTimeEntryForm() {
                     <FormItem>
                       <FormLabel>Duration (hours) *</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
+                        <Input
+                          type="number"
+                          step="0.01"
                           placeholder="e.g., 2.5 for 2 hours 30 minutes"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />

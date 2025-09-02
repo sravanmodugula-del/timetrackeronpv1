@@ -80,6 +80,11 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
     enabled: !!selectedProjectId,
   });
 
+  // Use all tasks for time entry selection (don't filter by status)
+  const availableTasks = tasks?.filter(task =>
+    task.status === "active" || task.status === "completed"
+  ) || [];
+
   // Calculate duration when start/end times change
   const calculateDuration = (startTime: string, endTime: string) => {
     if (!startTime || !endTime) {
@@ -221,7 +226,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
-                    disabled={!selectedProjectId}
+                    disabled={!selectedProjectId || availableTasks.length === 0}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -229,7 +234,7 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {tasks?.filter(task => task.status !== "archived").map((task) => (
+                      {availableTasks.map((task) => (
                         <SelectItem key={task.id} value={task.id}>
                           {task.name}
                         </SelectItem>

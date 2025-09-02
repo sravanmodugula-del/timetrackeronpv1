@@ -39,7 +39,7 @@ interface TaskModalProps {
 
 const taskFormSchema = z.object({
   name: z.string().min(1, "Task name is required"),
-  status: z.enum(["pending", "in_progress", "completed"]).default("pending"),
+  status: z.enum(["active", "completed", "archived"]).default("active"),
   description: z.string().optional().transform(val => val || ""),
 });
 
@@ -72,7 +72,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
       form.reset({
         name: "",
         description: "",
-        status: "pending",
+        status: "active",
       });
 
       // Clear any previous errors
@@ -85,7 +85,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     defaultValues: {
       name: "",
       description: "",
-      status: "pending",
+      status: "active",
     },
     mode: "onChange",
   });
@@ -97,13 +97,13 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         form.reset({
           name: task.name || "",
           description: task.description || "",
-          status: (task.status as "pending" | "in_progress" | "completed") || "pending",
+          status: (task.status as "active" | "completed" | "archived") || "active",
         });
       } else {
         form.reset({
           name: "",
           description: "",
-          status: "pending",
+          status: "active",
         });
       }
     }
@@ -128,7 +128,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         name: data.name.trim(),
         title: data.name.trim(),
         description: data.description?.trim() || "",
-        status: data.status || "pending",
+        status: data.status || "active",
         project_id: projectId,
         projectId: projectId,
       };
@@ -311,9 +311,9 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

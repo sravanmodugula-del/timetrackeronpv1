@@ -52,8 +52,8 @@ interface EnhancedTimeEntryModalProps {
 
 function getCurrentLocalDate(): string {
   const now = new Date();
-  return now.toLocaleDateString('en-CA', { 
-    timeZone: 'America/Los_Angeles' 
+  return now.toLocaleDateString('en-CA', {
+    timeZone: 'America/Los_Angeles'
   });
 }
 
@@ -96,7 +96,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
     enabled: !!selectedProjectId,
   });
 
-  const activeTasks = tasks?.filter(task => task.status === "active") || [];
+  // Use all tasks for time entry selection (don't filter by status)
+  const availableTasks = tasks || [];
 
   // Calculate duration when start/end times change
   const calculateDuration = (startTime?: string, endTime?: string) => {
@@ -306,21 +307,21 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Project *</FormLabel>
-                      <Select 
+                      <Select
                         onValueChange={(value) => {
                           field.onChange(value);
                           form.setValue("taskId", "");
-                        }} 
+                        }}
                         value={field.value}
                         disabled={projectsLoading}
                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
-                              projectsLoading 
-                                ? "Loading projects..." 
-                                : projects.length === 0 
-                                  ? "No active projects" 
+                              projectsLoading
+                                ? "Loading projects..."
+                                : projects.length === 0
+                                  ? "No active projects"
                                   : "Select a project"
                             } />
                           </SelectTrigger>
@@ -329,8 +330,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
+                                <div
+                                  className="w-3 h-3 rounded-full"
                                   style={{ backgroundColor: project.color || "#1976D2" }}
                                 />
                                 {project.name}
@@ -351,26 +352,26 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Task *</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
-                        disabled={!selectedProjectId || tasksLoading}
+                        disabled={!selectedProjectId || availableTasks.length === 0}
                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
-                              !selectedProjectId 
-                                ? "Select a project first" 
+                              !selectedProjectId
+                                ? "Select a project first"
                                 : tasksLoading
                                   ? "Loading tasks..."
-                                  : activeTasks.length === 0 
-                                    ? "No tasks available" 
+                                  : availableTasks.length === 0
+                                    ? "No tasks available"
                                     : "Select a task"
                             } />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {activeTasks.map((task) => (
+                          {availableTasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
                               {task.name}
                             </SelectItem>
@@ -394,8 +395,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
                       Date *
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="date" 
+                      <Input
+                        type="date"
                         {...field}
                         max={getCurrentLocalDate()}
                         className="w-full"
@@ -486,13 +487,13 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
                     <FormItem>
                       <FormLabel>Duration (hours) *</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01" 
+                        <Input
+                          type="number"
+                          step="0.01"
                           min="0.01"
                           max="24"
                           placeholder="e.g., 2.5 for 2 hours 30 minutes"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />

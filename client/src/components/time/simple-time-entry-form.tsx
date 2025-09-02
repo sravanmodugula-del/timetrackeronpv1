@@ -97,7 +97,7 @@ export default function SimpleTimeEntryForm() {
   const { data: allProjects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-  
+
   const projects = allProjects ? getActiveProjects(allProjects) : [];
 
   // Watch project selection
@@ -109,7 +109,13 @@ export default function SimpleTimeEntryForm() {
     enabled: !!selectedProjectId,
   });
 
-  const activeTasks = tasks?.filter(task => task.status === "active") || [];
+  const availableTasks = tasks || [];
+
+  // Filter tasks to include active and completed
+  const activeTasks = tasks?.filter(task => 
+    task.status === "active" || task.status === "completed"
+  ) || [];
+
 
   // Calculate duration for time range mode
   const calculateDuration = (startTime: string | undefined, endTime: string | undefined) => {
@@ -120,7 +126,7 @@ export default function SimpleTimeEntryForm() {
 
     const start = new Date(`2000-01-01T${startTime}:00`);
     const end = new Date(`2000-01-01T${endTime}:00`);
-    
+
     if (end <= start) {
       setCalculatedDuration("Invalid time range");
       return;
@@ -174,7 +180,7 @@ export default function SimpleTimeEntryForm() {
 
   const onSubmit = (data: TimeEntryForm) => {
     let submissionData: TimeEntryFormData;
-    
+
     if (inputMode === "timeRange") {
       // Validate time range inputs
       if (!data.startTime || !data.endTime) {
@@ -185,11 +191,11 @@ export default function SimpleTimeEntryForm() {
         });
         return;
       }
-      
+
       // Calculate duration from start/end times
       const start = new Date(`2000-01-01T${data.startTime}:00`);
       const end = new Date(`2000-01-01T${data.endTime}:00`);
-      
+
       if (end <= start) {
         toast({
           title: "Error",
@@ -198,10 +204,10 @@ export default function SimpleTimeEntryForm() {
         });
         return;
       }
-      
+
       const diffMs = end.getTime() - start.getTime();
       const hours = diffMs / (1000 * 60 * 60);
-      
+
       submissionData = {
         projectId: data.projectId,
         taskId: data.taskId,
@@ -221,7 +227,7 @@ export default function SimpleTimeEntryForm() {
         });
         return;
       }
-      
+
       // Use manual duration
       submissionData = {
         projectId: data.projectId,
@@ -374,12 +380,12 @@ export default function SimpleTimeEntryForm() {
                             <div className="p-2 text-sm text-muted-foreground">
                               Loading tasks...
                             </div>
-                          ) : activeTasks.length === 0 ? (
+                          ) : activeTasks.length === 0 ? ( // Changed from availableTasks to activeTasks
                             <div className="p-2 text-sm text-muted-foreground">
                               No active tasks available
                             </div>
                           ) : (
-                            activeTasks.map((task) => (
+                            activeTasks.map((task) => ( // Changed from availableTasks to activeTasks
                               <SelectItem key={task.id} value={task.id}>
                                 {task.name}
                               </SelectItem>

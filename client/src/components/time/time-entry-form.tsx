@@ -124,8 +124,10 @@ export default function TimeEntryForm() {
     enabled: !!selectedProjectId,
   });
 
-  // Use all tasks for time entry selection (don't filter by status)
-  const availableTasks = tasks || [];
+  // Filter tasks to show active and completed tasks for time entry
+  const availableTasks = tasks?.filter(task => 
+    task.status === "active" || task.status === "completed"
+  ) || [];s || [];
 
   // Debug logging
   React.useEffect(() => {

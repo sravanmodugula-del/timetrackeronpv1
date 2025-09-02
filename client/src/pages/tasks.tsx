@@ -194,7 +194,7 @@ export default function Tasks() {
   };
 
   const handleToggleStatus = (taskId: string, currentStatus: string) => {
-    const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    const newStatus = currentStatus === "completed" ? "active" : "completed";
     toggleTaskStatus.mutate({ taskId, status: newStatus });
   };
 
@@ -263,11 +263,8 @@ export default function Tasks() {
     switch (status) {
       case "completed":
         return "bg-green-100 text-green-700";
-      case "pending":
+      case "active":
         return "bg-blue-100 text-blue-700";
-      case "in_progress":
-      case "active": // Handle both frontend and backend status names
-        return "bg-orange-100 text-orange-700";
       case "archived":
         return "bg-gray-100 text-gray-700";
       default:
