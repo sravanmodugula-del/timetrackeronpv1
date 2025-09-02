@@ -125,7 +125,7 @@ export default function TimeEntryForm() {
 
   // Use all tasks for time entry selection (don't filter by status)
   const availableTasks = tasks || [];
-  
+
   // Debug logging
   React.useEffect(() => {
     if (selectedProjectId && tasks) {
@@ -434,7 +434,14 @@ export default function TimeEntryForm() {
                               Projects must be within their start and end date range.
                             </div>
                           ) : (
-                            projects.map((project) => (
+                            projects.filter(project => 
+                              project?.id && 
+                              typeof project.id === 'string' && 
+                              project.id.trim() !== '' &&
+                              project.name &&
+                              typeof project.name === 'string' &&
+                              project.name.trim() !== ''
+                            ).map(project => (
                               <SelectItem key={project.id} value={project.id}>
                                 <div className="flex items-center gap-2">
                                   <div 
@@ -647,7 +654,14 @@ export default function TimeEntryForm() {
                                 Projects must be within their start and end date range.
                               </div>
                             ) : (
-                              projects.map((project) => (
+                              projects.filter(project => 
+                                project?.id && 
+                                typeof project.id === 'string' && 
+                                project.id.trim() !== '' &&
+                                project.name &&
+                                typeof project.name === 'string' &&
+                                project.name.trim() !== ''
+                              ).map(project => (
                                 <SelectItem key={project.id} value={project.id}>
                                   <div className="flex items-center gap-2">
                                     <div 

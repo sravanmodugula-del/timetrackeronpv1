@@ -213,10 +213,11 @@ export default function TimeLog() {
                         typeof project.id === 'string' && 
                         project.id.trim() !== '' &&
                         project.name &&
+                        typeof project.name === 'string' &&
                         project.name.trim() !== ''
                       ).map(project => (
-                        <SelectItem key={project.id} value={project.id || 'unknown'}>
-                          {project.name || 'Unnamed Project'}
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
