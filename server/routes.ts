@@ -571,16 +571,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { projectId } = req.params;
       const activeStorage = getStorage();
 
+      console.log("📋 Fetching tasks for project:", projectId, "user:", userId);
+
       // Verify user has access to the project
       const project = await activeStorage.getProject(projectId, userId);
       if (!project) {
+        console.log("❌ Project not found or access denied:", projectId);
         return res.status(404).json({ message: "Project not found" });
       }
 
+      console.log("✅ Project access verified:", project.name);
+
       const tasks = await activeStorage.getTasksByProjectId(projectId);
-      res.json(tasks);
+      console.log("📋 Found tasks for project:", tasks?.length || 0);
+      console.log("📋 Task details:", tasks?.map(t => ({ id: t.id, name: t.name, status: t.status })));
+      
+      res.json(Array.isArray(tasks) ? tasks : []);
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("❌ Error fetching project tasks:", error);
       res.status(500).json({ message: "Failed to fetch tasks" });
     }
   });
@@ -621,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         title: name.trim(), // Also set title for database compatibility
         description: description?.trim() || "",
-        status: status || "active", // Use 'active' instead of 'pending' to match frontend expectations
+        status: status || "pending", // Use 'pending' as default since frontend expects this
         priority: "medium",
         assigned_to: userId,
         created_by: userId
@@ -649,10 +657,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const tasks = await activeStorage.getAllUserTasks(userId);
-      res.json(tasks);
+      
+      console.log("📋 Fetching all user tasks for user:", userId);
+      
+      try {
+        const tasks = await activeStorage.getAllUserTasks(userId);
+        console.log("✅ Found tasks:", tasks?.length || 0);
+        res.json(Array.isArray(tasks) ? tasks : []);
+      } catch (error) {
+        console.error("❌ Error in getAllUserTasks, trying fallback method:", error);
+        // Fallback: get all projects and their tasks
+        try {
+          const projects = await activeStorage.getProjectsByUserId(userId);
+          const allTasks = [];
+          for (const project of projects) {
+            const projectTasks = await activeStorage.getTasksByProjectId(project.id);
+            allTasks.push(...projectTasks);
+          }
+          console.log("✅ Fallback method found tasks:", allTasks.length);
+          res.json(allTasks);
+        } catch (fallbackError) {
+          console.error("❌ Fallback method also failed:", fallbackError);
+          res.json([]);
+        }
+      }
     } catch (error) {
-      console.error("Error fetching all tasks:", error);
+      console.error("❌ Error fetching all tasks:", error);
       res.status(500).json({ message: "Failed to fetch tasks" });
     }
   });
@@ -1898,6 +1928,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching project time entries:", error);
       res.status(500).json({ message: "Failed to fetch project time entries" });
+    }
+  });
+
+  // Debug endpoint to check task-project relationships
+  app.get('/api/debug/tasks/:projectId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = extractUserId(req.user);
+      const { projectId } = req.params;
+      const activeStorage = getStorage();
+
+      const project = await activeStorage.getProject(projectId, userId);
+      const tasks = await activeStorage.getTasksByProjectId(projectId);
+      
+      res.json({
+        userId,
+        projectId,
+        project: project ? { id: project.id, name: project.name } : null,
+        tasksCount: tasks?.length || 0,
+        tasks: tasks?.map(t => ({
+          id: t.id,
+          name: t.name,
+          status: t.status,
+          project_id: t.project_id
+        })) || []
+      });
+    } catch (error) {
+      console.error("Debug endpoint error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 
