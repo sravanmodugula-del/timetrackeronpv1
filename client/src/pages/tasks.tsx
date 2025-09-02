@@ -92,22 +92,15 @@ export default function Tasks() {
     queryKey: selectedProject === "all" ? ["/api/tasks/all"] : ["/api/projects", selectedProject, "tasks"],
     queryFn: async () => {
       if (selectedProject === "all") {
-        const response = await fetch(`/api/tasks/all`);
-        if (!response.ok) {
-          throw new Error(`${response.status}: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        return await apiRequest("/api/tasks/all", "GET");
       } else {
-        const response = await fetch(`/api/projects/${selectedProject}/tasks`);
-        if (!response.ok) {
-          throw new Error(`${response.status}: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
+        return await apiRequest(`/api/projects/${selectedProject}/tasks`, "GET");
       }
     },
     enabled: isAuthenticated && selectedProject !== "",
+    select: (data) => {
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   // Delete task mutation
