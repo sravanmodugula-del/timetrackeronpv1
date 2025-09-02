@@ -30,16 +30,25 @@ export const insertProjectSchema = z.object({
 });
 
 export const insertTaskSchema = z.object({
-  projectId: z.string().min(1, "Project ID is required"),
+  projectId: z.string().min(1, "Project ID is required").optional(),
+  project_id: z.string().min(1, "Project ID is required").optional(),
   name: z.string().min(1, "Task name is required"),
+  title: z.string().optional(),
   description: z.string().optional(),
-  status: z.enum(['active', 'completed', 'archived']).default('active'),
+  status: z.enum(['active', 'pending', 'in_progress', 'completed', 'archived', 'cancelled']).default('active'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
   assignedTo: z.string().optional(),
+  assigned_to: z.string().optional(),
   createdBy: z.string().optional(),
+  created_by: z.string().optional(),
   dueDate: z.string().optional(),
+  due_date: z.string().optional(),
   estimatedHours: z.number().optional(),
-  actualHours: z.number().default(0),
+  estimated_hours: z.number().optional(),
+  actualHours: z.number().default(0).optional(),
+  actual_hours: z.number().default(0).optional(),
+}).refine((data) => data.projectId || data.project_id, {
+  message: "Either projectId or project_id is required",
 });
 
 export const insertTimeEntrySchema = z.object({

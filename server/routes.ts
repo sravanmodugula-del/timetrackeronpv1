@@ -616,13 +616,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found or access denied" });
       }
 
-      const taskId = `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const taskData = {
-        id: taskId,
         project_id: projectId,
         name: name.trim(),
+        title: name.trim(), // Also set title for database compatibility
         description: description?.trim() || "",
-        status: status || "pending",
+        status: status || "active", // Use 'active' instead of 'pending' to match frontend expectations
         priority: "medium",
         assigned_to: userId,
         created_by: userId
@@ -630,22 +629,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newTask = await activeStorage.createTask(taskData);
 
-      // Ensure we return a proper task object
-      const responseTask = newTask || {
-        id: taskId,
-        project_id: projectId,
-        name: taskData.name,
-        description: taskData.description,
-        status: taskData.status,
-        priority: taskData.priority,
-        assigned_to: taskData.assigned_to,
-        created_by: taskData.created_by,
-        created_at: new Date(),
-        updated_at: new Date()
-      };
-
-      console.log("✅ Task created successfully:", responseTask.id);
-      res.json(responseTask);
+      console.log("✅ Task created successfully:", newTask?.id || 'unknown');
+      res.json(newTask);
     } catch (error) {
       console.error("❌ Project task creation error:", {
         message: error.message,
@@ -730,15 +715,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const taskData = {
+        project_id: taskProjectId.trim(),
         name: taskName.trim(),
         title: taskName.trim(),
         description: description?.trim() || '',
         status: status || 'active',
-        projectId: taskProjectId.trim()
+        priority: 'medium',
+        assigned_to: userId,
+        created_by: userId
       };
 
-      const task = await activeStorage.createTask(taskData, userId);
-      console.log("✅ Task created successfully:", task.id);
+      const task = await activeStorage.createTask(taskData);
+      console.log("✅ Task created successfully:", task?.id || 'unknown');
       res.status(201).json(task);
     } catch (error: any) {
       console.error("❌ Task creation error:", {
