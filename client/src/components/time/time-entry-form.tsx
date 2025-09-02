@@ -111,26 +111,33 @@ export default function TimeEntryForm() {
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
     queryFn: async () => {
       if (!selectedProjectId) return [];
+      console.log("🔍 Time Entry Form - Fetching tasks for project:", selectedProjectId);
       const response = await fetch(`/api/projects/${selectedProjectId}/tasks`);
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
       const data = await response.json();
+      console.log("📋 Time Entry Form - Received tasks:", data?.length || 0, data);
       return Array.isArray(data) ? data : [];
     },
     enabled: !!selectedProjectId,
   });
 
-  // Filter only active tasks
-  const activeTasks = tasks?.filter(task => task.status === "active") || [];
-
+  // Use all tasks for time entry selection (don't filter by status)
+  const availableTasks = tasks || [];
+  
   // Debug logging
   React.useEffect(() => {
     if (selectedProjectId && tasks) {
-      console.log("🔍 Tasks for project:", selectedProjectId, tasks);
-      console.log("✅ Active tasks:", activeTasks);
+      console.log("🔍 Time Entry Form - Tasks for project:", selectedProjectId, tasks);
+      console.log("📋 Time Entry Form - Available tasks count:", availableTasks.length);
+      console.log("📋 Time Entry Form - Task details:", availableTasks.map(t => ({ 
+        id: t.id, 
+        name: t.name, 
+        status: t.status 
+      })));
     }
-  }, [selectedProjectId, tasks, activeTasks]);
+  }, [selectedProjectId, tasks, availableTasks]);
 
   // Debug form states
   React.useEffect(() => {
@@ -455,14 +462,14 @@ export default function TimeEntryForm() {
                       <Select 
                         onValueChange={field.onChange} 
                         value={field.value || ""}
-                        disabled={!selectedProjectId || activeTasks.length === 0}
+                        disabled={!selectedProjectId || availableTasks.length === 0}
                       >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder={
                               !selectedProjectId 
                                 ? "Select a project first" 
-                                : activeTasks.length === 0 
+                                : availableTasks.length === 0 
                                   ? "No tasks available" 
                                   : "Select a task"
                             } />
@@ -473,15 +480,18 @@ export default function TimeEntryForm() {
                             <div className="p-2 text-sm text-muted-foreground">
                               Loading tasks...
                             </div>
-                          ) : activeTasks.length === 0 ? (
+                          ) : availableTasks.length === 0 ? (
                             <div className="p-2 text-sm text-muted-foreground">
                               No tasks available for this project.
-                              Please select a different project or contact your project manager to add tasks.
+                              Please create tasks for this project first.
                             </div>
                           ) : (
-                            activeTasks.map((task) => (
+                            availableTasks.map((task) => (
                               <SelectItem key={task.id} value={task.id}>
-                                {task.name}
+                                <div className="flex items-center gap-2">
+                                  <span>{task.name}</span>
+                                  <span className="text-xs text-muted-foreground">({task.status})</span>
+                                </div>
                               </SelectItem>
                             ))
                           )}
@@ -665,14 +675,14 @@ export default function TimeEntryForm() {
                         <Select 
                           onValueChange={field.onChange} 
                           value={field.value}
-                          disabled={!selectedProjectId || activeTasks.length === 0}
+                          disabled={!selectedProjectId || availableTasks.length === 0}
                         >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder={
                                 !selectedProjectId 
                                   ? "Select a project first" 
-                                  : activeTasks.length === 0 
+                                  : availableTasks.length === 0 
                                     ? "No tasks available" 
                                     : "Select a task"
                               } />
@@ -683,13 +693,13 @@ export default function TimeEntryForm() {
                               <div className="p-2 text-sm text-muted-foreground">
                                 Loading tasks...
                               </div>
-                            ) : activeTasks.length === 0 ? (
+                            ) : availableTasks.length === 0 ? (
                               <div className="p-2 text-sm text-muted-foreground">
                                 No tasks available for this project.
                                 Please select a different project or contact your project manager to add tasks.
                               </div>
                             ) : (
-                              activeTasks.map((task) => (
+                              availableTasks.map((task) => (
                                 <SelectItem key={task.id} value={task.id}>
                                   {task.name}
                                 </SelectItem>

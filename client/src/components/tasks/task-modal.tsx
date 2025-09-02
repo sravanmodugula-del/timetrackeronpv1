@@ -85,7 +85,7 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
     defaultValues: {
       name: "",
       description: "",
-      status: "active",
+      status: "pending",
     },
     mode: "onChange",
   });
@@ -152,9 +152,10 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         description: "Task created successfully",
       });
       form.reset();
-      // Invalidate queries to match the exact keys used in tasks page
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
+      // Invalidate all relevant task queries with exact cache key patterns
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       onSuccess();
     },
     onError: (error) => {
@@ -191,9 +192,10 @@ export default function TaskModal({ task, projectId, isOpen, onClose, onSuccess 
         title: "Success",
         description: "Task updated successfully",
       });
-      // Invalidate queries to match the exact keys used in tasks page
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks", { projectId }] });
+      // Invalidate all relevant task queries with exact cache key patterns
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       onSuccess();
     },
     onError: (error) => {

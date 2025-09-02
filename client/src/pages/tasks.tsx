@@ -89,10 +89,10 @@ export default function Tasks() {
 
   // Fetch tasks for selected project
   const { data: tasks, isLoading: tasksLoading, refetch } = useQuery<Task[]>({
-    queryKey: ["/api/tasks", { projectId: selectedProject }],
+    queryKey: selectedProject === "all" ? ["/api/tasks/all"] : ["/api/projects", selectedProject, "tasks"],
     queryFn: async () => {
       if (selectedProject === "all") {
-        const response = await fetch(`/api/tasks?projectId=all`);
+        const response = await fetch(`/api/tasks/all`);
         if (!response.ok) {
           throw new Error(`${response.status}: ${response.statusText}`);
         }
