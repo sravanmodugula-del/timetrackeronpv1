@@ -24,11 +24,20 @@ export default function StatsCards({ dateRange }: StatsCardsProps) {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate,
       });
-      const response = await fetch(`/api/dashboard/stats?${params}`);
+      const response = await fetch(`/api/dashboard/stats?${params}`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      // Ensure all values are properly defined
+      return {
+        todayHours: data?.todayHours || 0,
+        weekHours: data?.weekHours || 0,
+        monthHours: data?.monthHours || 0,
+        activeProjects: data?.activeProjects || 0
+      };
     },
     retry: 3,
     staleTime: 30000,

@@ -105,7 +105,20 @@ export async function request(url: string, method = 'GET', data?: any): Promise<
         return null;
       }
       try {
-        return JSON.parse(text);
+        const parsedData = JSON.parse(text);
+        
+        // Enhanced debugging for dashboard endpoints
+        if (url.includes('/api/dashboard/')) {
+          frontendLog('DEBUG', 'DASHBOARD-API', `Response data structure for ${url}`, {
+            requestId,
+            dataType: typeof parsedData,
+            isArray: Array.isArray(parsedData),
+            keys: parsedData && typeof parsedData === 'object' ? Object.keys(parsedData) : null,
+            firstItem: Array.isArray(parsedData) ? parsedData[0] : null
+          });
+        }
+        
+        return parsedData;
       } catch (error) {
         frontendLog('ERROR', 'API', `JSON parse error for ${method} ${url}`, {
           requestId,

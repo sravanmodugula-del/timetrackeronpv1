@@ -35,6 +35,15 @@ export default function DepartmentHours({ startDate, endDate }: DepartmentHoursP
 
   // Convert string hours to numbers for proper calculations with safe parsing
   const departmentHours: DepartmentHours[] = (departmentHoursRaw || []).map(dept => {
+    if (!dept || typeof dept !== 'object') {
+      return {
+        departmentId: '',
+        departmentName: 'Unknown Department',
+        totalHours: 0,
+        employeeCount: 0,
+      };
+    }
+    
     const totalHours = dept?.totalHours != null ? Number(dept.totalHours) : 0;
     const employeeCount = dept?.employeeCount != null ? Number(dept.employeeCount) : 0;
     

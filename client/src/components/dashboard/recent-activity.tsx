@@ -147,7 +147,7 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
               <div className={`w-2 h-2 ${getProjectColor()} rounded-full mt-2`}></div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {activity?.project?.name || 'Unknown Project'}
+                  {activity?.project?.name || activity?.projectName || 'Unknown Project'}
                 </p>
                 <p className="text-xs text-gray-600">
                   {activity?.description || "No description"}

@@ -119,8 +119,11 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
     const totalHours = item?.totalHours != null ? Number(item.totalHours) : 0;
     const percentage = item?.percentage != null ? Number(item.percentage) : 0;
     
+    // Enhanced null safety for project object
+    const projectName = item?.project?.name || item?.projectName || 'Unknown Project';
+    
     return {
-      name: item?.project?.name || 'Unknown Project',
+      name: projectName,
       hours: isNaN(totalHours) ? 0 : totalHours,
       percentage: isNaN(percentage) ? 0 : percentage,
       color: colors?.color || '#8884d8',
