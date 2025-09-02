@@ -2108,8 +2108,8 @@ export class FmbStorage implements IStorage {
 
       console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
 
-      // Now get the project breakdown with a more robust query
-      const result = await request.query(`
+      // Now get the project breakdown with a corrected query
+      let breakdownQuery = `
         SELECT
           p.id,
           p.name,
@@ -2117,11 +2117,34 @@ export class FmbStorage implements IStorage {
           COALESCE(SUM(te.hours), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId ${dateFilter}
+        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
         WHERE p.user_id = @userId
+      `;
+
+      // Add date filter to the JOIN condition if dates are provided
+      if (startDate && endDate) {
+        breakdownQuery = `
+          SELECT
+            p.id,
+            p.name,
+            COALESCE(p.color, '#1976D2') as color,
+            COALESCE(SUM(te.hours), 0) as total_hours,
+            COUNT(te.id) as entry_count
+          FROM projects p
+          LEFT JOIN time_entries te ON p.id = te.project_id 
+            AND te.user_id = @userId 
+            AND te.date >= @startDate 
+            AND te.date <= @endDate
+          WHERE p.user_id = @userId
+        `;
+      }
+
+      breakdownQuery += `
         GROUP BY p.id, p.name, p.color
         ORDER BY COALESCE(SUM(te.hours), 0) DESC
-      `);
+      `;
+
+      const result = await request.query(breakdownQuery);
 
       console.log('📊 [FMB-STORAGE] Raw breakdown query result:', result.recordset);
 
