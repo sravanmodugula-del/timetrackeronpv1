@@ -571,24 +571,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { projectId } = req.params;
       const activeStorage = getStorage();
 
-      console.log("📋 Fetching tasks for project:", projectId, "user:", userId);
+      console.log("📋 [API] Fetching tasks for project:", projectId, "user:", userId);
 
       // Verify user has access to the project
       const project = await activeStorage.getProject(projectId, userId);
       if (!project) {
-        console.log("❌ Project not found or access denied:", projectId);
+        console.log("❌ [API] Project not found or access denied:", projectId);
         return res.status(404).json({ message: "Project not found" });
       }
 
-      console.log("✅ Project access verified:", project.name);
+      console.log("✅ [API] Project access verified:", project.name);
 
       const tasks = await activeStorage.getTasksByProjectId(projectId);
-      console.log("📋 Found tasks for project:", tasks?.length || 0);
-      console.log("📋 Task details:", tasks?.map(t => ({ id: t.id, name: t.name, status: t.status })));
-      
-      res.json(Array.isArray(tasks) ? tasks : []);
+      console.log("📋 [API] Raw tasks result:", tasks);
+      console.log("📋 [API] Found tasks for project:", tasks?.length || 0);
+      console.log("📋 [API] Task details:", tasks?.map(t => ({ 
+        id: t.id, 
+        name: t.name, 
+        status: t.status,
+        project_id: t.project_id 
+      })));
+
+      const finalTasks = Array.isArray(tasks) ? tasks : [];
+      console.log("📋 [API] Returning tasks:", finalTasks.length);
+      res.json(finalTasks);
     } catch (error) {
-      console.error("❌ Error fetching project tasks:", error);
+      console.error("❌ [API] Error fetching project tasks:", error);
       res.status(500).json({ message: "Failed to fetch tasks" });
     }
   });
@@ -657,9 +665,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      
+
       console.log("📋 Fetching all user tasks for user:", userId);
-      
+
       try {
         const tasks = await activeStorage.getAllUserTasks(userId);
         console.log("✅ Found tasks:", tasks?.length || 0);
@@ -1938,9 +1946,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { projectId } = req.params;
       const activeStorage = getStorage();
 
+      console.log("🔧 [DEBUG] Debug endpoint called for project:", projectId, "user:", userId);
+
       const project = await activeStorage.getProject(projectId, userId);
+      console.log("🔧 [DEBUG] Project result:", project);
+
       const tasks = await activeStorage.getTasksByProjectId(projectId);
-      
+      console.log("🔧 [DEBUG] Tasks result:", tasks);
+
+      // Also test direct database query
+      const pool = (activeStorage as any).pool;
+      if (pool) {
+        const request = pool.request();
+        request.input('projectId', (activeStorage as any).sql.NVarChar, projectId);
+        const directResult = await request.query(`
+          SELECT COUNT(*) as task_count FROM tasks WHERE project_id = @projectId
+        `);
+        console.log("🔧 [DEBUG] Direct task count query:", directResult.recordset[0]);
+
+        const allTasksResult = await request.query(`
+          SELECT id, name, title, project_id, status FROM tasks WHERE project_id = @projectId
+        `);
+        console.log("🔧 [DEBUG] All tasks in database for project:", allTasksResult.recordset);
+      }
+
       res.json({
         userId,
         projectId,
@@ -1951,10 +1980,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: t.name,
           status: t.status,
           project_id: t.project_id
-        })) || []
+        })) || [],
+        debug: {
+          directDatabaseCheck: "See server logs for details"
+        }
       });
     } catch (error) {
-      console.error("Debug endpoint error:", error);
+      console.error("🔧 [DEBUG] Debug endpoint error:", error);
       res.status(500).json({ error: error.message });
     }
   });
