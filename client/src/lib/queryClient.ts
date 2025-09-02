@@ -1,3 +1,4 @@
+
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Enhanced frontend error logging
@@ -37,41 +38,34 @@ function frontendLog(level: 'ERROR' | 'WARN' | 'INFO' | 'DEBUG', category: strin
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorMessage = `${res.status}: ${res.statusText}`;
-
     try {
-      const errorText = await res.text();
-      if (errorText) {
+      const text = await res.text();
+      if (text) {
         try {
-          const errorData = JSON.parse(errorText);
+          const errorData = JSON.parse(text);
           errorMessage = errorData.message || errorMessage;
         } catch {
-          // If it's not JSON, use the text as is
-          errorMessage = errorText;
+          errorMessage = text;
         }
       }
     } catch {
-      // If we can't read the response body, use the status
       errorMessage = `${res.status}: ${res.statusText}`;
     }
-
+    
     frontendLog('ERROR', 'API', `HTTP ${res.status} error on ${res.url}`, {
       status: res.status,
       statusText: res.statusText,
-      errorMessage: errorMessage,
+      errorMessage,
       url: res.url
     });
-
+    
     throw new Error(errorMessage);
   }
 }
 
-export async function apiRequest(
-  url: string,
-  method: string,
-  data?: unknown | undefined,
-): Promise<any> {
+export async function request(url: string, method = 'GET', data?: any): Promise<any> {
   const requestId = Math.random().toString(36).substr(2, 9);
-
+  
   frontendLog('DEBUG', 'API', `Request ${requestId}: ${method} ${url}`, {
     requestId,
     method,
@@ -83,13 +77,13 @@ export async function apiRequest(
     const startTime = performance.now();
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers: data ? { 'Content-Type': 'application/json' } : {},
       body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      credentials: 'include',
     });
-
+    
     const duration = Math.round(performance.now() - startTime);
-
+    
     frontendLog('DEBUG', 'API', `Response ${requestId}: ${res.status} (${duration}ms)`, {
       requestId,
       status: res.status,
@@ -98,29 +92,8 @@ export async function apiRequest(
     });
 
     if (!res.ok) {
-      const errorText = await res.text();
-
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { message: errorText || res.statusText };
-      }
-
-      frontendLog('ERROR', 'API', `Request ${requestId} failed`, {
-        requestId,
-        method,
-        url,
-        status: res.status,
-        error: errorData,
-        duration: `${duration}ms`
-      });
-
-      const error = new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
-      (error as any).status = res.status;
-      (error as any).response = { data: errorData };
-      (error as any).requestId = requestId;
-      throw error;
+      await throwIfResNotOk(res);
+      return;
     }
 
     // Handle successful response
@@ -128,7 +101,6 @@ export async function apiRequest(
     if (contentType?.includes('application/json')) {
       const text = await res.text();
       if (!text || text.trim() === '') {
-        // Return null for empty responses
         frontendLog('DEBUG', 'API', `Empty response for ${method} ${url}`, { requestId });
         return null;
       }
@@ -168,53 +140,43 @@ export async function apiRequest(
   }
 }
 
-type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-
-    // Handle successful response
-    const contentType = res.headers.get('content-type');
-    if (contentType?.includes('application/json')) {
-      const text = await res.text();
-      if (!text || text.trim() === '') {
-        return null;
-      }
-      try {
-        return JSON.parse(text);
-      } catch (error) {
-        console.warn('Failed to parse JSON response for query:', queryKey, 'Response:', text.substring(0, 200));
-        throw new Error('Invalid JSON response from server');
-      }
-    }
-
-    const textResponse = await res.text();
-    return textResponse || null;
-  };
-
+// Query client with enhanced error handling
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: true, // Refetch on focus for fresh role data
-      staleTime: 0, // Always fetch fresh data - critical for role changes
-      gcTime: 30 * 1000, // 30 seconds cache time
-      retry: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 401/403 errors
+        if (error instanceof Error && (error.message.includes('401') || error.message.includes('403'))) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false,
     },
     mutations: {
       retry: false,
     },
   },
+});
+
+// Global error handler for uncaught query errors
+queryClient.setMutationDefaults(['mutation'], {
+  onError: (error) => {
+    frontendLog('ERROR', 'MUTATION', 'Uncaught mutation error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+queryClient.setQueryDefaults(['query'], {
+  onError: (error) => {
+    frontendLog('ERROR', 'QUERY', 'Uncaught query error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });

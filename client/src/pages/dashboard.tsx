@@ -5,9 +5,9 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/header";
 import StatsCards from "@/components/dashboard/stats-cards";
 import ProjectBreakdown from "@/components/dashboard/project-breakdown";
-
 import DepartmentHours from "@/components/dashboard/department-hours";
 import RecentActivity from "@/components/dashboard/recent-activity";
+import { ErrorBoundary } from "@/lib/errorBoundary";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, TrendingUp, Clock } from "lucide-react";
@@ -133,17 +133,27 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <StatsCards dateRange={getDateFilters()} />
+        <ErrorBoundary>
+          <StatsCards dateRange={getDateFilters()} />
+        </ErrorBoundary>
         
         {/* Enhanced Analytics */}
         <div className={`grid gap-8 mt-8 ${permissions.canViewDepartmentData ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-          <ProjectBreakdown dateRange={getDateFilters()} />
-          {permissions.canViewDepartmentData && <DepartmentHours {...getDateFilters()} />}
+          <ErrorBoundary>
+            <ProjectBreakdown dateRange={getDateFilters()} />
+          </ErrorBoundary>
+          {permissions.canViewDepartmentData && (
+            <ErrorBoundary>
+              <DepartmentHours {...getDateFilters()} />
+            </ErrorBoundary>
+          )}
         </div>
         
         {/* Recent Activity */}
         <div className="mt-8">
-          <RecentActivity dateRange={getDateFilters()} />
+          <ErrorBoundary>
+            <RecentActivity dateRange={getDateFilters()} />
+          </ErrorBoundary>
         </div>
       </main>
     </div>
