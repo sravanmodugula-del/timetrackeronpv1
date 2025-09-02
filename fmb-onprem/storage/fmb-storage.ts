@@ -1722,18 +1722,11 @@ export class FmbStorage implements IStorage {
 
       console.log(`✅ [FMB-STORAGE] Found ${result.recordset.length} tasks for project ${projectId}`);
 
-      // Map database status back to frontend status
-      const statusMapping = {
-        'active': 'in_progress',
-        'pending': 'pending',
-        'completed': 'completed'
-      };
-
       return result.recordset.map(task => ({
         ...task,
         name: task.title || task.name || 'Untitled Task', // Ensure name is never null
         title: task.title || task.name || 'Untitled Task',
-        status: statusMapping[task.status] || task.status,
+        status: task.status, // Use database status directly - no mapping needed
         projectId: task.project_id
       }));
     } catch (error) {
