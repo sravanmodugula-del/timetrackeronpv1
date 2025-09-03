@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -91,8 +92,6 @@ export default function TimeEntryForm() {
       duration: "",
     },
   });
-
-
 
   // Fetch projects and filter for active ones only
   const { data: allProjects, isLoading: projectsLoading } = useQuery<Project[]>({
@@ -197,13 +196,9 @@ export default function TimeEntryForm() {
 
   const createTimeEntry = useMutation({
     mutationFn: async (data: TimeRangeFormData | ManualDurationFormData) => {
-      let entryData: {
-        projectId: string;
-        taskId: string;
-        description?: string;
-        date: string;
-        duration: string;
-      };
+      console.log("📝 Time Entry Request Data:", data);
+      
+      let entryData: any;
 
       if (inputMode === "timeRange") {
         const timeData = data as TimeRangeFormData;
@@ -214,23 +209,25 @@ export default function TimeEntryForm() {
         entryData = {
           projectId: timeData.projectId,
           taskId: timeData.taskId,
-          description: timeData.description,
+          description: timeData.description || "",
           date: timeData.date,
-          duration: parseFloat(duration.toFixed(2)),
+          startTime: timeData.startTime,
+          endTime: timeData.endTime,
+          duration: parseFloat(duration.toFixed(2))
         };
       } else {
         const manualData = data as ManualDurationFormData;
-        // Ensure duration is always a number, whether from hours or duration field
-        const durationValue = manualData.hours || manualData.duration;
+        
         entryData = {
           projectId: manualData.projectId,
           taskId: manualData.taskId,
-          description: manualData.description,
+          description: manualData.description || "",
           date: manualData.date,
-          duration: typeof durationValue === 'string' ? parseFloat(durationValue) : Number(durationValue),
+          duration: parseFloat(manualData.duration)
         };
       }
 
+      console.log("📝 Sending entry data:", entryData);
       return await apiRequest("/api/time-entries", "POST", entryData);
     },
     onSuccess: () => {
@@ -269,6 +266,8 @@ export default function TimeEntryForm() {
       console.log("✅ [TIME-ENTRY] Successfully created entry and invalidated dashboard queries");
     },
     onError: (error) => {
+      console.error("❌ Time entry creation error:", error);
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -280,9 +279,10 @@ export default function TimeEntryForm() {
         }, 500);
         return;
       }
+      
       toast({
         title: "Error",
-        description: "Failed to create time entry",
+        description: error?.message || "Failed to create time entry",
         variant: "destructive",
       });
     },
