@@ -1184,7 +1184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Time entry not found" });
       }
 
-      // Map frontend camelCase to backend snake_case
+      // Map frontend camelCase to backend snake_case and ensure all fields are included
       let mappedData = { ...req.body };
       if (req.body.projectId) {
         mappedData.project_id = req.body.projectId;
@@ -1207,9 +1207,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("🔧 [API] Mapped data for database:", mappedData);
 
-      // Handle partial updates for time entries
-      const partialSchema = insertTimeEntrySchema.deepPartial();
-      const entryData = partialSchema.parse(mappedData);
+      // Create a complete update object with all necessary fields
+      const entryData = {
+        userId: mappedData.userId,
+        project_id: mappedData.project_id,
+        task_id: mappedData.task_id,
+        description: mappedData.description,
+        date: mappedData.date,
+        start_time: mappedData.start_time,
+        end_time: mappedData.end_time,
+        duration: mappedData.duration,
+        hours: mappedData.hours
+      };
+
+      // Remove undefined fields to allow partial updates
+      Object.keys(entryData).forEach(key => {
+        if (entryData[key] === undefined) {
+          delete entryData[key];
+        }
+      });
       
       console.log("🔧 [API] Validated entry data:", entryData);
 
