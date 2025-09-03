@@ -1735,15 +1735,15 @@ export class FmbStorage implements IStorage {
       // Create separate requests for each query to avoid parameter conflicts
       const todayRequest = this.pool.request();
       todayRequest.input('userId', sql.NVarChar(255), userId);
-      todayRequest.input('todayDate', sql.Date, new Date(todayStr + 'T00:00:00Z'));
+      todayRequest.input('todayDate', sql.NVarChar(10), todayStr);
 
       const weekRequest = this.pool.request();
       weekRequest.input('userId', sql.NVarChar(255), userId);
-      weekRequest.input('weekStartDate', sql.Date, new Date(weekStartStr + 'T00:00:00Z'));
+      weekRequest.input('weekStartDate', sql.NVarChar(10), weekStartStr);
 
       const monthRequest = this.pool.request();
       monthRequest.input('userId', sql.NVarChar(255), userId);
-      monthRequest.input('monthStartDate', sql.Date, new Date(monthStartStr + 'T00:00:00Z'));
+      monthRequest.input('monthStartDate', sql.NVarChar(10), monthStartStr);
 
       const projectsRequest = this.pool.request();
       projectsRequest.input('userId', sql.NVarChar(255), userId);
@@ -1751,26 +1751,26 @@ export class FmbStorage implements IStorage {
       // Execute queries with proper error handling
       try {
         const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
-          // TODAY's hours - always current day regardless of filter
+          // TODAY's hours - use date field directly without conversion
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId 
-              AND CONVERT(date, te.date) = CONVERT(date, @todayDate)
+              AND te.date = @todayDate
           `),
           // WEEK's hours - last 7 days
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId 
-              AND CONVERT(date, te.date) >= CONVERT(date, @weekStartDate)
+              AND te.date >= @weekStartDate
           `),
           // MONTH's hours - current month
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId 
-              AND CONVERT(date, te.date) >= CONVERT(date, @monthStartDate)
+              AND te.date >= @monthStartDate
           `),
           // Active projects count
           projectsRequest.query(`
@@ -1963,7 +1963,7 @@ export class FmbStorage implements IStorage {
       end_date: row.end_date,
       budget: row.budget,
       project_number: row.project_number,
-      color: row.color || '#1976D2', // Provide default color if null
+      color: '#1976D2', // Default color for FMB on-premises (no color column)
       is_enterprise_wide: row.is_enterprise_wide || false,
       is_template: row.is_template || false,
       allow_time_tracking: row.allow_time_tracking !== false,
@@ -2135,7 +2135,7 @@ export class FmbStorage implements IStorage {
           te.created_at,
           p.id as project_id,
           p.name as project_name,
-          p.color as project_color
+          '#1976D2' as project_color
         FROM time_entries te
         INNER JOIN projects p ON te.project_id = p.id
         WHERE te.user_id = @userId ${dateFilter}
@@ -2247,7 +2247,7 @@ export class FmbStorage implements IStorage {
         SELECT
           p.id,
           p.name,
-          COALESCE(p.color, '#1976D2') as color,
+          '#1976D2' as color,
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
@@ -2262,7 +2262,7 @@ export class FmbStorage implements IStorage {
         SELECT
           p.id,
           p.name,
-          COALESCE(p.color, '#1976D2') as color,
+          '#1976D2' as color,
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
@@ -2281,7 +2281,7 @@ export class FmbStorage implements IStorage {
       }
 
       breakdownQuery += `
-        GROUP BY p.id, p.name, p.color
+        GROUP BY p.id, p.name
         ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
       `;
 
