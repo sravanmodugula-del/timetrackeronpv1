@@ -49,7 +49,7 @@ export class FmbStorage implements IStorage {
   }
 
   // Add logging helper method
-  private logInfo(message: string, data?: any) {
+  private storageLog(message: string, data?: any) {
     console.log(`🗄️ [FMB-STORAGE] ${message}`, data ? JSON.stringify(data, null, 2) : '');
   }
 
@@ -1006,7 +1006,7 @@ export class FmbStorage implements IStorage {
           p.name as project_name,
           p.project_number,
           p.status as project_status,
-          p.color as project_color,
+          '#1976D2' as project_color,
           t.title as task_name,
           t.description as task_description
         FROM time_entries te
@@ -1022,13 +1022,13 @@ export class FmbStorage implements IStorage {
       }
 
       if (filters?.startDate) {
-        query += ` AND te.date >= @startDate`;
+        query += ` AND CONVERT(date, te.date) >= CONVERT(date, @startDate)`;
         request.input('startDate', sql.Date, new Date(filters.startDate));
         console.log('🔍 [FMB-STORAGE] Filtering start date:', filters.startDate);
       }
 
       if (filters?.endDate) {
-        query += ` AND te.date <= @endDate`;
+        query += ` AND CONVERT(date, te.date) <= CONVERT(date, @endDate)`;
         request.input('endDate', sql.Date, new Date(filters.endDate));
         console.log('🔍 [FMB-STORAGE] Filtering end date:', filters.endDate);
       }
@@ -1039,7 +1039,7 @@ export class FmbStorage implements IStorage {
         query += ` OFFSET ${filters.offset || 0} ROWS FETCH NEXT ${filters.limit} ROWS ONLY`;
       }
 
-      console.log('🔍 [FMB-STORAGE] Executing time entries query:', query.substring(0, 300) + '...');
+      console.log('🔍 [FMB-STORAGE] Executing time entries query with improved date handling');
 
       const result = await request.query(query);
 
@@ -1058,37 +1058,48 @@ export class FmbStorage implements IStorage {
         return [];
       }
 
+      // Transform to the expected frontend format with consistent camelCase
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
         project_id: row.project_id,
+        projectId: row.project_id, // Add camelCase alias
         task_id: row.task_id,
+        taskId: row.task_id, // Add camelCase alias
         user_id: row.user_id,
+        userId: row.user_id, // Add camelCase alias
         date: row.date,
         start_time: row.start_time,
+        startTime: row.start_time, // Add camelCase alias
         end_time: row.end_time,
+        endTime: row.end_time, // Add camelCase alias
         duration: parseFloat(row.duration || row.hours || 0),
         hours: parseFloat(row.hours || row.duration || 0),
         description: row.description || '',
         created_at: row.created_at,
+        createdAt: row.created_at, // Add camelCase alias
         updated_at: row.updated_at,
+        updatedAt: row.updated_at, // Add camelCase alias
         project: row.project_name ? {
           id: row.project_id,
           name: row.project_name,
           project_number: row.project_number,
+          projectNumber: row.project_number, // Add camelCase alias
           status: row.project_status,
           color: row.project_color || '#1976D2'
         } : {
           id: row.project_id,
           name: 'Unknown Project',
           project_number: null,
+          projectNumber: null,
           status: 'unknown',
           color: '#1976D2'
         },
         task: row.task_name ? {
           id: row.task_id,
           name: row.task_name,
+          title: row.task_name,
           description: row.task_description
-        } : undefined
+        } : null
       }));
 
       console.log(`✅ [FMB-STORAGE] Found ${timeEntries.length} time entries for user ${userId}`);
