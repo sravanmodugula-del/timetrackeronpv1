@@ -146,16 +146,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract user ID using consistent helper function
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
+      
       try {
-        const projects = await activeStorage.getProjectsByUserId(userId);
-        res.json(projects);
+        // Get user's own projects
+        const userProjects = await activeStorage.getProjectsByUserId(userId);
+        
+        // Get ALL enterprise-wide projects (regardless of who created them)
+        const allProjects = await activeStorage.getProjects();
+        const enterpriseProjects = allProjects.filter(p => 
+          p.is_enterprise_wide && !userProjects.some(up => up.id === p.id)
+        );
+        
+        // Combine user projects with ALL enterprise-wide projects
+        const combinedProjects = [...userProjects, ...enterpriseProjects];
+        
+        console.log(`📁 Projects API: Found ${userProjects.length} user projects and ${enterpriseProjects.length} enterprise projects for user ${userId}`);
+        res.json(combinedProjects);
       } catch (error) {
         console.error("Error in getProjectsByUserId:", error);
         // Try fallback method
         try {
           const allProjects = await activeStorage.getProjects();
-          const userProjects = allProjects.filter(p => p.user_id === userId);
-          res.json(userProjects);
+          // Return user's projects + ALL enterprise-wide projects
+          const accessibleProjects = allProjects.filter(p => 
+            p.user_id === userId || p.is_enterprise_wide
+          );
+          res.json(accessibleProjects);
         } catch (fallbackError) {
           console.error("Fallback method also failed:", fallbackError);
           res.status(500).json({ message: "Failed to fetch projects", error: error.message });
@@ -592,10 +608,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activeStorage = getStorage();
 
       if (!projectId || projectId === "all") {
-        // Return all tasks for the user
+        // Return all tasks for the user including tasks from enterprise-wide projects
         try {
-          const tasks = await activeStorage.getAllUserTasks(userId);
-          res.json(Array.isArray(tasks) ? tasks : []);
+          // Get user's own tasks
+          const userTasks = await activeStorage.getAllUserTasks(userId);
+          
+          // Get all projects to find enterprise-wide ones
+          const allProjects = await activeStorage.getProjects();
+          const enterpriseProjects = allProjects.filter(p => 
+            p.is_enterprise_wide && !userTasks.some(task => task.project_id === p.id)
+          );
+          
+          // Get tasks from enterprise-wide projects
+          const enterpriseTasks = [];
+          for (const project of enterpriseProjects) {
+            const projectTasks = await activeStorage.getTasksByProjectId(project.id);
+            for (const task of projectTasks) {
+              enterpriseTasks.push({
+                ...task,
+                project: {
+                  id: project.id,
+                  name: project.name,
+                  color: project.color || '#1976D2'
+                }
+              });
+            }
+          }
+          
+          // Combine user tasks with enterprise tasks
+          const allTasks = [...userTasks, ...enterpriseTasks];
+          console.log(`📋 Tasks API: Found ${userTasks.length} user tasks and ${enterpriseTasks.length} enterprise tasks for user ${userId}`);
+          
+          res.json(Array.isArray(allTasks) ? allTasks : []);
           return;
         } catch (error) {
           console.error("Error fetching all user tasks:", error);
@@ -604,8 +648,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Verify user has access to the project
-      const project = await activeStorage.getProject(projectId as string, userId);
+      // Verify user has access to the project (including enterprise-wide projects)
+      const allProjects = await activeStorage.getProjects();
+      const project = allProjects.find(p => 
+        p.id === projectId && (p.user_id === userId || p.is_enterprise_wide)
+      );
+      
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
@@ -626,14 +674,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("📋 [API] Fetching tasks for project:", projectId, "user:", userId);
 
-      // Verify user has access to the project
-      const project = await activeStorage.getProject(projectId, userId);
+      // Check if user has access to the project (including enterprise-wide projects)
+      const allProjects = await activeStorage.getProjects();
+      const project = allProjects.find(p => 
+        p.id === projectId && (p.user_id === userId || p.is_enterprise_wide)
+      );
+      
       if (!project) {
         console.log("❌ [API] Project not found or access denied:", projectId);
         return res.status(404).json({ message: "Project not found" });
       }
 
-      console.log("✅ [API] Project access verified:", project.name);
+      console.log("✅ [API] Project access verified:", project.name, "enterprise:", project.is_enterprise_wide);
 
       const tasks = await activeStorage.getTasksByProjectId(projectId);
       console.log("📋 [API] Raw tasks result:", tasks);
@@ -739,13 +791,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("📋 [API] Fetching all user tasks with project info for user:", userId);
 
       try {
-        // Get all projects first
-        const projects = await activeStorage.getProjectsByUserId(userId);
-        console.log("📋 [API] Found projects:", projects?.length || 0);
+        // Get user's own projects
+        const userProjects = await activeStorage.getProjectsByUserId(userId);
+        console.log("📋 [API] Found user projects:", userProjects?.length || 0);
 
+        // Get all projects to find enterprise-wide ones
+        const allProjects = await activeStorage.getProjects();
+        const enterpriseProjects = allProjects.filter(p => 
+          p.is_enterprise_wide && !userProjects.some(up => up.id === p.id)
+        );
+        console.log("📋 [API] Found enterprise projects:", enterpriseProjects?.length || 0);
+
+        // Combine all accessible projects
+        const accessibleProjects = [...userProjects, ...enterpriseProjects];
         const allTasksWithProjects = [];
 
-        for (const project of projects || []) {
+        for (const project of accessibleProjects || []) {
           const projectTasks = await activeStorage.getTasksByProjectId(project.id);
           if (projectTasks && projectTasks.length > 0) {
             // Add project info to each task
@@ -761,7 +822,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        console.log("✅ [API] Found tasks with project info:", allTasksWithProjects.length);
+        console.log("✅ [API] Found tasks with project info:", allTasksWithProjects.length, "from", accessibleProjects.length, "projects");
 
         if (allTasksWithProjects.length > 0) {
           console.log("📋 [API] Task details with projects:", allTasksWithProjects.map(t => ({
@@ -769,7 +830,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: t.name,
             status: t.status,
             project_id: t.project_id,
-            project_name: t.project?.name
+            project_name: t.project?.name,
+            is_enterprise: enterpriseProjects.some(ep => ep.id === t.project_id)
           })));
         }
 
@@ -1530,8 +1592,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/departments", isAuthenticated, async (req: any, res) => {
     try {
       const activeStorage = getStorage();
+      
+      // Return all departments for all users with access to departments page
       const departments = await activeStorage.getDepartments();
-      console.log(`📋 Departments API: Found ${departments.length} departments`);
+      console.log(`📋 Departments API: Found ${departments.length} departments (all departments visible to all users)`);
       res.json(departments);
     } catch (error) {
       console.error("❌ Error fetching departments:", error);
