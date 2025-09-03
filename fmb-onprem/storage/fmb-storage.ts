@@ -48,11 +48,6 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  // Add logging helper method
-  private storageLog(message: string, data?: any) {
-    console.log(`🗄️ [FMB-STORAGE] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-  }
-
   private logError(message: string, error?: any) {
     console.error(`🔴 [FMB-STORAGE] ${message}`, error);
   }
