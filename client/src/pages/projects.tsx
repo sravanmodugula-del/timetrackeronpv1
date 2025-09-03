@@ -121,6 +121,7 @@ export default function Projects() {
         startDate: startDate || null,
         endDate: endDate || null,
         projectNumber: data.projectNumber?.trim() || null,
+        color: data.color || '#1976D2',
         isEnterpriseWide: data.isEnterpriseWide,
         budget: null,
         organizationId: null,
@@ -190,6 +191,7 @@ export default function Projects() {
         startDate: startDate || null,
         endDate: endDate || null,
         projectNumber: data.projectNumber?.trim() || null,
+        color: data.color || '#1976D2',
         isEnterpriseWide: data.isEnterpriseWide,
       };
 
@@ -327,7 +329,7 @@ export default function Projects() {
       name: project.name,
       projectNumber: project.project_number || "",
       description: project.description || "",
-      color: "#1976D2",
+      color: project.color || "#1976D2",
       startDate: project.start_date ? new Date(project.start_date).toISOString().split('T')[0] : "",
       endDate: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : "",
       isEnterpriseWide: project.is_enterprise_wide,
