@@ -1706,13 +1706,13 @@ export class FmbStorage implements IStorage {
   // Dashboard Stats
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
     try {
-      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId);
+      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId, 'dateRange:', { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
       }
 
-      // Get current date in UTC
+      // ALWAYS calculate today's hours regardless of the date range filter
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
       
@@ -1728,21 +1728,22 @@ export class FmbStorage implements IStorage {
       console.log('📊 [FMB-STORAGE] Date ranges:', {
         today: todayStr,
         weekStart: weekStartStr,
-        monthStart: monthStartStr
+        monthStart: monthStartStr,
+        filterRange: { startDate, endDate }
       });
 
       // Create separate requests for each query to avoid parameter conflicts
       const todayRequest = this.pool.request();
       todayRequest.input('userId', sql.NVarChar(255), userId);
-      todayRequest.input('todayDate', sql.Date, new Date(todayStr));
+      todayRequest.input('todayDate', sql.Date, new Date(todayStr + 'T00:00:00Z'));
 
       const weekRequest = this.pool.request();
       weekRequest.input('userId', sql.NVarChar(255), userId);
-      weekRequest.input('weekStartDate', sql.Date, new Date(weekStartStr));
+      weekRequest.input('weekStartDate', sql.Date, new Date(weekStartStr + 'T00:00:00Z'));
 
       const monthRequest = this.pool.request();
       monthRequest.input('userId', sql.NVarChar(255), userId);
-      monthRequest.input('monthStartDate', sql.Date, new Date(monthStartStr));
+      monthRequest.input('monthStartDate', sql.Date, new Date(monthStartStr + 'T00:00:00Z'));
 
       const projectsRequest = this.pool.request();
       projectsRequest.input('userId', sql.NVarChar(255), userId);
@@ -1750,21 +1751,28 @@ export class FmbStorage implements IStorage {
       // Execute queries with proper error handling
       try {
         const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
+          // TODAY's hours - always current day regardless of filter
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CONVERT(date, te.date) = CONVERT(date, @todayDate)
+            WHERE te.user_id = @userId 
+              AND CONVERT(date, te.date) = CONVERT(date, @todayDate)
           `),
+          // WEEK's hours - last 7 days
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CONVERT(date, te.date) >= CONVERT(date, @weekStartDate)
+            WHERE te.user_id = @userId 
+              AND CONVERT(date, te.date) >= CONVERT(date, @weekStartDate)
           `),
+          // MONTH's hours - current month
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CONVERT(date, te.date) >= CONVERT(date, @monthStartDate)
+            WHERE te.user_id = @userId 
+              AND CONVERT(date, te.date) >= CONVERT(date, @monthStartDate)
           `),
+          // Active projects count
           projectsRequest.query(`
             SELECT COUNT(DISTINCT p.id) as count
             FROM projects p
@@ -1780,11 +1788,10 @@ export class FmbStorage implements IStorage {
         };
 
         console.log('📊 [FMB-STORAGE] Dashboard stats calculated:', stats);
-        console.log('📊 [FMB-STORAGE] Raw results:', {
-          today: todayResult.recordset[0],
-          week: weekResult.recordset[0],
-          month: monthResult.recordset[0],
-          projects: projectsResult.recordset[0]
+        console.log('📊 [FMB-STORAGE] Today check:', {
+          todayStr,
+          queryResult: todayResult.recordset[0],
+          calculatedToday: stats.todayHours
         });
 
         return stats;
@@ -2112,9 +2119,9 @@ export class FmbStorage implements IStorage {
 
       let dateFilter = '';
       if (startDate && endDate) {
-        request.input('startDate', sql.Date, new Date(startDate));
-        request.input('endDate', sql.Date, new Date(endDate));
-        dateFilter = 'AND CONVERT(date, te.date) >= CONVERT(date, @startDate) AND CONVERT(date, te.date) <= CONVERT(date, @endDate)';
+        request.input('startDate', sql.Date, new Date(startDate + 'T00:00:00Z'));
+        request.input('endDate', sql.Date, new Date(endDate + 'T23:59:59Z'));
+        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
         console.log('📋 [FMB-STORAGE] Using date filter for recent activity:', { startDate, endDate });
       }
 
@@ -2135,23 +2142,39 @@ export class FmbStorage implements IStorage {
         ORDER BY te.date DESC, te.created_at DESC
       `;
 
-      console.log('📋 [FMB-STORAGE] Executing recent activity query:', query.substring(0, 200) + '...');
+      console.log('📋 [FMB-STORAGE] Executing recent activity query with date filter:', dateFilter);
 
       const result = await request.query(query);
 
       console.log('📋 [FMB-STORAGE] Recent activity raw result:', {
         recordCount: result.recordset?.length || 0,
-        firstRecord: result.recordset?.[0]
+        firstRecord: result.recordset?.[0],
+        dateFilter,
+        queryParams: { userId, startDate, endDate }
       });
 
       if (!result.recordset || result.recordset.length === 0) {
-        console.log('📋 [FMB-STORAGE] No recent activity found');
+        console.log('📋 [FMB-STORAGE] No recent activity found - checking all time entries for user');
+        
+        // Debug query to see what time entries exist
+        const debugRequest = this.pool.request();
+        debugRequest.input('debugUserId', sql.NVarChar(255), userId);
+        const debugResult = await debugRequest.query(`
+          SELECT TOP 5 te.id, te.date, te.hours, te.description, p.name as project_name
+          FROM time_entries te
+          INNER JOIN projects p ON te.project_id = p.id
+          WHERE te.user_id = @debugUserId
+          ORDER BY te.date DESC, te.created_at DESC
+        `);
+        console.log('📋 [FMB-STORAGE] Debug - All recent time entries for user:', debugResult.recordset);
+        
         return [];
       }
 
       // Transform the results to match the expected frontend structure
       const activities = result.recordset.map(row => ({
         id: row.id,
+        type: 'time_entry',
         description: row.description || 'No description',
         date: row.date,
         created_at: row.created_at || row.date,
@@ -2161,13 +2184,15 @@ export class FmbStorage implements IStorage {
           id: row.project_id,
           name: row.project_name || 'Unknown Project',
           color: row.project_color || '#1976D2'
-        }
+        },
+        project_name: row.project_name // Add for compatibility
       }));
 
       console.log('📋 [FMB-STORAGE] Recent activity transformed:', {
         count: activities.length,
         activities: activities.map(a => ({
           id: a.id,
+          type: a.type,
           description: a.description?.substring(0, 50),
           project: a.project.name,
           hours: a.hours,
