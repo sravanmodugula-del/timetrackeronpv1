@@ -20,10 +20,14 @@ export async function buildAuthContext(req: any, storageInstance: any): Promise<
   const userId = req.user.claims.sub;
   
   try {
+    // First, get the actual user record to retrieve their role
+    const user = await storageInstance.getUserById(userId);
+    
     // Get user role and department/organization info from employee record
     const employee = await storageInstance.getEmployeeByUserId(userId);
     
-    let role = Role.EMPLOYEE; // Default role
+    // Start with the user's actual role from the database, or default to EMPLOYEE
+    let role = user?.role ? user.role as Role : Role.EMPLOYEE;
     let departmentId: string | undefined;
     let organizationId: string | undefined;
     
@@ -37,19 +41,27 @@ export async function buildAuthContext(req: any, storageInstance: any): Promise<
           organizationId = department.organization.id;
         }
         
-        // Check if user is a department manager
-        if (department?.managerId === employee.id) {
+        // Check if user is a department manager (this can override employee role to manager)
+        if (department?.managerId === employee.id && role === Role.EMPLOYEE) {
           role = Role.MANAGER;
         }
       }
     }
     
-    // Check for admin role (could be based on specific user IDs or other criteria)
-    // For now, we'll use a simple check - you can enhance this
+    // Check for admin role override (environment-based admin users take precedence)
     const adminUsers = process.env.ADMIN_USERS?.split(',') || [];
     if (adminUsers.includes(userId)) {
       role = Role.ADMIN;
     }
+    
+    console.log('🔍 [AUTH-CONTEXT] Built auth context:', {
+      userId,
+      userRoleFromDB: user?.role,
+      finalRole: role,
+      departmentId,
+      organizationId,
+      isAdminUser: adminUsers.includes(userId)
+    });
     
     const permissions = getRolePermissions(role);
     
