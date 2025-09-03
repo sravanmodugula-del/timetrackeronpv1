@@ -1378,6 +1378,87 @@ export class FmbStorage implements IStorage {
     return result[0];
   }
 
+  async upsertEmployee(employeeData: {
+    employee_id: string;
+    first_name: string;
+    last_name: string;
+    department?: string;
+    user_id: string;
+  }): Promise<Employee> {
+    try {
+      // Check if employee exists by user_id first (primary lookup)
+      const existingByUserId = await this.execute(
+        'SELECT * FROM employees WHERE user_id = @param0', 
+        [employeeData.user_id]
+      );
+
+      // Check if employee exists by employee_id as secondary lookup
+      const existingByEmployeeId = await this.execute(
+        'SELECT * FROM employees WHERE employee_id = @param0', 
+        [employeeData.employee_id]
+      );
+
+      const existingEmployee = existingByUserId[0] || existingByEmployeeId[0];
+
+      if (existingEmployee) {
+        // Update existing employee record
+        const request = this.pool!.request();
+        request.input('id', sql.NVarChar(255), existingEmployee.id);
+        request.input('employee_id', sql.NVarChar(255), employeeData.employee_id);
+        request.input('first_name', sql.NVarChar(255), employeeData.first_name);
+        request.input('last_name', sql.NVarChar(255), employeeData.last_name);
+        request.input('department', sql.NVarChar(255), employeeData.department || null);
+        request.input('user_id', sql.NVarChar(255), employeeData.user_id);
+
+        await request.query(`
+          UPDATE employees 
+          SET employee_id = @employee_id, first_name = @first_name, last_name = @last_name,
+              department = @department, user_id = @user_id, updated_at = GETDATE()
+          WHERE id = @id
+        `);
+
+        this.storageLog('UPSERT_EMPLOYEE', 'Employee record updated', {
+          id: existingEmployee.id,
+          employee_id: employeeData.employee_id,
+          user_id: employeeData.user_id
+        });
+
+        return await this.getEmployeeById(existingEmployee.id) as Employee;
+      } else {
+        // Create new employee record
+        const employeeId = `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        const request = this.pool!.request();
+        request.input('id', sql.NVarChar(255), employeeId);
+        request.input('employee_id', sql.NVarChar(255), employeeData.employee_id);
+        request.input('first_name', sql.NVarChar(255), employeeData.first_name);
+        request.input('last_name', sql.NVarChar(255), employeeData.last_name);
+        request.input('department', sql.NVarChar(255), employeeData.department || null);
+        request.input('user_id', sql.NVarChar(255), employeeData.user_id);
+
+        await request.query(`
+          INSERT INTO employees (id, employee_id, first_name, last_name, department, user_id, created_at, updated_at)
+          VALUES (@id, @employee_id, @first_name, @last_name, @department, @user_id, GETDATE(), GETDATE())
+        `);
+
+        this.storageLog('UPSERT_EMPLOYEE', 'Employee record created', {
+          id: employeeId,
+          employee_id: employeeData.employee_id,
+          user_id: employeeData.user_id
+        });
+
+        return await this.getEmployeeById(employeeId) as Employee;
+      }
+    } catch (error) {
+      this.storageLog('UPSERT_EMPLOYEE', 'Failed to upsert employee', {
+        error: error.message,
+        employee_id: employeeData.employee_id,
+        user_id: employeeData.user_id
+      });
+      throw new Error(`Failed to upsert employee: ${error.message}`);
+    }
+  }
+
   async updateEmployee(id: string, employeeData: Partial<InsertEmployee>): Promise<Employee> {
     const fields = [];
     const params = [];

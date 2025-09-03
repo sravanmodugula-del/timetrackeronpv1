@@ -556,7 +556,7 @@ VALUES ('admin-001', 'admin@fmb.com', 'System', 'Administrator', 'admin', 1);
 
 -- Default organization
 INSERT INTO organizations (id, name, description, user_id) 
-VALUES ('org-fmb', 'First Midwest Bank', 'Primary FMB organization', 'admin-001');
+VALUES ('org-fmb', 'FMB', 'Farmers & Merchants Bank', 'admin-001');
 
 -- Update user with organization
 UPDATE users SET organization_id = 'org-fmb' WHERE id = 'admin-001';

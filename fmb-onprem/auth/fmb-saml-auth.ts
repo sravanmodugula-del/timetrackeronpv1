@@ -69,13 +69,17 @@ export async function setupFmbSamlAuth(app: Express) {
           nameID: profile.nameID,
           email: profile.email || profile.nameID,
           firstName: profile.firstName,
-          lastName: profile.lastName
+          lastName: profile.lastName,
+          department: profile.department || profile.Department,
+          employeeId: profile.employeeId || profile.EmployeeId || profile.employee_id || 
+                     profile.employeeNumber || profile.EmployeeNumber
         });
 
         // Extract user information from SAML profile
         const email = profile.email || profile.nameID;
         const firstName = profile.firstName || profile.givenName || email.split('@')[0];
         const lastName = profile.lastName || profile.surname || '';
+        const department = profile.department || profile.Department || null;
 
         // Upsert user in database first
         const upsertedUser = await fmbStorage.upsertUser({
@@ -85,11 +89,39 @@ export async function setupFmbSamlAuth(app: Express) {
           last_name: lastName,
           profile_image_url: null,
           role: 'user',
-          organization_id: null,
-          department: null
+          organization_id: 'org-fmb', // Default organization ID since not provided by SAML
+          department: department
         });
 
         authLog('INFO', 'User upserted in database', { email });
+
+        // Extract employee_id from SAML profile (could be in various fields)
+        const employeeId = profile.employeeId || profile.EmployeeId || profile.employee_id || 
+                          profile.employeeNumber || profile.EmployeeNumber || email;
+
+        // Upsert employee record for this user
+        try {
+          await fmbStorage.upsertEmployee({
+            employee_id: employeeId,
+            first_name: firstName,
+            last_name: lastName,
+            department: department || null,
+            user_id: upsertedUser.id
+          });
+
+          authLog('INFO', 'Employee record upserted', { 
+            employeeId, 
+            userId: upsertedUser.id,
+            department: department 
+          });
+        } catch (employeeError) {
+          authLog('WARN', 'Failed to create/update employee record', {
+            error: employeeError.message,
+            employeeId,
+            userId: upsertedUser.id
+          });
+          // Don't fail authentication if employee creation fails
+        }
 
         // Create session user object
         const sessionUser = {
@@ -219,7 +251,7 @@ export async function setupFmbSamlAuth(app: Express) {
             first_name: user.first_name,
             last_name: user.last_name,
             role: user.role,
-            organization_id: user.organization_id,
+            organization_id: user.organization_id || 'org-fmb', // Ensure default org ID
             department: user.department,
             is_active: user.is_active
           };
