@@ -568,7 +568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId } = req.params;
+      const {projectId } = req.params;
       const activeStorage = getStorage();
 
       console.log("📋 [API] Fetching tasks for project:", projectId, "user:", userId);
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/projects/:projectId/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId } = req.params;
+      const {projectId } = req.params;
       const { name, description, status } = req.body;
 
       console.log("📝 Project Task Creation Request:", { 
@@ -1344,11 +1344,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user_id: userId
       };
 
-      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId}) by user: ${user.email} (${userRole})`);
+      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employee_id}) by user: ${user.email} (${userRole})`);
 
       const employee = await activeStorage.createEmployee(employeeData);
 
-      console.log(`✅ Employee created successfully: ${employee.id} - ${employee.firstName} ${employee.lastName}`);
+      console.log(`✅ Employee created successfully: ${employee.id} - ${employee.first_name} ${employee.last_name}`);
 
       res.status(201).json({
         ...employee,
