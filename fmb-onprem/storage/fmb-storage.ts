@@ -1427,7 +1427,7 @@ export class FmbStorage implements IStorage {
       } else {
         // Create new employee record
         const employeeId = `emp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         const request = this.pool!.request();
         request.input('id', sql.NVarChar(255), employeeId);
         request.input('employee_id', sql.NVarChar(255), employeeData.employee_id);
@@ -1598,7 +1598,7 @@ export class FmbStorage implements IStorage {
       } else {
         // Create new department record
         const departmentId = `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         const request = this.pool!.request();
         request.input('id', sql.NVarChar(255), departmentId);
         request.input('name', sql.NVarChar(255), departmentData.name);
@@ -1690,9 +1690,7 @@ export class FmbStorage implements IStorage {
     return result;
   }
 
-  async getUserById(id: string): Promise<User | null> {
-    return await this.getUser(id);
-  }
+  // Removed duplicate getUserById method. The consolidated method is provided below.
 
   async createUser(userData: UpsertUser): Promise<User> {
     return await this.upsertUser(userData);
@@ -2615,7 +2613,7 @@ export class FmbStorage implements IStorage {
         lineNumber: error?.lineNumber
       });
 
-      // Return empty array instead of throwing to prevent 500 errors
+      // Return empty array instead of throwing
       return [];
     }
   }
@@ -2659,39 +2657,40 @@ export class FmbStorage implements IStorage {
   }
 
   // Get user by ID
-  async getUserById(userId: string): Promise<User | null> {
-    try {
-      console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
-      
-      const request = this.pool.request();
-      request.input('userId', sql.NVarChar(255), userId);
-      
-      const result = await request.query(`
-        SELECT 
-          id,
-          email,
-          first_name as firstName,
-          last_name as lastName,
-          role,
-          is_active as isActive,
-          last_login_at as lastLoginAt,
-          organization_id as organizationId,
-          department,
-          created_at as createdAt,
-          updated_at as updatedAt
-        FROM users 
-        WHERE id = @userId
-      `);
+  // This method is consolidated into a single implementation above.
+  // async getUserById(userId: string): Promise<User | null> {
+  //   try {
+  //     console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
 
-      const user = result.recordset[0];
-      console.log('👤 [FMB-STORAGE] User found:', user ? { id: user.id, role: user.role } : 'Not found');
-      
-      return user || null;
-    } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error getting user by ID:', error);
-      throw error;
-    }
-  }
+  //     const request = this.pool.request();
+  //     request.input('userId', sql.NVarChar(255), userId);
+
+  //     const result = await request.query(`
+  //       SELECT 
+  //         id,
+  //         email,
+  //         first_name as firstName,
+  //         last_name as lastName,
+  //         role,
+  //         is_active as isActive,
+  //         last_login_at as lastLoginAt,
+  //         organization_id as organizationId,
+  //         department,
+  //         created_at as createdAt,
+  //         updated_at as updatedAt
+  //       FROM users 
+  //       WHERE id = @userId
+  //     `);
+
+  //     const user = result.recordset[0];
+  //     console.log('👤 [FMB-STORAGE] User found:', user ? { id: user.id, role: user.role } : 'Not found');
+
+  //     return user || null;
+  //   } catch (error) {
+  //     console.error('🔴 [FMB-STORAGE] Error getting user by ID:', error);
+  //     throw error;
+  //   }
+  // }
 
   // User Role Management
   async updateUserRole(userId: string, newRole: string): Promise<User> {

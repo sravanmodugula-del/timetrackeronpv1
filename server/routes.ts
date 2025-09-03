@@ -993,8 +993,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const clonedTask = await activeStorage.createTask({
-        projectId: targetProjectId,
+        project_id: targetProjectId,
         name: taskName,
+        title: taskName, // Ensure both name and title are set
         description: taskDescription,
         status: "active", // Reset status to active for cloned tasks
       });
