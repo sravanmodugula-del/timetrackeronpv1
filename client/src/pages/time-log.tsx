@@ -175,12 +175,31 @@ export default function TimeLog() {
   };
 
   // Helper function to format time
-  const formatTime = (time: string | Date) => {
+  const formatTime = (time: string | Date | null | undefined) => {
     try {
-      const date = time instanceof Date ? time : new Date(time);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!time) return '—';
+      
+      // If it's already in HH:MM format (string), return as is
+      if (typeof time === 'string') {
+        // Check if it matches HH:MM pattern
+        if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
+          return time;
+        }
+        // Try to parse as date if it's a full datetime string
+        const date = new Date(time);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+      }
+      
+      // If it's a Date object
+      if (time instanceof Date && !isNaN(time.getTime())) {
+        return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      return '—';
     } catch {
-      return 'Invalid time';
+      return '—';
     }
   };
 
