@@ -967,18 +967,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Task not found" });
       }
 
+      console.log('🔄 [CLONE-TASK] Original task data:', {
+        id: originalTask.id,
+        name: originalTask.name,
+        title: originalTask.title,
+        description: originalTask.description,
+        status: originalTask.status
+      });
+
       // Verify user owns the target project
       const targetProject = await activeStorage.getProject(targetProjectId, userId);
       if (!targetProject) {
         return res.status(403).json({ message: "Access denied to target project" });
       }
 
-      // Clone the task
+      // Clone the task - ensure name/title mapping is correct
+      const taskName = originalTask.title || originalTask.name || "Cloned Task";
+      const taskDescription = originalTask.description || "";
+      
+      console.log('🔄 [CLONE-TASK] Creating cloned task with data:', {
+        projectId: targetProjectId,
+        name: taskName,
+        description: taskDescription,
+        status: "active"
+      });
+
       const clonedTask = await activeStorage.createTask({
         projectId: targetProjectId,
-        name: originalTask.name,
-        description: originalTask.description,
+        name: taskName,
+        description: taskDescription,
         status: "active", // Reset status to active for cloned tasks
+      });
+
+      console.log('✅ [CLONE-TASK] Task cloned successfully:', {
+        originalId: originalTask.id,
+        clonedId: clonedTask.id,
+        name: taskName
       });
 
       res.status(201).json(clonedTask);
