@@ -1879,7 +1879,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const organizations = await activeStorage.getOrganizationsByUserId(userId);
+      
+      // Check if storage has getAllOrganizations method, fallback to getOrganizationsByUserId
+      let organizations;
+      if ('getAllOrganizations' in activeStorage && typeof activeStorage.getAllOrganizations === 'function') {
+        organizations = await (activeStorage as any).getAllOrganizations();
+      } else {
+        // Fallback: get all organizations by querying without user filter
+        organizations = await activeStorage.getOrganizationsByUserId(userId);
+      }
+      
       res.json(organizations);
     } catch (error) {
       console.error("Error fetching organizations:", error);
