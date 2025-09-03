@@ -214,11 +214,11 @@ CREATE TABLE time_entries (
     project_id NVARCHAR(255),
     task_id NVARCHAR(255),
     description NVARCHAR(MAX),
-    hours DECIMAL(5,2) NOT NULL,
+    hours DECIMAL(5,2) NOT NULL DEFAULT 0,
     duration DECIMAL(5,2) NOT NULL,
     date DATE NOT NULL,
-    start_time DATETIME2,
-    end_time DATETIME2,
+    start_time NVARCHAR(8), -- Changed to VARCHAR to match frontend format "HH:MM"
+    end_time NVARCHAR(8), -- Changed to VARCHAR to match frontend format "HH:MM"
     status NVARCHAR(50) NOT NULL DEFAULT 'draft',
     billable BIT NOT NULL DEFAULT 0,
     is_billable BIT NOT NULL DEFAULT 0,

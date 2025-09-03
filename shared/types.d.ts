@@ -56,28 +56,19 @@ export interface Project {
 
 export interface TimeEntry {
   id: string;
-  description: string;
-  duration: number;
-  date: Date;
   user_id: string;
   project_id?: string;
   task_id?: string;
+  description?: string;
+  hours: number;
+  duration: number;
+  date: string;
+  start_time?: string;
+  end_time?: string;
+  status?: string;
+  billable?: boolean;
   created_at: Date;
-  updated_at?: Date;
-  start_time?: Date;
-  end_time?: Date;
-  tags?: string[];
-  is_billable?: boolean;
-  billable_rate?: number;
-  notes?: string;
-  location?: string;
-  approval_status?: "pending" | "approved" | "rejected";
-  // CamelCase aliases for frontend
-  startTime?: Date;
-  endTime?: Date;
-  projectId?: string;
-  taskId?: string;
-  createdAt?: Date;
+  updated_at: Date;
 }
 
 export interface Task {

@@ -146,20 +146,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract user ID using consistent helper function
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      
+
       try {
         // Get user's own projects
         const userProjects = await activeStorage.getProjectsByUserId(userId);
-        
+
         // Get ALL enterprise-wide projects (regardless of who created them)
         const allProjects = await activeStorage.getProjects();
         const enterpriseProjects = allProjects.filter(p => 
           p.is_enterprise_wide && !userProjects.some(up => up.id === p.id)
         );
-        
+
         // Combine user projects with ALL enterprise-wide projects
         const combinedProjects = [...userProjects, ...enterpriseProjects];
-        
+
         console.log(`📁 Projects API: Found ${userProjects.length} user projects and ${enterpriseProjects.length} enterprise projects for user ${userId}`);
         res.json(combinedProjects);
       } catch (error) {
@@ -613,13 +613,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Get user's own tasks
           const userTasks = await activeStorage.getAllUserTasks(userId);
-          
+
           // Get all projects to find enterprise-wide ones
           const allProjects = await activeStorage.getProjects();
           const enterpriseProjects = allProjects.filter(p => 
             p.is_enterprise_wide && !userTasks.some(task => task.project_id === p.id)
           );
-          
+
           // Get tasks from enterprise-wide projects
           const enterpriseTasks = [];
           for (const project of enterpriseProjects) {
@@ -635,11 +635,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
             }
           }
-          
+
           // Combine user tasks with enterprise tasks
           const allTasks = [...userTasks, ...enterpriseTasks];
           console.log(`📋 Tasks API: Found ${userTasks.length} user tasks and ${enterpriseTasks.length} enterprise tasks for user ${userId}`);
-          
+
           res.json(Array.isArray(allTasks) ? allTasks : []);
           return;
         } catch (error) {
@@ -654,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = allProjects.find(p => 
         p.id === projectId && (p.user_id === userId || p.is_enterprise_wide)
       );
-      
+
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
@@ -680,7 +680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = allProjects.find(p => 
         p.id === projectId && (p.user_id === userId || p.is_enterprise_wide)
       );
-      
+
       if (!project) {
         console.log("❌ [API] Project not found or access denied:", projectId);
         return res.status(404).json({ message: "Project not found" });
@@ -1047,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clone the task - ensure name/title mapping is correct
       const taskName = originalTask.title || originalTask.name || "Cloned Task";
       const taskDescription = originalTask.description || "";
-      
+
       console.log('🔄 [CLONE-TASK] Creating cloned task with data:', {
         projectId: targetProjectId,
         name: taskName,
@@ -1080,7 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/time-entries', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      const { projectId, startDate, endDate, limit, offset } = req.query;
+      const {projectId, startDate, endDate, limit, offset } = req.query;
       const activeStorage = getStorage();
 
       const filters = {
@@ -1126,13 +1126,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle manual duration mode by providing default start/end times
       let processedData = { ...req.body, userId };
+
+      // Coerce duration to number if it's a string
+      if (processedData.duration && typeof processedData.duration === 'string') {
+        const durationValue = parseFloat(processedData.duration);
+        if (!isNaN(durationValue)) {
+          processedData.duration = durationValue;
+        }
+      }
+
+      // Coerce hours to number if it's a string
+      if (processedData.hours && typeof processedData.hours === 'string') {
+        const hoursValue = parseFloat(processedData.hours);
+        if (!isNaN(hoursValue)) {
+          processedData.hours = hoursValue;
+        }
+      }
+
       if (processedData.duration && !processedData.startTime && !processedData.endTime) {
         // For manual duration, set dummy start/end times that match the duration
-        processedData.startTime = "09:00";
-        const durationHours = parseFloat(processedData.duration);
-        const endHour = 9 + Math.floor(durationHours);
-        const endMinute = Math.round((durationHours % 1) * 60);
-        processedData.endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        processedData.start_time = "09:00";
+        const startHour = 9;
+        const endHour = startHour + processedData.duration;
+        const endMinutes = Math.round((endHour % 1) * 60);
+        const endHourInt = Math.floor(endHour);
+        processedData.end_time = `${endHourInt.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
       }
 
       const entryData = insertTimeEntrySchema.parse(processedData);
@@ -1593,7 +1611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/departments", isAuthenticated, async (req: any, res) => {
     try {
       const activeStorage = getStorage();
-      
+
       // Return all departments for all users with access to departments page
       const departments = await activeStorage.getDepartments();
       console.log(`📋 Departments API: Found ${departments.length} departments (all departments visible to all users)`);
@@ -1944,7 +1962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      
+
       // Check if storage has getAllOrganizations method, fallback to getOrganizationsByUserId
       let organizations;
       if ('getAllOrganizations' in activeStorage && typeof activeStorage.getAllOrganizations === 'function') {
@@ -1953,7 +1971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fallback: get all organizations by querying without user filter
         organizations = await activeStorage.getOrganizationsByUserId(userId);
       }
-      
+
       res.json(organizations);
     } catch (error) {
       console.error("Error fetching organizations:", error);

@@ -56,8 +56,20 @@ export const insertTimeEntrySchema = z.object({
   projectId: z.string().optional(),
   taskId: z.string().optional(),
   description: z.string().optional(),
-  hours: z.number().min(0).max(24),
-  duration: z.number().min(0),
+  hours: z.union([z.number(), z.string()]).transform((val) => {
+    if (typeof val === 'string') {
+      const num = parseFloat(val);
+      return isNaN(num) ? 0 : num;
+    }
+    return val;
+  }).refine((val) => val >= 0 && val <= 24, "Hours must be between 0 and 24"),
+  duration: z.union([z.number(), z.string()]).transform((val) => {
+    if (typeof val === 'string') {
+      const num = parseFloat(val);
+      return isNaN(num) ? 0 : num;
+    }
+    return val;
+  }).refine((val) => val >= 0, "Duration must be non-negative"),
   date: z.string().min(1, "Date is required"),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
