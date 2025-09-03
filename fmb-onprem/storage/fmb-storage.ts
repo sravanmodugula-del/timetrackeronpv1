@@ -1141,27 +1141,65 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async getTimeEntry(id: string, userId?: string): Promise<TimeEntry | null> {
+  async getTimeEntry(id: string, userId?: string): Promise<TimeEntryWithProject | null> {
     try {
-      const result = await this.pool.request()
-        .input('entry_id', id)
-        .input('user_id', userId || this.userId)
-        .query(`
-          SELECT te.*, p.name as project_name, p.project_number, t.name as task_name
-          FROM time_entries te
-          LEFT JOIN projects p ON te.project_id = p.id
-          LEFT JOIN tasks t ON te.task_id = t.id
-          WHERE te.id = @entry_id AND te.user_id = @user_id
-        `);
+      console.log(`🔍 [FMB-STORAGE] Getting time entry: ${id} for user: ${userId || 'any'}`);
+
+      const request = this.pool.request();
+      request.input('id', sql.NVarChar(255), id);
+
+      let userFilter = '';
+      if (userId) {
+        request.input('userId', sql.NVarChar(255), userId);
+        userFilter = 'AND te.user_id = @userId';
+      }
+
+      const query = `
+        SELECT 
+          te.*,
+          p.name as project_name,
+          p.color as project_color,
+          t.title as task_name,
+          t.name as task_name_alt
+        FROM time_entries te
+        LEFT JOIN projects p ON te.project_id = p.id
+        LEFT JOIN tasks t ON te.task_id = t.id
+        WHERE te.id = @id ${userFilter}
+      `;
+
+      console.log(`🔍 [FMB-STORAGE] Executing getTimeEntry query with userFilter: '${userFilter}'`);
+      const result = await request.query(query);
+
+      console.log(`🔍 [FMB-STORAGE] GetTimeEntry result: ${result.recordset.length} records found`);
 
       if (result.recordset.length === 0) {
+        console.log(`❌ [FMB-STORAGE] No time entry found for id: ${id} with userId: ${userId || 'any'}`);
         return null;
       }
 
-      return this.mapTimeEntryFromDb(result.recordset[0]);
+      const entry = result.recordset[0];
+      console.log(`✅ [FMB-STORAGE] Found time entry: ${entry.id} for user: ${entry.user_id}`);
+
+      return {
+        id: entry.id,
+        user_id: entry.user_id,
+        project_id: entry.project_id,
+        task_id: entry.task_id,
+        description: entry.description,
+        date: entry.date,
+        start_time: entry.start_time,
+        end_time: entry.end_time,
+        duration: parseFloat(entry.duration) || 0,
+        hours: parseFloat(entry.hours) || parseFloat(entry.duration) || 0,
+        created_at: entry.created_at,
+        updated_at: entry.updated_at,
+        project_name: entry.project_name,
+        project_color: entry.project_color,
+        task_name: entry.task_name || entry.task_name_alt
+      };
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching time entry:', error);
-      throw error;
+      console.error('🔴 [FMB-STORAGE] Error getting time entry:', error);
+      return null;
     }
   }
 
@@ -1466,13 +1504,13 @@ export class FmbStorage implements IStorage {
     try {
       // Check if employee exists by user_id first (primary lookup)
       const existingByUserId = await this.execute(
-        'SELECT * FROM employees WHERE user_id = @param0', 
+        'SELECT * FROM employees WHERE user_id = @param0',
         [employeeData.user_id]
       );
 
       // Check if employee exists by employee_id as secondary lookup
       const existingByEmployeeId = await this.execute(
-        'SELECT * FROM employees WHERE employee_id = @param0', 
+        'SELECT * FROM employees WHERE employee_id = @param0',
         [employeeData.employee_id]
       );
 
@@ -1489,7 +1527,7 @@ export class FmbStorage implements IStorage {
         request.input('user_id', sql.NVarChar(255), employeeData.user_id);
 
         await request.query(`
-          UPDATE employees 
+          UPDATE employees
           SET employee_id = @employee_id, first_name = @first_name, last_name = @last_name,
               department = @department, user_id = @user_id, updated_at = GETDATE()
           WHERE id = @id
@@ -1582,8 +1620,8 @@ export class FmbStorage implements IStorage {
       this.storageLog('GET_ALL_DEPARTMENTS', 'Fetching all departments for all users');
 
       const result = await this.execute(`
-        SELECT d.*, 
-               e.first_name as manager_first_name, 
+        SELECT d.*,
+               e.first_name as manager_first_name,
                e.last_name as manager_last_name,
                o.name as organization_name
         FROM departments d
@@ -1651,7 +1689,7 @@ export class FmbStorage implements IStorage {
     try {
       // Check if department exists by name and organization_id
       const existingDepartment = await this.execute(
-        'SELECT * FROM departments WHERE name = @param0 AND organization_id = @param1', 
+        'SELECT * FROM departments WHERE name = @param0 AND organization_id = @param1',
         [departmentData.name, departmentData.organization_id]
       );
 
@@ -1679,7 +1717,7 @@ export class FmbStorage implements IStorage {
 
         if (updateFields.length > 1) { // More than just updated_at
           await this.execute(`
-            UPDATE departments 
+            UPDATE departments
             SET ${updateFields.join(', ')}
             WHERE id = @param${paramIndex}
           `, updateParams);
@@ -1795,7 +1833,7 @@ export class FmbStorage implements IStorage {
       request.input('userId', sql.NVarChar(255), userId);
 
       const result = await request.query(`
-        SELECT 
+        SELECT
           id,
           email,
           first_name as firstName,
@@ -1807,15 +1845,15 @@ export class FmbStorage implements IStorage {
           department,
           created_at as createdAt,
           updated_at as updatedAt
-        FROM users 
+        FROM users
         WHERE id = @userId
       `);
 
       const user = result.recordset[0];
-      console.log('👤 [FMB-STORAGE] User found:', user ? { 
-        id: user.id, 
+      console.log('👤 [FMB-STORAGE] User found:', user ? {
+        id: user.id,
         role: user.role,
-        email: user.email 
+        email: user.email
       } : 'Not found');
 
       return user || null;
@@ -2157,21 +2195,21 @@ export class FmbStorage implements IStorage {
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId 
+            WHERE te.user_id = @userId
               AND te.date = @todayDate
           `),
           // WEEK's hours - last 7 days
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId 
+            WHERE te.user_id = @userId
               AND te.date >= @weekStartDate
           `),
           // MONTH's hours - current month
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId 
+            WHERE te.user_id = @userId
               AND te.date >= @monthStartDate
           `),
           // Active projects count
@@ -2225,7 +2263,7 @@ export class FmbStorage implements IStorage {
       request.input('projectId', sql.NVarChar, projectId);
 
       const result = await this.executeQuery(request, `
-        SELECT 
+        SELECT
           id,
           project_id,
           title,
@@ -2236,7 +2274,7 @@ export class FmbStorage implements IStorage {
           created_by,
           created_at,
           updated_at
-        FROM tasks 
+        FROM tasks
         WHERE project_id = @projectId
         ORDER BY created_at DESC
       `);
@@ -2347,7 +2385,7 @@ export class FmbStorage implements IStorage {
       created_at: row.created_at,
       updated_at: row.updated_at,
       project_name: row.project_name, // Added for convenience
-      task_name: row.task_name     // Added for convenience
+      task_name: row.task_name // Added for convenience
     };
   }
 
@@ -2623,12 +2661,12 @@ export class FmbStorage implements IStorage {
       checkRequest.input('userId', sql.NVarChar(255), userId);
 
       const timeEntriesCheck = await checkRequest.query(`
-        SELECT COUNT(*) as total_entries, 
+        SELECT COUNT(*) as total_entries,
                COUNT(DISTINCT project_id) as unique_projects,
                MIN(date) as earliest_date,
                MAX(date) as latest_date,
                SUM(CAST(hours as DECIMAL(10,2))) as total_hours
-        FROM time_entries 
+        FROM time_entries
         WHERE user_id = @userId
       `);
 
@@ -2669,17 +2707,17 @@ export class FmbStorage implements IStorage {
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        INNER JOIN time_entries te ON p.id = te.project_id 
-        WHERE p.user_id = @userId 
+        INNER JOIN time_entries te ON p.id = te.project_id
+        WHERE p.user_id = @userId
           AND te.user_id = @userId
-          AND CONVERT(date, te.date) >= CONVERT(date, @startDate) 
+          AND CONVERT(date, te.date) >= CONVERT(date, @startDate)
           AND CONVERT(date, te.date) <= CONVERT(date, @endDate)
         `;
         console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
       } else {
         // If no date filter, ensure we are only counting entries for the specific user
         breakdownQuery += `
-        INNER JOIN time_entries te ON p.id = te.project_id 
+        INNER JOIN time_entries te ON p.id = te.project_id
         WHERE p.user_id = @userId AND te.user_id = @userId
         `;
       }
@@ -2801,7 +2839,7 @@ export class FmbStorage implements IStorage {
   //     request.input('userId', sql.NVarChar(255), userId);
 
   //     const result = await request.query(`
-  //       SELECT 
+  //       SELECT
   //         id,
   //         email,
   //         first_name as firstName,
@@ -2813,7 +2851,7 @@ export class FmbStorage implements IStorage {
   //         department,
   //         created_at as createdAt,
   //         updated_at as updatedAt
-  //       FROM users 
+  //       FROM users
   //       WHERE id = @userId
   //     `);
 
