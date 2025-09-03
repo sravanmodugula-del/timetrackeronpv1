@@ -113,12 +113,18 @@ export default function Projects() {
     mutationFn: async (data: ProjectFormData) => {
       const { assignedEmployeeIds, startDate, endDate, ...projectData } = data;
 
-      // Send date strings directly - backend will handle conversion
+      // Send properly formatted data to backend
       const formattedData = {
-        ...projectData,
-        ...(startDate && startDate.trim() && { start_date: startDate }),
-        ...(endDate && endDate.trim() && { end_date: endDate }),
-        is_enterprise_wide: data.isEnterpriseWide,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        status: 'active',
+        startDate: startDate || null,
+        endDate: endDate || null,
+        projectNumber: data.projectNumber?.trim() || null,
+        isEnterpriseWide: data.isEnterpriseWide,
+        budget: null,
+        organizationId: null,
+        departmentId: null,
       };
 
       const project = await apiRequest("/api/projects", "POST", formattedData);
@@ -177,12 +183,14 @@ export default function Projects() {
 
       const { assignedEmployeeIds, startDate, endDate, ...projectData } = data;
 
-      // Send date strings directly - backend will handle conversion
+      // Send properly formatted data to backend
       const formattedData = {
-        ...projectData,
-        ...(startDate && startDate.trim() && { start_date: startDate }),
-        ...(endDate && endDate.trim() && { end_date: endDate }),
-        is_enterprise_wide: data.isEnterpriseWide,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        projectNumber: data.projectNumber?.trim() || null,
+        isEnterpriseWide: data.isEnterpriseWide,
       };
 
       const project = await apiRequest(`/api/projects/${editingProject.id}`, "PUT", formattedData);
@@ -322,7 +330,7 @@ export default function Projects() {
       startDate: project.start_date ? new Date(project.start_date).toISOString().split('T')[0] : "",
       endDate: project.end_date ? new Date(project.end_date).toISOString().split('T')[0] : "",
       isEnterpriseWide: project.is_enterprise_wide,
-      assignedEmployeeIds: [],
+      assignedEmployeeIds: projectWithEmployees.assignedEmployees?.map(emp => emp.id) || [],
     });
     setActiveTab("details");
     setIsDialogOpen(true);
