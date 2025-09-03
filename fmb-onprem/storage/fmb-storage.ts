@@ -194,7 +194,16 @@ export class FmbStorage implements IStorage {
     const existingUser = await this.getUserByEmail(userData.email);
 
     if (existingUser) {
-      // Update existing user
+      // Update existing user - preserve role unless explicitly changed
+      const roleToUpdate = userData.role || existingUser.role;
+      
+      this.storageLog('UPSERT_USER', 'Updating existing user', {
+        email: userData.email,
+        existingRole: existingUser.role,
+        newRole: userData.role,
+        finalRole: roleToUpdate
+      });
+      
       await this.execute(`
         UPDATE users
         SET first_name = @param0, last_name = @param1, profile_image_url = @param2,
@@ -203,7 +212,7 @@ export class FmbStorage implements IStorage {
         WHERE email = @param6
       `, [
         userData.first_name, userData.last_name, userData.profile_image_url,
-        userData.role, userData.organization_id, userData.department, userData.email
+        roleToUpdate, userData.organization_id, userData.department, userData.email
       ]);
       return await this.getUserByEmail(userData.email) as User;
     } else {

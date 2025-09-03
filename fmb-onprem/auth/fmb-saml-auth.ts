@@ -3,6 +3,7 @@ import { Strategy as SamlStrategy } from '@node-saml/passport-saml';
 import type { Express } from 'express';
 import { getFmbStorage } from '../config/fmb-database.js';
 import { getFmbConfig } from '../config/fmb-env.js';
+import { Role } from '../../server/auth/types.js';
 
 // Enhanced authentication logging
 function authLog(level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG', message: string, data?: any) {
@@ -81,14 +82,36 @@ export async function setupFmbSamlAuth(app: Express) {
         const lastName = profile.lastName || profile.surname || '';
         const department = profile.department || profile.Department || null;
 
-        // Upsert user in database first
+        // Check if user already exists to preserve their role
+        const existingUser = await fmbStorage.getUserByEmail(email);
+        
+        // Determine role: preserve existing role or use proper default from Role enum
+        let userRole = Role.EMPLOYEE; // Default role from Role enum instead of 'user'
+        
+        if (existingUser) {
+          // Preserve existing role if user already exists
+          userRole = existingUser.role;
+          authLog('INFO', 'Preserving existing user role', { 
+            email, 
+            existingRole: existingUser.role 
+          });
+        } else {
+          // Check for admin users from environment
+          const adminUsers = process.env.ADMIN_USERS?.split(',') || [];
+          if (adminUsers.includes(email)) {
+            userRole = Role.ADMIN;
+            authLog('INFO', 'Setting admin role from environment', { email });
+          }
+        }
+
+        // Upsert user in database with proper role
         const upsertedUser = await fmbStorage.upsertUser({
           id: email,
           email: email,
           first_name: firstName,
           last_name: lastName,
           profile_image_url: null,
-          role: 'user',
+          role: userRole,
           organization_id: 'org-fmb', // Default organization ID since not provided by SAML
           department: department
         });
