@@ -31,6 +31,12 @@ export async function buildAuthContext(req: any, storageInstance: any): Promise<
     let departmentId: string | undefined;
     let organizationId: string | undefined;
     
+    console.log('🔍 [AUTH-CONTEXT] Initial role from database:', {
+      userId,
+      databaseRole: user?.role,
+      resolvedRole: role
+    });
+    
     if (employee) {
       departmentId = employee.department;
       
@@ -42,8 +48,10 @@ export async function buildAuthContext(req: any, storageInstance: any): Promise<
         }
         
         // Check if user is a department manager (this can override employee role to manager)
+        // BUT do not override admin roles
         if (department?.managerId === employee.id && role === Role.EMPLOYEE) {
           role = Role.MANAGER;
+          console.log('🔍 [AUTH-CONTEXT] Role upgraded to MANAGER due to department management');
         }
       }
     }
@@ -52,6 +60,13 @@ export async function buildAuthContext(req: any, storageInstance: any): Promise<
     const adminUsers = process.env.ADMIN_USERS?.split(',') || [];
     if (adminUsers.includes(userId)) {
       role = Role.ADMIN;
+      console.log('🔍 [AUTH-CONTEXT] Role set to ADMIN from environment variable');
+    }
+    
+    // Preserve database admin role - don't downgrade admins
+    if (user?.role === 'admin' || user?.role === Role.ADMIN) {
+      role = Role.ADMIN;
+      console.log('🔍 [AUTH-CONTEXT] Preserving ADMIN role from database');
     }
     
     console.log('🔍 [AUTH-CONTEXT] Built auth context:', {

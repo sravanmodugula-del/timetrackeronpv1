@@ -1690,7 +1690,43 @@ export class FmbStorage implements IStorage {
     return result;
   }
 
-  // Removed duplicate getUserById method. The consolidated method is provided below.
+  async getUserById(userId: string): Promise<User | null> {
+    try {
+      console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
+      
+      const request = this.pool!.request();
+      request.input('userId', sql.NVarChar(255), userId);
+      
+      const result = await request.query(`
+        SELECT 
+          id,
+          email,
+          first_name as firstName,
+          last_name as lastName,
+          role,
+          is_active as isActive,
+          last_login_at as lastLoginAt,
+          organization_id as organizationId,
+          department,
+          created_at as createdAt,
+          updated_at as updatedAt
+        FROM users 
+        WHERE id = @userId
+      `);
+
+      const user = result.recordset[0];
+      console.log('👤 [FMB-STORAGE] User found:', user ? { 
+        id: user.id, 
+        role: user.role,
+        email: user.email 
+      } : 'Not found');
+      
+      return user || null;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error getting user by ID:', error);
+      throw error;
+    }
+  }
 
   async createUser(userData: UpsertUser): Promise<User> {
     return await this.upsertUser(userData);
