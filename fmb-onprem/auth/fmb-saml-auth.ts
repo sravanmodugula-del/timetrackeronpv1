@@ -99,6 +99,33 @@ export async function setupFmbSamlAuth(app: Express) {
         const employeeId = profile.employeeId || profile.EmployeeId || profile.employee_id || 
                           profile.employeeNumber || profile.EmployeeNumber || email;
 
+        // Upsert department record if department is provided
+        let departmentRecord = null;
+        if (department) {
+          try {
+            departmentRecord = await fmbStorage.upsertDepartment({
+              name: department,
+              organization_id: 'org-fmb', // Default FMB organization
+              description: 'Department of FMB Organization',
+              user_id: upsertedUser.id,
+              manager_id: null // No manager assigned initially
+            });
+
+            authLog('INFO', 'Department record upserted', {
+              departmentName: department,
+              departmentId: departmentRecord.id,
+              organizationId: 'org-fmb'
+            });
+          } catch (departmentError) {
+            authLog('WARN', 'Failed to create/update department record', {
+              error: departmentError.message,
+              departmentName: department,
+              userId: upsertedUser.id
+            });
+            // Continue with authentication even if department creation fails
+          }
+        }
+
         // Upsert employee record for this user
         try {
           await fmbStorage.upsertEmployee({

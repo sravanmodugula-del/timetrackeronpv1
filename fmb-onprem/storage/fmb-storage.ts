@@ -1544,6 +1544,92 @@ export class FmbStorage implements IStorage {
     return result[0];
   }
 
+  async upsertDepartment(departmentData: {
+    name: string;
+    organization_id: string;
+    description?: string;
+    user_id: string;
+    manager_id?: string;
+  }): Promise<Department> {
+    try {
+      // Check if department exists by name and organization_id
+      const existingDepartment = await this.execute(
+        'SELECT * FROM departments WHERE name = @param0 AND organization_id = @param1', 
+        [departmentData.name, departmentData.organization_id]
+      );
+
+      if (existingDepartment && existingDepartment.length > 0) {
+        // Update existing department record (only update description and manager if provided)
+        const updateFields = [];
+        const updateParams = [];
+        let paramIndex = 0;
+
+        if (departmentData.description !== undefined) {
+          updateFields.push(`description = @param${paramIndex}`);
+          updateParams.push(departmentData.description);
+          paramIndex++;
+        }
+
+        if (departmentData.manager_id !== undefined) {
+          updateFields.push(`manager_id = @param${paramIndex}`);
+          updateParams.push(departmentData.manager_id);
+          paramIndex++;
+        }
+
+        // Always update the updated_at timestamp
+        updateFields.push('updated_at = GETDATE()');
+        updateParams.push(existingDepartment[0].id);
+
+        if (updateFields.length > 1) { // More than just updated_at
+          await this.execute(`
+            UPDATE departments 
+            SET ${updateFields.join(', ')}
+            WHERE id = @param${paramIndex}
+          `, updateParams);
+        }
+
+        this.storageLog('UPSERT_DEPARTMENT', 'Department record updated', {
+          id: existingDepartment[0].id,
+          name: departmentData.name,
+          organization_id: departmentData.organization_id
+        });
+
+        return await this.getDepartmentById(existingDepartment[0].id) as Department;
+      } else {
+        // Create new department record
+        const departmentId = `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        const request = this.pool!.request();
+        request.input('id', sql.NVarChar(255), departmentId);
+        request.input('name', sql.NVarChar(255), departmentData.name);
+        request.input('organization_id', sql.NVarChar(255), departmentData.organization_id);
+        request.input('description', sql.NVarChar(sql.MAX), departmentData.description || null);
+        request.input('manager_id', sql.NVarChar(255), departmentData.manager_id || null);
+        request.input('user_id', sql.NVarChar(255), departmentData.user_id);
+
+        await request.query(`
+          INSERT INTO departments (id, name, organization_id, manager_id, description, user_id, created_at, updated_at)
+          VALUES (@id, @name, @organization_id, @manager_id, @description, @user_id, GETDATE(), GETDATE())
+        `);
+
+        this.storageLog('UPSERT_DEPARTMENT', 'Department record created', {
+          id: departmentId,
+          name: departmentData.name,
+          organization_id: departmentData.organization_id
+        });
+
+        return await this.getDepartmentById(departmentId) as Department;
+      }
+    } catch (error) {
+      this.storageLog('UPSERT_DEPARTMENT', 'Failed to upsert department', {
+        error: error.message,
+        name: departmentData.name,
+        organization_id: departmentData.organization_id
+      });
+      throw new Error(`Failed to upsert department: ${error.message}`);
+    }
+  }
+
   async updateDepartment(id: string, deptData: Partial<InsertDepartment>): Promise<Department> {
     const fields = [];
     const params = [];
