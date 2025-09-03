@@ -341,6 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         start_date: projectData.startDate,
         end_date: projectData.endDate,
         project_number: projectData.projectNumber,
+        color: req.body.color || '#1976D2',
         user_id: projectData.user_id,
         is_enterprise_wide: !!req.body.isEnterpriseWide, // Assuming isEnterpriseWide is directly in req.body
       };
