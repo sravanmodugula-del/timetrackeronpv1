@@ -113,7 +113,7 @@ export default function TimeEntryForm() {
       if (!selectedProjectId) return [];
       console.log("🔍 Time Entry Form - Fetching tasks for project:", selectedProjectId);
       try {
-        const response = await apiRequest(`/api/projects/${selectedProjectId}/tasks`);
+        const response = await apiRequest(`/api/projects/${selectedProjectId}/tasks`, 'GET');
         console.log("📋 Time Entry Form - Received tasks:", response?.length || 0, response);
         return Array.isArray(response) ? response : [];
       } catch (error) {
@@ -123,7 +123,7 @@ export default function TimeEntryForm() {
     },
     enabled: !!selectedProjectId,
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results
   });
 
   // Filter tasks to show active and completed tasks for time entry
@@ -216,8 +216,7 @@ export default function TimeEntryForm() {
           taskId: timeData.taskId,
           description: timeData.description,
           date: timeData.date,
-          hours: parseFloat(duration.toFixed(2)),
-          duration: parseFloat(duration.toFixed(2)),
+          duration: duration.toFixed(2),
         };
       } else {
         const manualData = data as ManualDurationFormData;
@@ -226,8 +225,7 @@ export default function TimeEntryForm() {
           taskId: manualData.taskId,
           description: manualData.description,
           date: manualData.date,
-          hours: parseFloat(manualData.duration),
-          duration: parseFloat(manualData.duration),
+          duration: manualData.duration,
         };
       }
 

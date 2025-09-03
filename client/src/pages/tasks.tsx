@@ -454,7 +454,7 @@ export default function Tasks() {
                         )}
                       </button>
                       <h3 className={`font-semibold ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {task.name || task.title || "Untitled Task"}
+                        {task.name || "Untitled Task"}
                       </h3>
                     </div>
                     <Badge className={getStatusColor(task.status)}>

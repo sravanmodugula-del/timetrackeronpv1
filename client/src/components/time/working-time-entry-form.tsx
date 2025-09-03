@@ -112,10 +112,10 @@ export default function WorkingTimeEntryForm() {
   // Fetch tasks for the selected project
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "tasks"],
-    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/tasks`),
+    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/tasks`, "GET"),
     enabled: !!selectedProjectId && selectedProjectId !== "all",
     staleTime: 0, // Always fetch fresh data
-    cacheTime: 0, // Don't cache results
+    gcTime: 0, // Don't cache results
   });
 
   // Filter tasks to show active and completed tasks for time entry
@@ -233,7 +233,7 @@ export default function WorkingTimeEntryForm() {
         startTime: data.startTime,
         endTime: data.endTime,
         hours: parseFloat(hours.toFixed(2)),
-        duration: parseFloat(hours.toFixed(2)),
+        duration: parseFloat(hours.toFixed(2)).toString(),
       };
 
       createTimeEntry.mutate(submissionData);
@@ -247,13 +247,15 @@ export default function WorkingTimeEntryForm() {
         return;
       }
 
+      const duration = parseFloat(data.duration);
+
       const submissionData = {
         projectId: data.projectId,
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        hours: parseFloat(data.duration),
-        duration: parseFloat(data.duration),
+        hours: duration,
+        duration: duration.toString(),
       };
 
       createTimeEntry.mutate(submissionData);
