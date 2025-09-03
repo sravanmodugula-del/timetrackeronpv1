@@ -1753,17 +1753,17 @@ export class FmbStorage implements IStorage {
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND te.date = @todayDate
+            WHERE te.user_id = @userId AND CAST(te.date as DATE) = CAST(@todayDate as DATE)
           `),
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND te.date >= @weekStartDate
+            WHERE te.user_id = @userId AND CAST(te.date as DATE) >= CAST(@weekStartDate as DATE)
           `),
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND te.date >= @monthStartDate
+            WHERE te.user_id = @userId AND CAST(te.date as DATE) >= CAST(@monthStartDate as DATE)
           `),
           projectsRequest.query(`
             SELECT COUNT(DISTINCT p.id) as count
@@ -2114,7 +2114,7 @@ export class FmbStorage implements IStorage {
       if (startDate && endDate) {
         request.input('startDate', sql.Date, new Date(startDate));
         request.input('endDate', sql.Date, new Date(endDate));
-        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+        dateFilter = 'AND CAST(te.date as DATE) >= CAST(@startDate as DATE) AND CAST(te.date as DATE) <= CAST(@endDate as DATE)';
         console.log('📋 [FMB-STORAGE] Using date filter for recent activity:', { startDate, endDate });
       }
 
@@ -2217,7 +2217,7 @@ export class FmbStorage implements IStorage {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
-      // Build the query to get project breakdown
+      // Build the query to get project breakdown - use LEFT JOIN to include all projects
       let breakdownQuery = `
         SELECT
           p.id,
@@ -2226,19 +2226,31 @@ export class FmbStorage implements IStorage {
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        INNER JOIN time_entries te ON p.id = te.project_id
-        WHERE te.user_id = @userId
+        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
       `;
 
-      // Add date filter if provided
+      // Add date filter to the JOIN condition if provided
       if (startDate && endDate) {
         request.input('startDate', sql.Date, new Date(startDate));
         request.input('endDate', sql.Date, new Date(endDate));
-        breakdownQuery += ` AND te.date >= @startDate AND te.date <= @endDate`;
+        breakdownQuery = `
+        SELECT
+          p.id,
+          p.name,
+          COALESCE(p.color, '#1976D2') as color,
+          COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
+          COUNT(te.id) as entry_count
+        FROM projects p
+        LEFT JOIN time_entries te ON p.id = te.project_id 
+          AND te.user_id = @userId 
+          AND te.date >= @startDate 
+          AND te.date <= @endDate
+        `;
         console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
       }
 
       breakdownQuery += `
+        WHERE p.user_id = @userId
         GROUP BY p.id, p.name, p.color
         HAVING SUM(CAST(te.hours as DECIMAL(10,2))) > 0
         ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
