@@ -1174,21 +1174,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      // Handle partial updates for time entries
-      const partialSchema = insertTimeEntrySchema.deepPartial();
-      const entryData = partialSchema.parse(req.body);
-      const timeEntry = await activeStorage.updateTimeEntry(id, entryData, userId);
 
-      if (!timeEntry) {
+      console.log("🔧 [API] Update time entry request:", { id, userId, body: req.body });
+
+      // Check if time entry exists first
+      const existingEntry = await activeStorage.getTimeEntry(id, userId);
+      if (!existingEntry) {
+        console.log("❌ [API] Time entry not found:", { id, userId });
         return res.status(404).json({ message: "Time entry not found" });
       }
 
+      // Map frontend camelCase to backend snake_case
+      let mappedData = { ...req.body };
+      if (req.body.projectId) {
+        mappedData.project_id = req.body.projectId;
+        delete mappedData.projectId;
+      }
+      if (req.body.taskId) {
+        mappedData.task_id = req.body.taskId;
+        delete mappedData.taskId;
+      }
+      if (req.body.startTime) {
+        mappedData.start_time = req.body.startTime;
+        delete mappedData.startTime;
+      }
+      if (req.body.endTime) {
+        mappedData.end_time = req.body.endTime;
+        delete mappedData.endTime;
+      }
+      // Ensure userId is set
+      mappedData.userId = mappedData.userId || userId;
+
+      console.log("🔧 [API] Mapped data for database:", mappedData);
+
+      // Handle partial updates for time entries
+      const partialSchema = insertTimeEntrySchema.deepPartial();
+      const entryData = partialSchema.parse(mappedData);
+      
+      console.log("🔧 [API] Validated entry data:", entryData);
+
+      const timeEntry = await activeStorage.updateTimeEntry(id, entryData, userId);
+
+      if (!timeEntry) {
+        console.log("❌ [API] Update failed - entry not found after validation:", { id, userId });
+        return res.status(404).json({ message: "Time entry not found" });
+      }
+
+      console.log("✅ [API] Time entry updated successfully:", { id, timeEntry: timeEntry.id });
       res.json(timeEntry);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("❌ [API] Validation error:", error.errors);
         return res.status(400).json({ message: "Invalid time entry data", errors: error.errors });
       }
-      console.error("Error updating time entry:", error);
+      console.error("❌ [API] Error updating time entry:", error);
       res.status(500).json({ message: "Failed to update time entry" });
     }
   });
