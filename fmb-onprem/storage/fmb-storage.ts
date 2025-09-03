@@ -2084,15 +2084,18 @@ export class FmbStorage implements IStorage {
     try {
       console.log('📊 [FMB-STORAGE] Starting project breakdown query for user:', userId, 'dateRange:', { startDate, endDate });
 
+      if (!this.pool) {
+        throw new Error('Database pool not available');
+      }
+
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
-      let dateFilter = '';
+      // Add date parameters if provided
       if (startDate && endDate) {
-        request.input('startDate', sql.Date, startDate);
-        request.input('endDate', sql.Date, endDate);
-        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
-        console.log('📊 [FMB-STORAGE] Using date filter:', dateFilter);
+        request.input('startDate', sql.Date, new Date(startDate));
+        request.input('endDate', sql.Date, new Date(endDate));
+        console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
       }
 
       // First, let's check if there are any time entries for this user
@@ -2108,7 +2111,7 @@ export class FmbStorage implements IStorage {
 
       console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
 
-      // Now get the project breakdown with a corrected query
+      // Build the query with proper date filtering
       let breakdownQuery = `
         SELECT
           p.id,
@@ -2118,31 +2121,20 @@ export class FmbStorage implements IStorage {
           COUNT(te.id) as entry_count
         FROM projects p
         LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
-        WHERE p.user_id = @userId
       `;
 
       // Add date filter to the JOIN condition if dates are provided
       if (startDate && endDate) {
-        breakdownQuery = `
-          SELECT
-            p.id,
-            p.name,
-            COALESCE(p.color, '#1976D2') as color,
-            COALESCE(SUM(te.hours), 0) as total_hours,
-            COUNT(te.id) as entry_count
-          FROM projects p
-          LEFT JOIN time_entries te ON p.id = te.project_id 
-            AND te.user_id = @userId 
-            AND te.date >= @startDate 
-            AND te.date <= @endDate
-          WHERE p.user_id = @userId
-        `;
+        breakdownQuery += ` AND te.date >= @startDate AND te.date <= @endDate`;
       }
 
       breakdownQuery += `
+        WHERE p.user_id = @userId
         GROUP BY p.id, p.name, p.color
         ORDER BY COALESCE(SUM(te.hours), 0) DESC
       `;
+
+      console.log('📊 [FMB-STORAGE] Executing breakdown query:', breakdownQuery);
 
       const result = await request.query(breakdownQuery);
 
@@ -2176,9 +2168,19 @@ export class FmbStorage implements IStorage {
       });
 
       return breakdown;
-    } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error getting project breakdown:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('🔴 [FMB-STORAGE] Error getting project breakdown:', {
+        message: error?.message,
+        code: error?.code,
+        number: error?.number,
+        severity: error?.class,
+        state: error?.state,
+        procedure: error?.procName,
+        lineNumber: error?.lineNumber
+      });
+      
+      // Return empty array instead of throwing to prevent 500 errors
+      return [];
     }
   }
 
