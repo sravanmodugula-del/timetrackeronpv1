@@ -36,20 +36,52 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
     return 'bg-primary';
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString + 'T00:00:00');
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+  const formatDate = (dateString: string | Date) => {
+    try {
+      // Handle different date formats
+      let date: Date;
+      if (typeof dateString === 'string') {
+        // Try parsing the date string directly first
+        date = new Date(dateString);
+        // If that doesn't work, try appending time
+        if (isNaN(date.getTime())) {
+          date = new Date(dateString + 'T00:00:00');
+        }
+        // If still invalid, try parsing as ISO date
+        if (isNaN(date.getTime())) {
+          date = new Date(dateString + 'T00:00:00.000Z');
+        }
+      } else {
+        date = new Date(dateString);
+      }
 
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      const diffTime = Math.abs(today.getTime() - date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return `${diffDays} days ago`;
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date in recent activity:', dateString);
+        return "Unknown date";
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time for comparison
+      
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const compareDate = new Date(date);
+      compareDate.setHours(0, 0, 0, 0); // Reset time for comparison
+
+      if (compareDate.getTime() === today.getTime()) {
+        return "Today";
+      } else if (compareDate.getTime() === yesterday.getTime()) {
+        return "Yesterday";
+      } else {
+        const diffTime = Math.abs(today.getTime() - compareDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+      }
+    } catch (error) {
+      console.error('Error formatting date in recent activity:', error, dateString);
+      return "Unknown date";
     }
   };
 
@@ -124,7 +156,7 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
                     {activity.description || "No description"}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formatDate(typeof activity.date === 'string' ? activity.date : activity.date.toString())} • {activity.duration} hours
+                    {formatDate(activity.date)} • {typeof activity.duration === 'number' ? activity.duration : (activity.hours || 0)} hours
                   </p>
                 </div>
               </div>
