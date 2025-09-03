@@ -324,6 +324,7 @@ export default function Projects() {
       }
     }
 
+    setEditingProject(projectWithEmployees);
     form.reset({
       name: project.name,
       projectNumber: project.project_number || "",
