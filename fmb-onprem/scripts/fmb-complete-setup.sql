@@ -163,6 +163,7 @@ CREATE TABLE projects (
     end_date DATE,
     budget DECIMAL(10,2),
     project_number NVARCHAR(255),
+    color NVARCHAR(7) DEFAULT '#1976D2',
     is_enterprise_wide BIT NOT NULL DEFAULT 0,
     is_template BIT NOT NULL DEFAULT 0,
     allow_time_tracking BIT NOT NULL DEFAULT 1,

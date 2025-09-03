@@ -674,6 +674,7 @@ export class FmbStorage implements IStorage {
     request.input('endDate', sql.Date, projectData.end_date || null);
     request.input('budget', sql.Decimal(18, 2), projectData.budget || null);
     request.input('projectNumber', sql.NVarChar(50), projectData.project_number || null);
+    request.input('color', sql.NVarChar(7), projectData.color || '#1976D2');
     request.input('isEnterpriseWide', sql.Bit, projectData.is_enterprise_wide || false);
     request.input('isTemplate', sql.Bit, projectData.is_template || false);
     request.input('allowTimeTracking', sql.Bit, projectData.allow_time_tracking !== false);
@@ -684,11 +685,11 @@ export class FmbStorage implements IStorage {
     await request.query(`
       INSERT INTO projects (id, name, description, status, organization_id, department_id,
                            manager_id, user_id, start_date, end_date, budget, project_number,
-                           is_enterprise_wide, is_template, allow_time_tracking,
+                           color, is_enterprise_wide, is_template, allow_time_tracking,
                            require_task_selection, enable_budget_tracking, enable_billing,
                            created_at, updated_at)
       VALUES (@id, @name, @description, @status, @organizationId, @departmentId, @managerId, @userId,
-              @startDate, @endDate, @budget, @projectNumber, @isEnterpriseWide, @isTemplate,
+              @startDate, @endDate, @budget, @projectNumber, @color, @isEnterpriseWide, @isTemplate,
               @allowTimeTracking, @requireTaskSelection, @enableBudgetTracking, @enableBilling,
               GETDATE(), GETDATE())
     `);
@@ -1524,7 +1525,7 @@ export class FmbStorage implements IStorage {
   async getDepartments(): Promise<Department[]> {
     try {
       this.storageLog('GET_ALL_DEPARTMENTS', 'Fetching all departments for all users');
-      
+
       const result = await this.execute(`
         SELECT d.*, 
                e.first_name as manager_first_name, 
@@ -1535,11 +1536,11 @@ export class FmbStorage implements IStorage {
         LEFT JOIN organizations o ON d.organization_id = o.id
         ORDER BY d.created_at DESC
       `);
-      
+
       this.storageLog('GET_ALL_DEPARTMENTS', 'All departments fetched successfully', {
         count: result.length
       });
-      
+
       return result;
     } catch (error) {
       this.storageLog('GET_ALL_DEPARTMENTS', 'Failed to fetch all departments', {
@@ -2309,7 +2310,7 @@ export class FmbStorage implements IStorage {
       end_date: row.end_date,
       budget: row.budget,
       project_number: row.project_number,
-      color: '#1976D2', // Default color for FMB on-premises (no color column)
+      color: row.color || '#1976D2', // Use the color from the database or default
       is_enterprise_wide: row.is_enterprise_wide || false,
       is_template: row.is_template || false,
       allow_time_tracking: row.allow_time_tracking !== false,
@@ -2481,7 +2482,7 @@ export class FmbStorage implements IStorage {
           te.created_at,
           p.id as project_id,
           p.name as project_name,
-          '#1976D2' as project_color
+          p.color as project_color
         FROM time_entries te
         INNER JOIN projects p ON te.project_id = p.id
         WHERE te.user_id = @userId ${dateFilter}
@@ -2593,7 +2594,7 @@ export class FmbStorage implements IStorage {
         SELECT
           p.id,
           p.name,
-          '#1976D2' as color,
+          p.color,
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
@@ -2604,11 +2605,12 @@ export class FmbStorage implements IStorage {
       if (startDate && endDate) {
         request.input('startDate', sql.Date, new Date(startDate));
         request.input('endDate', sql.Date, new Date(endDate));
+        // Reconstruct query with INNER JOIN for filtered date range
         breakdownQuery = `
         SELECT
           p.id,
           p.name,
-          '#1976D2' as color,
+          p.color,
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
@@ -2620,6 +2622,7 @@ export class FmbStorage implements IStorage {
         `;
         console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
       } else {
+        // If no date filter, ensure we are only counting entries for the specific user
         breakdownQuery += `
         INNER JOIN time_entries te ON p.id = te.project_id 
         WHERE p.user_id = @userId AND te.user_id = @userId
@@ -2627,7 +2630,7 @@ export class FmbStorage implements IStorage {
       }
 
       breakdownQuery += `
-        GROUP BY p.id, p.name
+        GROUP BY p.id, p.name, p.color
         ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
       `;
 
