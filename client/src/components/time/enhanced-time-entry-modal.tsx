@@ -132,6 +132,7 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
   // Update time entry mutation
   const updateTimeEntry = useMutation({
     mutationFn: async (data: TimeEntryFormData) => {
+      // Construct the URL with the entry ID
       return apiRequest(`/api/time-entries/${entry.id}`, "PUT", data);
     },
     onSuccess: () => {
@@ -192,15 +193,18 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       const hours = diffMs / (1000 * 60 * 60);
 
       const submissionData = {
-        project_id: data.projectId,
-        task_id: data.taskId,
+        projectId: data.projectId,
+        taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        start_time: `${data.startTime}:00`,
-        end_time: `${data.endTime}:00`,
-        duration: hours.toFixed(2),
+        startTime: data.startTime, // Keep camelCase for frontend
+        endTime: data.endTime,     // Keep camelCase for frontend
+        duration: parseFloat(hours.toFixed(2)),
+        hours: parseFloat(hours.toFixed(2)),
+        userId: entry.user_id, // Include userId for server validation
       };
 
+      console.log("🔧 [TIME-RANGE] Submitting data:", submissionData);
       updateTimeEntry.mutate(submissionData);
     } else {
       if (!data.duration) {
@@ -223,13 +227,16 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       }
 
       const submissionData = {
-        project_id: data.projectId,
-        task_id: data.taskId,
+        projectId: data.projectId,
+        taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        duration: data.duration,
+        duration: durationNum,
+        hours: durationNum,
+        userId: entry.user_id, // Include userId for server validation
       };
 
+      console.log("🔧 [MANUAL-DURATION] Submitting data:", submissionData);
       updateTimeEntry.mutate(submissionData);
     }
   };
