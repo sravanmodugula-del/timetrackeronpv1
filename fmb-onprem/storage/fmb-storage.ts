@@ -1753,17 +1753,17 @@ export class FmbStorage implements IStorage {
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CAST(te.date as DATE) = CAST(@todayDate as DATE)
+            WHERE te.user_id = @userId AND CONVERT(date, te.date) = CONVERT(date, @todayDate)
           `),
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CAST(te.date as DATE) >= CAST(@weekStartDate as DATE)
+            WHERE te.user_id = @userId AND CONVERT(date, te.date) >= CONVERT(date, @weekStartDate)
           `),
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
-            WHERE te.user_id = @userId AND CAST(te.date as DATE) >= CAST(@monthStartDate as DATE)
+            WHERE te.user_id = @userId AND CONVERT(date, te.date) >= CONVERT(date, @monthStartDate)
           `),
           projectsRequest.query(`
             SELECT COUNT(DISTINCT p.id) as count
@@ -2096,7 +2096,7 @@ export class FmbStorage implements IStorage {
   // Dashboard Methods
   async getRecentActivity(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<any[]> {
     try {
-      console.log('📋 [FMB-STORAGE] Getting recent activity for user:', userId, 'limit:', limit);
+      console.log('📋 [FMB-STORAGE] Getting recent activity for user:', userId, 'limit:', limit, 'dateRange:', { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
@@ -2114,7 +2114,7 @@ export class FmbStorage implements IStorage {
       if (startDate && endDate) {
         request.input('startDate', sql.Date, new Date(startDate));
         request.input('endDate', sql.Date, new Date(endDate));
-        dateFilter = 'AND CAST(te.date as DATE) >= CAST(@startDate as DATE) AND CAST(te.date as DATE) <= CAST(@endDate as DATE)';
+        dateFilter = 'AND CONVERT(date, te.date) >= CONVERT(date, @startDate) AND CONVERT(date, te.date) <= CONVERT(date, @endDate)';
         console.log('📋 [FMB-STORAGE] Using date filter for recent activity:', { startDate, endDate });
       }
 
@@ -2241,18 +2241,22 @@ export class FmbStorage implements IStorage {
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id 
-          AND te.user_id = @userId 
-          AND te.date >= @startDate 
-          AND te.date <= @endDate
+        INNER JOIN time_entries te ON p.id = te.project_id 
+        WHERE p.user_id = @userId 
+          AND te.user_id = @userId
+          AND CONVERT(date, te.date) >= CONVERT(date, @startDate) 
+          AND CONVERT(date, te.date) <= CONVERT(date, @endDate)
         `;
         console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
+      } else {
+        breakdownQuery += `
+        INNER JOIN time_entries te ON p.id = te.project_id 
+        WHERE p.user_id = @userId AND te.user_id = @userId
+        `;
       }
 
       breakdownQuery += `
-        WHERE p.user_id = @userId
         GROUP BY p.id, p.name, p.color
-        HAVING SUM(CAST(te.hours as DECIMAL(10,2))) > 0
         ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
       `;
 
