@@ -1,770 +1,747 @@
-2025-09-03T15:05:42: 2025-09-03T22:05:42.532Z 🟢 [SERVER] Starting FMB TimeTracker On-Premises Application...
-2025-09-03T15:05:42: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 📡 auto-backup env with Radar: https://dotenvx.com/radar
-2025-09-03T15:05:42: [dotenv@17.2.1] injecting env (23) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
-2025-09-03T15:05:42: 🏢 FMB On-Premises configuration loaded
-2025-09-03T15:05:42: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
-2025-09-03T15:05:42: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
-2025-09-03T15:05:42: 🔍 [FMB-CONFIG] Certificate length: 1004 characters
-2025-09-03T15:05:42: 2025-09-03T22:05:42.539Z 🟢 [FMB-ONPREM] FMB On-premises environment initialized
-2025-09-03T15:05:42: 2025-09-03T22:05:42.539Z 🟢 [CONFIG] FMB session secret validated successfully
-2025-09-03T15:05:42: 🔗 Connecting to FMB MS SQL database...
-2025-09-03T15:05:42: ✅ FMB Database connection established successfully
-2025-09-03T15:05:42: 2025-09-03T22:05:42.644Z 🟢 [DATABASE] FMB Database initialization completed successfully
-2025-09-03T15:05:42: 2025-09-03T22:05:42.648Z 🟢 [SESSION] FMB Enterprise Session configured for production mode
-2025-09-03T15:05:42: 2025-09-03T22:05:42.648Z 🟢 [SESSION] Using memory session store for development/testing
-2025-09-03T15:05:42: 2025-09-03T22:05:42.648Z 🟢 [SESSION] Session store initialization completed
-2025-09-03T15:05:42: Warning: connect.session() MemoryStore is not
-2025-09-03T15:05:42: designed for a production environment, as it will leak
-2025-09-03T15:05:42: memory, and will not scale past a single process.
-2025-09-03T15:05:42: 2025-09-03T22:05:42.649Z 🟢 [SERVER] FMB Session middleware configured successfully
-2025-09-03T15:05:42: 2025-09-03T22:05:42.651Z 🟢 [SECURITY] Enterprise session security middleware activated
-2025-09-03T15:05:42: 🚀 Setting up FMB SAML Authentication for On-Premises environment...
-2025-09-03T15:05:42: 2025-09-03T22:05:42.656Z 🔵 [FMB-SAML] Initializing FMB SAML Authentication
-2025-09-03T15:05:42: 🔧 [FMB-DATABASE] Creating new FMB storage instance...
-2025-09-03T15:05:42: [dotenv@17.2.1] injecting env (0) from fmb-onprem\.env.fmb-onprem -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
-2025-09-03T15:05:42: [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 encrypt with Dotenvx: https://dotenvx.com
-2025-09-03T15:05:42: 🏢 FMB On-Premises configuration loaded
-2025-09-03T15:05:42: 🔍 [FMB-CONFIG] Looking for certificate at: C:\fmb-timetracker\saml_cert.pem
-2025-09-03T15:05:42: ✅ [FMB-CONFIG] Certificate loaded successfully from: C:\fmb-timetracker\saml_cert.pem
-2025-09-03T15:05:42: 🔍 [FMB-CONFIG] Certificate length: 1004 characters
-2025-09-03T15:05:42: 🔗 [FMB-STORAGE] Connecting to FMB MS SQL Server...
-2025-09-03T15:05:42: 2025-09-03T22:05:42.660Z 🟢 [FMB-SAML] SAML Certificate validation {
-2025-09-03T15:05:42:   "certLength": 1004,
-2025-09-03T15:05:42:   "hasBeginMarker": true,
-2025-09-03T15:05:42:   "hasEndMarker": true
-2025-09-03T15:05:42: }
-2025-09-03T15:05:42: 2025-09-03T22:05:42.661Z 🔵 [FMB-SAML] FMB SAML Authentication setup completed
-2025-09-03T15:05:42: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
-2025-09-03T15:05:42: 🛡️ [SESSION-MGMT] Enterprise session management routes registered
-2025-09-03T15:05:42: 2025-09-03T22:05:42.667Z 🟢 [SERVER] FMB TimeTracker running on http://0.0.0.0:3000
-2025-09-03T15:05:42: 2025-09-03T22:05:42.667Z 🟢 [SERVER] Environment: fmb-onprem
-2025-09-03T15:05:42: 2025-09-03T22:05:42.668Z 🟢 [FMB-ONPREM] On-premises deployment active - SAML authentication enabled
-2025-09-03T15:05:42: 2025-09-03T22:05:42.730Z 🗄️ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
-2025-09-03T15:06:09: 2025-09-03T22:06:09.509Z 🔵 [FMB-SAML] SAML ACS callback received - IdP-initiated flow {
-2025-09-03T15:06:09:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:09:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
-2025-09-03T15:06:09:   "timestamp": "2025-09-03T22:06:09.509Z",
-2025-09-03T15:06:09:   "hasBody": true,
-2025-09-03T15:06:09:   "bodyKeys": [
-2025-09-03T15:06:09:     "SAMLResponse"
-2025-09-03T15:06:09:   ],
-2025-09-03T15:06:09:   "headers": {
-2025-09-03T15:06:09:     "content-type": "application/x-www-form-urlencoded",
-2025-09-03T15:06:09:     "content-length": "8093"
-2025-09-03T15:06:09:   }
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.591Z 🔵 [FMB-SAML] SAML profile received {
-2025-09-03T15:06:09:   "nameID": "Sravan.Modugula@fmb.com",
-2025-09-03T15:06:09:   "email": "Sravan.Modugula@fmb.com",
-2025-09-03T15:06:09:   "firstName": "Sravan",
-2025-09-03T15:06:09:   "lastName": "Modugula",
-2025-09-03T15:06:09:   "department": "Information Technology Services",
-2025-09-03T15:06:09:   "employeeId": "FMB90378"
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:09: 2025-09-03T22:06:09.745Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169592-dcq8w1', recordCount: 1 }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.745Z 🔵 [FMB-SAML] Preserving existing user role {
-2025-09-03T15:06:09:   "email": "Sravan.Modugula@fmb.com",
-2025-09-03T15:06:09:   "existingRole": "admin"
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:09: 2025-09-03T22:06:09.776Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169745-x68b3x', recordCount: 1 }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.777Z 🗄️ [FMB-STORAGE] UPSERT_USER: Updating existing user {
-2025-09-03T15:06:09:   email: 'Sravan.Modugula@fmb.com',
-2025-09-03T15:06:09:   existingRole: 'admin',
-2025-09-03T15:06:09:   newRole: 'admin',
-2025-09-03T15:06:09:   finalRole: 'admin'
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🔄 [SQL] 
-2025-09-03T15:06:09:  operation on users
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 7 parameters
-2025-09-03T15:06:09: ✅ [SQL] Operation completed: 1 rows affected
-2025-09-03T15:06:09: 2025-09-03T22:06:09.827Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169777-o51mfo', recordCount: 0 }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:09: 2025-09-03T22:06:09.858Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169827-yrn4wk', recordCount: 1 }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.859Z 🔵 [FMB-SAML] User upserted in database {
-2025-09-03T15:06:09:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 2 parameters
-2025-09-03T15:06:09: 2025-09-03T22:06:09.901Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169859-ymt614', recordCount: 1 }
-2025-09-03T15:06:09: 🔄 [SQL] 
-2025-09-03T15:06:09:  operation on departments
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 3 parameters
-2025-09-03T15:06:09: ✅ [SQL] Operation completed: 1 rows affected
-2025-09-03T15:06:09: 2025-09-03T22:06:09.953Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169901-7dw7ia', recordCount: 0 }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.953Z 🗄️ [FMB-STORAGE] UPSERT_DEPARTMENT: Department record updated {
-2025-09-03T15:06:09:   id: 'dept-1756935788407-c5vuvci2h',
-2025-09-03T15:06:09:   name: 'Information Technology Services',
-2025-09-03T15:06:09:   organization_id: 'org-fmb'
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:09: 2025-09-03T22:06:09.988Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169954-hcylgv', recordCount: 1 }
-2025-09-03T15:06:09: 2025-09-03T22:06:09.989Z 🔵 [FMB-SAML] Department record upserted {
-2025-09-03T15:06:09:   "departmentName": "Information Technology Services",
-2025-09-03T15:06:09:   "departmentId": "dept-1756935788407-c5vuvci2h",
-2025-09-03T15:06:09:   "organizationId": "org-fmb"
-2025-09-03T15:06:09: }
-2025-09-03T15:06:09: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.020Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937169989-00s8lx', recordCount: 1 }
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.058Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170021-mcymm3', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.104Z 🗄️ [FMB-STORAGE] UPSERT_EMPLOYEE: Employee record updated {
-2025-09-03T15:06:10:   id: 'emp-1756935788649-sh7x3kpr6',
-2025-09-03T15:06:10:   employee_id: 'FMB90378',
-2025-09-03T15:06:10:   user_id: 'user-1756935788213'
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.134Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170105-tdtlwt', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.134Z 🔵 [FMB-SAML] Employee record upserted {
-2025-09-03T15:06:10:   "employeeId": "FMB90378",
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "department": "Information Technology Services"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.134Z 🔵 [FMB-SAML] User authenticated and stored {
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.136Z 🟢 [FMB-SAML] Serializing user for session {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "timestamp": "2025-09-03T22:06:10.136Z",
-2025-09-03T15:06:10:   "source": "saml"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 🔵 [FMB-SAML] User session established and saved: Sravan.Modugula@fmb.com
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.227Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170194-eafibg', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.227Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.368Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170336-rbk13j', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.368Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.396Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170339-w0jttf', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.397Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.425Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170344-xwn8td', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.425Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.432Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170345-2ie3j3', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.432Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.433Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170345-ell5dd', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.433Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.436Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170348-uojfve', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.436Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.444Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170349-j1v1e1', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.444Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.941Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170905-jybffx', recordCount: 1 }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.941Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.942Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
-2025-09-03T15:06:10:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:10:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:10:   "isAuthenticated": true
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 2025-09-03T22:06:10.942Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:10:   "userId": "user-1756935788213",
-2025-09-03T15:06:10:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:10: }
-2025-09-03T15:06:10: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:10: 2025-09-03T22:06:10.981Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937170942-i0ef7u', recordCount: 1 }
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 2025-09-03T22:06:11.093Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171058-x4tcst', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.094Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.094Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/organizations {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.094Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.096Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171059-4jqc18', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.097Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.098Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.098Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:11: 2025-09-03T22:06:11.099Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171063-pzkxnm', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.100Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.100Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/dashboard/stats {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.100Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [DASHBOARD-STATS] Request: {
-2025-09-03T15:06:11:   userId: 'user-1756935788213',
-2025-09-03T15:06:11:   startDate: '2025-08-27',
-2025-09-03T15:06:11:   endDate: '2025-09-03'
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Getting dashboard stats for user: user-1756935788213 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Date ranges: {
-2025-09-03T15:06:11:   today: '2025-09-03',
-2025-09-03T15:06:11:   weekStart: '2025-09-01',
-2025-09-03T15:06:11:   monthStart: '2025-09-01',
-2025-09-03T15:06:11:   filterRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.105Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171065-0itimj', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.105Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.105Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/dashboard/recent-activity {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.105Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [RECENT-ACTIVITY] Request: {
-2025-09-03T15:06:11:   userId: 'user-1756935788213',
-2025-09-03T15:06:11:   limit: '10',
-2025-09-03T15:06:11:   startDate: '2025-08-27',
-2025-09-03T15:06:11:   endDate: '2025-09-03'
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] Getting recent activity for user: user-1756935788213 limit: 10 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] Using date filter for recent activity: { startDate: '2025-08-27', endDate: '2025-09-03' }
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] Executing recent activity query with date filter: AND te.date >= @startDate AND te.date <= @endDate
-2025-09-03T15:06:11: 2025-09-03T22:06:11.110Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171064-9dwjw7', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.110Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.110Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/dashboard/project-breakdown {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.110Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [PROJECT-BREAKDOWN] Request: {
-2025-09-03T15:06:11:   userId: 'user-1756935788213',
-2025-09-03T15:06:11:   startDate: '2025-08-27',
-2025-09-03T15:06:11:   endDate: '2025-09-03'
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Starting project breakdown query for user: user-1756935788213 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.112Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171064-19bmft', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.112Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.123Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171064-m85drm', recordCount: 1 }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.123Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.123Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/dashboard/department-hours {
-2025-09-03T15:06:11:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:11:   "isAuthenticated": true
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 2025-09-03T22:06:11.123Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:11:   "userId": "user-1756935788213",
-2025-09-03T15:06:11:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 🏢 Fetching department hours for user: user-1756935788213 dates: 2025-08-27 2025-09-03
-2025-09-03T15:06:11: 2025-09-03T22:06:11.134Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937171098-t180p3', recordCount: 1 }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Dashboard stats calculated: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 2 }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Today check: {
-2025-09-03T15:06:11:   todayStr: '2025-09-03',
-2025-09-03T15:06:11:   queryResult: { total_hours: 0 },
-2025-09-03T15:06:11:   calculatedToday: 0
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [DASHBOARD-STATS] Response: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 2 }
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] Recent activity raw result: {
-2025-09-03T15:06:11:   recordCount: 0,
-2025-09-03T15:06:11:   firstRecord: undefined,
-2025-09-03T15:06:11:   dateFilter: 'AND te.date >= @startDate AND te.date <= @endDate',
-2025-09-03T15:06:11:   queryParams: {
-2025-09-03T15:06:11:     userId: 'user-1756935788213',
-2025-09-03T15:06:11:     startDate: '2025-08-27',
-2025-09-03T15:06:11:     endDate: '2025-09-03'
-2025-09-03T15:06:11:   }
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] No recent activity found - checking all time entries for user
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] Time entries check: {
-2025-09-03T15:06:11:   total_entries: 0,
-2025-09-03T15:06:11:   unique_projects: 0,
-2025-09-03T15:06:11:   earliest_date: null,
-2025-09-03T15:06:11:   latest_date: null,
-2025-09-03T15:06:11:   total_hours: null
-2025-09-03T15:06:11: }
-2025-09-03T15:06:11: 📊 [FMB-STORAGE] No time entries found for user
-2025-09-03T15:06:11: 📊 [PROJECT-BREAKDOWN] Response: 0 projects
-2025-09-03T15:06:11: 🏢 [FMB-STORAGE] Department hours query result: [
-2025-09-03T15:06:11:   {
-2025-09-03T15:06:11:     departmentName: 'Information Technology Services',
-2025-09-03T15:06:11:     departmentId: 'dept-1756935788407-c5vuvci2h',
-2025-09-03T15:06:11:     totalHours: 0,
-2025-09-03T15:06:11:     employeeCount: 0,
-2025-09-03T15:06:11:     entryCount: 0
-2025-09-03T15:06:11:   },
-2025-09-03T15:06:11:   {
-2025-09-03T15:06:11:     departmentName: 'Information Technology',
-2025-09-03T15:06:11:     departmentId: 'dept-it',
-2025-09-03T15:06:11:     totalHours: 0,
-2025-09-03T15:06:11:     employeeCount: 0,
-2025-09-03T15:06:11:     entryCount: 0
-2025-09-03T15:06:11:   }
-2025-09-03T15:06:11: ]
-2025-09-03T15:06:11: 📊 Department hours result: [
-2025-09-03T15:06:11:   {
-2025-09-03T15:06:11:     "departmentName": "Information Technology Services",
-2025-09-03T15:06:11:     "departmentId": "dept-1756935788407-c5vuvci2h",
-2025-09-03T15:06:11:     "totalHours": 0,
-2025-09-03T15:06:11:     "employeeCount": 0,
-2025-09-03T15:06:11:     "entryCount": 0
-2025-09-03T15:06:11:   },
-2025-09-03T15:06:11:   {
-2025-09-03T15:06:11:     "departmentName": "Information Technology",
-2025-09-03T15:06:11:     "departmentId": "dept-it",
-2025-09-03T15:06:11:     "totalHours": 0,
-2025-09-03T15:06:11:     "employeeCount": 0,
-2025-09-03T15:06:11:     "entryCount": 0
-2025-09-03T15:06:11:   }
-2025-09-03T15:06:11: ]
-2025-09-03T15:06:11: 📋 [FMB-STORAGE] Debug - All recent time entries for user: []
-2025-09-03T15:06:11: 📊 [RECENT-ACTIVITY] Response: []
-2025-09-03T15:06:14: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:14: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:14: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:14: 2025-09-03T22:06:14.129Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937174101-zkhci8', recordCount: 1 }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.129Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.130Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/auth/user {
-2025-09-03T15:06:14:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:14:   "isAuthenticated": true
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.130Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:14: 2025-09-03T22:06:14.132Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937174103-lxazje', recordCount: 1 }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.132Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.132Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/organizations {
-2025-09-03T15:06:14:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:14:   "isAuthenticated": true
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.132Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.134Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937174105-xit3qe', recordCount: 1 }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.134Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.134Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/projects {
-2025-09-03T15:06:14:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:14:   "isAuthenticated": true
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.135Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:14:   "userId": "user-1756935788213",
-2025-09-03T15:06:14:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:14: }
-2025-09-03T15:06:14: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:14: 2025-09-03T22:06:14.165Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937174135-3xq0b6', recordCount: 2 }
-2025-09-03T15:06:14: 2025-09-03T22:06:14.166Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937174130-7f7pug', recordCount: 1 }
-2025-09-03T15:06:14: 📁 Projects API: Found 2 user projects and 0 enterprise projects for user user-1756935788213
-2025-09-03T15:06:16: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:16: 2025-09-03T22:06:16.688Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937176657-wt8xbo', recordCount: 1 }
-2025-09-03T15:06:16: 2025-09-03T22:06:16.688Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:16:   "userId": "user-1756935788213",
-2025-09-03T15:06:16:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:16: }
-2025-09-03T15:06:16: 2025-09-03T22:06:16.688Z 🟢 [FMB-SAML] FMB Authentication check for GET /api/projects/proj-1756935854564-ofa980dh8/tasks {
-2025-09-03T15:06:16:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:16:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:16:   "isAuthenticated": true
-2025-09-03T15:06:16: }
-2025-09-03T15:06:16: 2025-09-03T22:06:16.688Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:16:   "userId": "user-1756935788213",
-2025-09-03T15:06:16:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:16: }
-2025-09-03T15:06:16: 📋 [API] Fetching tasks for project: proj-1756935854564-ofa980dh8 user: user-1756935788213
-2025-09-03T15:06:16: ✅ [API] Project access verified: Replicon Replacement enterprise: true
-2025-09-03T15:06:16: 🔍 [FMB-STORAGE] Fetching tasks for project: proj-1756935854564-ofa980dh8
-2025-09-03T15:06:16: ✅ [FMB-STORAGE] Found 4 tasks for project proj-1756935854564-ofa980dh8
-2025-09-03T15:06:16: 📋 [API] Raw tasks result: [
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936301249-o2jkms8np',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8',
-2025-09-03T15:06:16:     title: 'Documentation',
-2025-09-03T15:06:16:     description: 'product documentation',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     priority: 'medium',
-2025-09-03T15:06:16:     assigned_to: 'user-1756935788213',
-2025-09-03T15:06:16:     created_by: 'user-1756935788213',
-2025-09-03T15:06:16:     created_at: 2025-09-03T14:51:41.300Z,
-2025-09-03T15:06:16:     updated_at: 2025-09-03T14:51:41.300Z,
-2025-09-03T15:06:16:     name: 'Documentation',
-2025-09-03T15:06:16:     projectId: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936261455-vt2iuh4x5',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8',
-2025-09-03T15:06:16:     title: 'CICD',
-2025-09-03T15:06:16:     description: 'continuous integration and deployment',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     priority: 'medium',
-2025-09-03T15:06:16:     assigned_to: 'user-1756935788213',
-2025-09-03T15:06:16:     created_by: 'user-1756935788213',
-2025-09-03T15:06:16:     created_at: 2025-09-03T14:51:01.506Z,
-2025-09-03T15:06:16:     updated_at: 2025-09-03T14:51:01.506Z,
-2025-09-03T15:06:16:     name: 'CICD',
-2025-09-03T15:06:16:     projectId: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936240987-hiw4lwkm7',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8',
-2025-09-03T15:06:16:     title: 'Development',
-2025-09-03T15:06:16:     description: 'application development',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     priority: 'medium',
-2025-09-03T15:06:16:     assigned_to: 'user-1756935788213',
-2025-09-03T15:06:16:     created_by: 'user-1756935788213',
-2025-09-03T15:06:16:     created_at: 2025-09-03T14:50:41.043Z,
-2025-09-03T15:06:16:     updated_at: 2025-09-03T14:50:41.043Z,
-2025-09-03T15:06:16:     name: 'Development',
-2025-09-03T15:06:16:     projectId: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936226886-f6gw16w32',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8',
-2025-09-03T15:06:16:     title: 'Design',
-2025-09-03T15:06:16:     description: 'System design',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     priority: 'medium',
-2025-09-03T15:06:16:     assigned_to: 'user-1756935788213',
-2025-09-03T15:06:16:     created_by: 'user-1756935788213',
-2025-09-03T15:06:16:     created_at: 2025-09-03T14:50:26.946Z,
-2025-09-03T15:06:16:     updated_at: 2025-09-03T14:50:26.946Z,
-2025-09-03T15:06:16:     name: 'Design',
-2025-09-03T15:06:16:     projectId: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   }
-2025-09-03T15:06:16: ]
-2025-09-03T15:06:16: 📋 [API] Found tasks for project: 4
-2025-09-03T15:06:16: 📋 [API] Task details: [
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936301249-o2jkms8np',
-2025-09-03T15:06:16:     name: 'Documentation',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936261455-vt2iuh4x5',
-2025-09-03T15:06:16:     name: 'CICD',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936240987-hiw4lwkm7',
-2025-09-03T15:06:16:     name: 'Development',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   },
-2025-09-03T15:06:16:   {
-2025-09-03T15:06:16:     id: 'task-1756936226886-f6gw16w32',
-2025-09-03T15:06:16:     name: 'Design',
-2025-09-03T15:06:16:     status: 'active',
-2025-09-03T15:06:16:     project_id: 'proj-1756935854564-ofa980dh8'
-2025-09-03T15:06:16:   }
-2025-09-03T15:06:16: ]
-2025-09-03T15:06:16: 📋 [API] Returning tasks count: 4
-2025-09-03T15:06:37: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:37: 2025-09-03T22:06:37.722Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937197694-ad27pq', recordCount: 1 }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.722Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:37:   "userId": "user-1756935788213",
-2025-09-03T15:06:37:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.723Z 🟢 [FMB-SAML] FMB Authentication check for POST /api/time-entries {
-2025-09-03T15:06:37:   "ip": "192.168.210.23:61664",
-2025-09-03T15:06:37:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:06:37:   "isAuthenticated": true
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.723Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:06:37:   "userId": "user-1756935788213",
-2025-09-03T15:06:37:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 📝 Time Entry Request Body: {
-2025-09-03T15:06:37:   "projectId": "proj-1756935854564-ofa980dh8",
-2025-09-03T15:06:37:   "taskId": "task-1756936226886-f6gw16w32",
-2025-09-03T15:06:37:   "description": "design draft is ready for review.",
-2025-09-03T15:06:37:   "date": "2025-09-03",
-2025-09-03T15:06:37:   "hours": 2,
-2025-09-03T15:06:37:   "duration": "2"
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: ❌ Validation Error: [
-2025-09-03T15:06:37:   {
-2025-09-03T15:06:37:     code: 'invalid_type',
-2025-09-03T15:06:37:     expected: 'number',
-2025-09-03T15:06:37:     received: 'string',
-2025-09-03T15:06:37:     path: [ 'duration' ],
-2025-09-03T15:06:37:     message: 'Expected number, received string'
-2025-09-03T15:06:37:   }
-2025-09-03T15:06:37: ]
-2025-09-03T15:06:37: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:37: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:06:37: 2025-09-03T22:06:37.868Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937197837-u0xjuv', recordCount: 1 }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.868Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:37:   "userId": "user-1756935788213",
-2025-09-03T15:06:37:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.794Z 🔴 [FRONTEND-API] Request 4jmkq6sxb failed {
-2025-09-03T15:06:37:   data: {
-2025-09-03T15:06:37:     requestId: '4jmkq6sxb',
-2025-09-03T15:06:37:     method: 'POST',
-2025-09-03T15:06:37:     url: '/api/time-entries',
-2025-09-03T15:06:37:     status: 400,
-2025-09-03T15:06:37:     error: { message: 'Invalid time entry data', errors: [Array] },
-2025-09-03T15:06:37:     duration: '128ms'
-2025-09-03T15:06:37:   },
-2025-09-03T15:06:37:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:06:37:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:06:37:   ip: '192.168.210.23:61664',
-2025-09-03T15:06:37:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.871Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937197840-vvq2df', recordCount: 1 }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.871Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:06:37:   "userId": "user-1756935788213",
-2025-09-03T15:06:37:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:06:37: }
-2025-09-03T15:06:37: 2025-09-03T22:06:37.795Z 🔴 [FRONTEND-API] Request 4jmkq6sxb exception {
-2025-09-03T15:06:37:   data: {
-2025-09-03T15:06:37:     requestId: '4jmkq6sxb',
-2025-09-03T15:06:37:     method: 'POST',
-2025-09-03T15:06:37:     url: '/api/time-entries',
-2025-09-03T15:06:37:     error: {
-2025-09-03T15:06:37:       name: 'Error',
-2025-09-03T15:06:37:       message: 'Invalid time entry data',
-2025-09-03T15:06:37:       stack: 'Error: Invalid time entry data\n' +
-2025-09-03T15:06:37:         '    at fe (https://timetracker.fmb.com/assets/index-CPuhwweB.js:1:3142)\n' +
-2025-09-03T15:06:37:         '    at async Object.mutationFn (https://timetracker.fmb.com/assets/index-CPuhwweB.js:291:99078)'
-2025-09-03T15:06:37:     }
-2025-09-03T15:06:37:   },
-2025-09-03T15:06:37:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:06:37:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:06:37:   ip: '192.168.210.23:61664',
-2025-09-03T15:06:37:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:06:37: }
-2025-09-03T15:08:43: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:43: 2025-09-03T22:08:43.339Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937323248-b5dwa2', recordCount: 1 }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.339Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:43:   "userId": "user-1756935788213",
-2025-09-03T15:08:43:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.339Z 🟢 [FMB-SAML] FMB Authentication check for POST /api/time-entries {
-2025-09-03T15:08:43:   "ip": "192.168.210.23:61664",
-2025-09-03T15:08:43:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:08:43:   "isAuthenticated": true
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.339Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:08:43:   "userId": "user-1756935788213",
-2025-09-03T15:08:43:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 📝 Time Entry Request Body: {
-2025-09-03T15:08:43:   "projectId": "proj-1756935854564-ofa980dh8",
-2025-09-03T15:08:43:   "taskId": "task-1756936226886-f6gw16w32",
-2025-09-03T15:08:43:   "description": "design draft is ready for review.",
-2025-09-03T15:08:43:   "date": "2025-09-03",
-2025-09-03T15:08:43:   "startTime": "14:08",
-2025-09-03T15:08:43:   "endTime": "15:08",
-2025-09-03T15:08:43:   "hours": 1,
-2025-09-03T15:08:43:   "duration": "1"
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: ❌ Validation Error: [
-2025-09-03T15:08:43:   {
-2025-09-03T15:08:43:     code: 'invalid_type',
-2025-09-03T15:08:43:     expected: 'number',
-2025-09-03T15:08:43:     received: 'string',
-2025-09-03T15:08:43:     path: [ 'duration' ],
-2025-09-03T15:08:43:     message: 'Expected number, received string'
-2025-09-03T15:08:43:   }
-2025-09-03T15:08:43: ]
-2025-09-03T15:08:43: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:43: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:43: 2025-09-03T22:08:43.423Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937323394-joupim', recordCount: 1 }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.424Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:43:   "userId": "user-1756935788213",
-2025-09-03T15:08:43:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.368Z 🔴 [FRONTEND-API] Request kpcmdl2rm failed {
-2025-09-03T15:08:43:   data: {
-2025-09-03T15:08:43:     requestId: 'kpcmdl2rm',
-2025-09-03T15:08:43:     method: 'POST',
-2025-09-03T15:08:43:     url: '/api/time-entries',
-2025-09-03T15:08:43:     status: 400,
-2025-09-03T15:08:43:     error: { message: 'Invalid time entry data', errors: [Array] },
-2025-09-03T15:08:43:     duration: '149ms'
-2025-09-03T15:08:43:   },
-2025-09-03T15:08:43:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:08:43:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:08:43:   ip: '192.168.210.23:61664',
-2025-09-03T15:08:43:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.450Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937323397-09h669', recordCount: 1 }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.451Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:43:   "userId": "user-1756935788213",
-2025-09-03T15:08:43:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:43: }
-2025-09-03T15:08:43: 2025-09-03T22:08:43.368Z 🔴 [FRONTEND-API] Request kpcmdl2rm exception {
-2025-09-03T15:08:43:   data: {
-2025-09-03T15:08:43:     requestId: 'kpcmdl2rm',
-2025-09-03T15:08:43:     method: 'POST',
-2025-09-03T15:08:43:     url: '/api/time-entries',
-2025-09-03T15:08:43:     error: {
-2025-09-03T15:08:43:       name: 'Error',
-2025-09-03T15:08:43:       message: 'Invalid time entry data',
-2025-09-03T15:08:43:       stack: 'Error: Invalid time entry data\n' +
-2025-09-03T15:08:43:         '    at fe (https://timetracker.fmb.com/assets/index-CPuhwweB.js:1:3142)\n' +
-2025-09-03T15:08:43:         '    at async Object.mutationFn (https://timetracker.fmb.com/assets/index-CPuhwweB.js:291:99078)'
-2025-09-03T15:08:43:     }
-2025-09-03T15:08:43:   },
-2025-09-03T15:08:43:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:08:43:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:08:43:   ip: '192.168.210.23:61664',
-2025-09-03T15:08:43:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:08:43: }
-2025-09-03T15:08:46: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:46: 2025-09-03T22:08:46.266Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937326233-6o9rzt', recordCount: 1 }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.266Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:46:   "userId": "user-1756935788213",
-2025-09-03T15:08:46:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.266Z 🟢 [FMB-SAML] FMB Authentication check for POST /api/time-entries {
-2025-09-03T15:08:46:   "ip": "192.168.210.23:61664",
-2025-09-03T15:08:46:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e",
-2025-09-03T15:08:46:   "isAuthenticated": true
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.266Z 🟢 [FMB-SAML] FMB Authentication successful {
-2025-09-03T15:08:46:   "userId": "user-1756935788213",
-2025-09-03T15:08:46:   "sessionId": "217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e"
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 📝 Time Entry Request Body: {
-2025-09-03T15:08:46:   "projectId": "proj-1756935854564-ofa980dh8",
-2025-09-03T15:08:46:   "taskId": "task-1756936226886-f6gw16w32",
-2025-09-03T15:08:46:   "description": "design draft is ready for review.",
-2025-09-03T15:08:46:   "date": "2025-09-03",
-2025-09-03T15:08:46:   "startTime": "14:08",
-2025-09-03T15:08:46:   "endTime": "15:08",
-2025-09-03T15:08:46:   "hours": 1,
-2025-09-03T15:08:46:   "duration": "1"
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: ❌ Validation Error: [
-2025-09-03T15:08:46:   {
-2025-09-03T15:08:46:     code: 'invalid_type',
-2025-09-03T15:08:46:     expected: 'number',
-2025-09-03T15:08:46:     received: 'string',
-2025-09-03T15:08:46:     path: [ 'duration' ],
-2025-09-03T15:08:46:     message: 'Expected number, received string'
-2025-09-03T15:08:46:   }
-2025-09-03T15:08:46: ]
-2025-09-03T15:08:46: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:46: 🗄️ [SQL] Executing with 1 parameters
-2025-09-03T15:08:46: 2025-09-03T22:08:46.354Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937326325-d66ni6', recordCount: 1 }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.354Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:46:   "userId": "user-1756935788213",
-2025-09-03T15:08:46:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.296Z 🔴 [FRONTEND-API] Request oxcnop2w1 failed {
-2025-09-03T15:08:46:   data: {
-2025-09-03T15:08:46:     requestId: 'oxcnop2w1',
-2025-09-03T15:08:46:     method: 'POST',
-2025-09-03T15:08:46:     url: '/api/time-entries',
-2025-09-03T15:08:46:     status: 400,
-2025-09-03T15:08:46:     error: { message: 'Invalid time entry data', errors: [Array] },
-2025-09-03T15:08:46:     duration: '96ms'
-2025-09-03T15:08:46:   },
-2025-09-03T15:08:46:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:08:46:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:08:46:   ip: '192.168.210.23:61664',
-2025-09-03T15:08:46:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.356Z 🗄️ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937326328-8ublad', recordCount: 1 }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.356Z 🟢 [FMB-SAML] User deserialized successfully {
-2025-09-03T15:08:46:   "userId": "user-1756935788213",
-2025-09-03T15:08:46:   "email": "Sravan.Modugula@fmb.com"
-2025-09-03T15:08:46: }
-2025-09-03T15:08:46: 2025-09-03T22:08:46.296Z 🔴 [FRONTEND-API] Request oxcnop2w1 exception {
-2025-09-03T15:08:46:   data: {
-2025-09-03T15:08:46:     requestId: 'oxcnop2w1',
-2025-09-03T15:08:46:     method: 'POST',
-2025-09-03T15:08:46:     url: '/api/time-entries',
-2025-09-03T15:08:46:     error: {
-2025-09-03T15:08:46:       name: 'Error',
-2025-09-03T15:08:46:       message: 'Invalid time entry data',
-2025-09-03T15:08:46:       stack: 'Error: Invalid time entry data\n' +
-2025-09-03T15:08:46:         '    at fe (https://timetracker.fmb.com/assets/index-CPuhwweB.js:1:3142)\n' +
-2025-09-03T15:08:46:         '    at async Object.mutationFn (https://timetracker.fmb.com/assets/index-CPuhwweB.js:291:99078)'
-2025-09-03T15:08:46:     }
-2025-09-03T15:08:46:   },
-2025-09-03T15:08:46:   url: 'https://timetracker.fmb.com/time-entry',
-2025-09-03T15:08:46:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-2025-09-03T15:08:46:   ip: '192.168.210.23:61664',
-2025-09-03T15:08:46:   sessionId: '217448c8a06756c5cb40f166da923fe4647563cefec65cd8f9130e93652a8b9e'
-2025-09-03T15:08:46: }
+PS C:\Users\ADM91381> cd..
+
+PS C:\Users> cd..
+
+PS C:\> cd .\fmb-timetracker
+
+PS C:\fmb-timetracker> # FMB TimeTracker Simple Deployment Script
+param(
+    [string]$InstallPath = "C:\fmb-timetracker"
+)
+
+Write-Host "🚀 FMB TimeTracker Deployment" -ForegroundColor Green
+
+# Check admin privileges
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "❌ Run as Administrator" -ForegroundColor Red
+    exit 1
+}
+
+# Create logs directory
+if (-not (Test-Path "$InstallPath\logs")) {
+    New-Item -ItemType Directory -Path "$InstallPath\logs" -Force | Out-Null
+}
+
+# Check .env file
+if (-not (Test-Path ".env")) {
+    if (Test-Path "fmb-onprem/.env.fmb-onprem") {
+        Copy-Item "fmb-onprem/.env.fmb-onprem" ".env"
+        Write-Host "✅ Environment file copied" -ForegroundColor Green
+    } else {
+        Write-Host "❌ No .env file found" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# Stop existing processes
+Write-Host "⏹️ Stopping application..." -ForegroundColor Yellow
+npx pm2 delete fmb-timetracker 2>$null
+
+# Install dependencies
+Write-Host "📦 Installing dependencies..." -ForegroundColor Yellow
+npm install --legacy-peer-deps
+
+# Build application
+Write-Host "🔨 Building..." -ForegroundColor Yellow
+npm run build
+
+if (-not (Test-Path "dist/index.js")) {
+    Write-Host "❌ Build failed" -ForegroundColor Red
+    exit 1
+}
+
+# Start application
+Write-Host "▶️ Starting application..." -ForegroundColor Yellow
+npx pm2 start ecosystem.config.cjs
+
+# Wait and check status
+Start-Sleep -Seconds 15
+$status = npx pm2 jlist | ConvertFrom-Json
+$app = $status | Where-Object { $_.name -eq "fmb-timetracker" }
+
+if ($app -and $app.pm2_env.status -eq "online") {
+    Write-Host "✅ Deployment successful!" -ForegroundColor Green
+    Write-Host "🌐 Check: http://localhost:3000" -ForegroundColor Green
+    
+    # Health check
+    Start-Sleep -Seconds 5
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:3000/health" -UseBasicParsing -TimeoutSec 10
+        if ($response.StatusCode -eq 200) {
+            Write-Host "✅ Health check passed" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "⚠️ Health check failed - check logs" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "❌ Deployment failed" -ForegroundColor Red
+    npx pm2 logs fmb-timetracker --lines 10
+    exit 1
+}
+
+Write-Host "📋 Commands: npx pm2 status | npx pm2 logs" -ForegroundColor Cyan
+🚀 FMB TimeTracker Deployment
+⏹️ Stopping application...
+[PM2] Applying action deleteProcessId on app [fmb-timetracker](ids: [ 0 ])
+[PM2] [fmb-timetracker](0) âœ“
+â”Œâ”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â
+”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚ id â”‚ name      â”‚ namespace   â”‚ version â”‚ mode    â”‚ pid      â”‚ uptime â”‚ â†º    â”‚ status    â”‚ cpu      â”‚ mem      â”‚ user     â”‚ watching â”‚
+â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â
+”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+📦 Installing dependencies...
+
+up to date in 50s
+
+111 packages are looking for funding
+  run `npm fund` for details
+🔨 Building...
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+[36mvite v7.1.3 [32mbuilding for production...[36m[39m
+transforming...
+[32mâœ“[39m 2079 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../dist/public/[22m[32mindex.html                 [39m[1m[2m  1.06 kB[22m[1m[22m[2m â”‚ gzip:  0.44 kB[22m
+[2m../dist/public/[22m[35massets/index-qbm3AQHd.css  [39m[1m[2m 70.17 kB[22m[1m[22m[2m â”‚ gzip: 12.51 kB[22m
+[2m../dist/public/[22m[36massets/charts-Cw_4P-5S.js  [39m[1m[2m  0.03 kB[22m[1m[22m[2m â”‚ gzip:  0.05 kB[22m
+[2m../dist/public/[22m[36massets/router-tUbYGXdU.js  [39m[1m[2m  5.03 kB[22m[1m[22m[2m â”‚ gzip:  2.50 kB[22m
+[2m../dist/public/[22m[36massets/query-skQegACk.js   [39m[1m[2m 33.91 kB[22m[1m[22m[2m â”‚ gzip: 10.05 kB[22m
+[2m../dist/public/[22m[36massets/utils-DzfkJJIA.js   [39m[1m[2m 40.06 kB[22m[1m[22m[2m â”‚ gzip: 12.39 kB[22m
+[2m../dist/public/[22m[36massets/ui-Bepph9p2.js      [39m[1m[2m 90.93 kB[22m[1m[22m[2m â”‚ gzip: 31.14 kB[22m
+[2m../dist/public/[22m[36massets/vendor-D3F3s8fL.js  [39m[1m[2m141.72 kB[22m[1m[22m[2m â”‚ gzip: 45.48 kB[22m
+[2m../dist/public/[22m[36massets/index-CPuhwweB.js   [39m[1m[2m344.00 kB[22m[1m[22m[2m â”‚ gzip: 83.47 kB[22m
+[32mâœ“ built in 9.20s[39m
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  dist\index.js  289.6kb
+Done in 40ms
+▶️ Starting application...
+[PM2][WARN] Applications fmb-timetracker not running, starting...
+[PM2] App [fmb-timetracker] launched (1 instances)
+â”Œâ”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â
+”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”
+€â”€â”€â”€â”€â”€â”€â”
+â”‚ id â”‚ name               â”‚ namespace   â”‚ version â”‚ mode    â”‚ pid      â”‚ uptime â”‚ â†º    â”‚ status    â”‚ cpu      â”‚ mem      â”‚ user     â”‚ watching â”‚
+â”œâ”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â
+”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”
+€â”€â”€â”€â”€â”€â”€â”¤
+â”‚ 0  â”‚ fmb-timetracker    â”‚ default     â”‚ 1.0.0   â”‚ fork    â”‚ 3716     â”‚ 0s     â”‚ 0    â”‚ online    â”‚ 28.1%    â”‚ 64.9mb   â”‚ ADM91381 â”‚ disabled â”‚
+â””â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â
+”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”
+€â”€â”€â”€â”€â”€â”€â”˜
+ConvertFrom-Json : Cannot convert the JSON string because a dictionary that was converted from the string contains the duplicated keys 'username' and 'USERNAME'.
+At line:53 char:27
++ $status = npx pm2 jlist | ConvertFrom-Json
++                           ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [ConvertFrom-Json], InvalidOperationException
+    + FullyQualifiedErrorId : DuplicateKeysInJsonString,Microsoft.PowerShell.Commands.ConvertFromJsonCommand
+ 
+❌ Deployment failed
+[TAILING] Tailing last 10 lines for [fmb-timetracker] process (change the value with --lines option)
+C:\fmb-timetracker\logs\err-0.log last 10 lines:
+0|fmb-time | 2025-09-03T15:13:40:     code: 'invalid_type',
+0|fmb-time | 2025-09-03T15:13:40:     expected: 'number',
+0|fmb-time | 2025-09-03T15:13:40:     received: 'string',
+0|fmb-time | 2025-09-03T15:13:40:     path: [ 'duration' ],
+0|fmb-time | 2025-09-03T15:13:40:     message: 'Expected number, received string'
+0|fmb-time | 2025-09-03T15:13:40:   }
+0|fmb-time | 2025-09-03T15:13:40: ]
+0|fmb-time | 2025-09-03T15:19:36: Warning: connect.session() MemoryStore is not
+0|fmb-time | 2025-09-03T15:19:36: designed for a production environment, as it will leak
+0|fmb-time | 2025-09-03T15:19:36: memory, and will not scale past a single process.
+
+C:\fmb-timetracker\logs\out-0.log last 10 lines:
+0|fmb-time | 2025-09-03T15:19:36:   "hasBeginMarker": true,
+0|fmb-time | 2025-09-03T15:19:36:   "hasEndMarker": true
+0|fmb-time | 2025-09-03T15:19:36: }
+0|fmb-time | 2025-09-03T15:19:36: 2025-09-03T22:19:36.909Z ðŸ”µ [FMB-SAML] FMB SAML Authentication setup completed
+0|fmb-time | 2025-09-03T15:19:36: ðŸ›¡ï¸ [SESSION-MGMT] Enterprise session management routes registered
+0|fmb-time | 2025-09-03T15:19:36: ðŸ›¡ï¸ [SESSION-MGMT] Enterprise session management routes registered
+0|fmb-time | 2025-09-03T15:19:36: 2025-09-03T22:19:36.915Z ðŸŸ¢ [SERVER] FMB TimeTracker running on http://0.0.0.0:3000
+0|fmb-time | 2025-09-03T15:19:36: 2025-09-03T22:19:36.915Z ðŸŸ¢ [SERVER] Environment: fmb-onprem
+0|fmb-time | 2025-09-03T15:19:36: 2025-09-03T22:19:36.915Z ðŸŸ¢ [FMB-ONPREM] On-premises deployment active - SAML authentication enabled
+0|fmb-time | 2025-09-03T15:19:36: 2025-09-03T22:19:36.978Z ðŸ—„ï¸ [FMB-STORAGE] CONNECT: Successfully connected to MS SQL Server
+
+0|fmb-timetracker  | 2025-09-03T15:19:57: 2025-09-03T22:19:57.781Z ðŸ”µ [FMB-SAML] SAML ACS callback received - IdP-initiated flow {
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "timestamp": "2025-09-03T22:19:57.781Z",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "hasBody": true,
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "bodyKeys": [
+0|fmb-timetracker  | 2025-09-03T15:19:57:     "SAMLResponse"
+0|fmb-timetracker  | 2025-09-03T15:19:57:   ],
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "headers": {
+0|fmb-timetracker  | 2025-09-03T15:19:57:     "content-type": "application/x-www-form-urlencoded",
+0|fmb-timetracker  | 2025-09-03T15:19:57:     "content-length": "8093"
+0|fmb-timetracker  | 2025-09-03T15:19:57:   }
+0|fmb-timetracker  | 2025-09-03T15:19:57: }
+0|fmb-timetracker  | 2025-09-03T15:19:57: 2025-09-03T22:19:57.857Z ðŸ”µ [FMB-SAML] SAML profile received {
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "nameID": "Sravan.Modugula@fmb.com",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "email": "Sravan.Modugula@fmb.com",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "firstName": "Sravan",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "lastName": "Modugula",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "department": "Information Technology Services",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "employeeId": "FMB90378"
+0|fmb-timetracker  | 2025-09-03T15:19:57: }
+0|fmb-timetracker  | 2025-09-03T15:19:57: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:57: 2025-09-03T22:19:57.976Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937997858-h6cvkn', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:57: 2025-09-03T22:19:57.976Z ðŸ”µ [FMB-SAML] Preserving existing user role {
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "email": "Sravan.Modugula@fmb.com",
+0|fmb-timetracker  | 2025-09-03T15:19:57:   "existingRole": "admin"
+0|fmb-timetracker  | 2025-09-03T15:19:57: }
+0|fmb-timetracker  | 2025-09-03T15:19:57: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.011Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937997977-vxb4dc', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.012Z ðŸ—„ï¸ [FMB-STORAGE] UPSERT_USER: Updating existing user {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   email: 'Sravan.Modugula@fmb.com',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   existingRole: 'admin',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   newRole: 'admin',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   finalRole: 'admin'
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ”„ [SQL] 
+0|fmb-timetracker  | 2025-09-03T15:19:58:  operation on users
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 7 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: âœ… [SQL] Operation completed: 1 rows affected
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.078Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998012-1l4vf6', recordCount: 0 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.110Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998079-bb6o4z', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.110Z ðŸ”µ [FMB-SAML] User upserted in database {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 2 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.142Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998111-5l053z', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ”„ [SQL] 
+0|fmb-timetracker  | 2025-09-03T15:19:58:  operation on departments
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 3 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: âœ… [SQL] Operation completed: 1 rows affected
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.190Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998143-65qqll', recordCount: 0 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.190Z ðŸ—„ï¸ [FMB-STORAGE] UPSERT_DEPARTMENT: Department record updated {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   id: 'dept-1756935788407-c5vuvci2h',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   name: 'Information Technology Services',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   organization_id: 'org-fmb'
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.221Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998191-8jbbnc', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.221Z ðŸ”µ [FMB-SAML] Department record upserted {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "departmentName": "Information Technology Services",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "departmentId": "dept-1756935788407-c5vuvci2h",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "organizationId": "org-fmb"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.250Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998221-igy9al', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.283Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998251-hekhts', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.328Z ðŸ—„ï¸ [FMB-STORAGE] UPSERT_EMPLOYEE: Employee record updated {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   id: 'emp-1756935788649-sh7x3kpr6',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   employee_id: 'FMB90378',
+0|fmb-timetracker  | 2025-09-03T15:19:58:   user_id: 'user-1756935788213'
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.360Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998328-mbj6mk', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.360Z ðŸ”µ [FMB-SAML] Employee record upserted {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "employeeId": "FMB90378",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "department": "Information Technology Services"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.360Z ðŸ”µ [FMB-SAML] User authenticated and stored {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.361Z ðŸŸ¢ [FMB-SAML] Serializing user for session {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "timestamp": "2025-09-03T22:19:58.361Z",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "source": "saml"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ”µ [FMB-SAML] User session established and saved: Sravan.Modugula@fmb.com
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.448Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998418-sjs7ql', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.449Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.572Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998537-8u71cj', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.573Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.601Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998541-nfbzdo', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.601Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.629Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998545-mnhsoc', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.629Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.638Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998548-kagquy', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.639Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.644Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998549-8nfsg5', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.644Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.649Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998549-q1jf1l', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.650Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.651Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937998555-9v8et2', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:58: 2025-09-03T22:19:58.651Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:58:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:58: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.231Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999202-k7gh0j', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.232Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.232Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.233Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.265Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999233-dicsrx', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.376Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999347-rrrils', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.377Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.377Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.377Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.380Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999348-tidcfi', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.381Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.382Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/organizations {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.382Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.385Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999352-4ogfkk', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.385Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.386Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/dashboard/stats {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.386Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [DASHBOARD-STATS] Request: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   userId: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   startDate: '2025-08-27',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   endDate: '2025-09-03'
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Getting dashboard stats for user: user-1756935788213 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Date ranges: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   today: '2025-09-03',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   weekStart: '2025-09-01',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   monthStart: '2025-09-01',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   filterRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.391Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999352-6a3e3x', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.391Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.391Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/dashboard/project-breakdown {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.391Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [PROJECT-BREAKDOWN] Request: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   userId: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   startDate: '2025-08-27',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   endDate: '2025-09-03'
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Starting project breakdown query for user: user-1756935788213 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.394Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999355-x69ooc', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.394Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.395Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999352-akb9zm', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.396Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.396Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/dashboard/department-hours {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.396Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ¢ Fetching department hours for user: user-1756935788213 dates: 2025-08-27 2025-09-03
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.399Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999355-o7m75a', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.399Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.399Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/dashboard/recent-activity {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.400Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:19:59:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [RECENT-ACTIVITY] Request: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   userId: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   limit: '10',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   startDate: '2025-08-27',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   endDate: '2025-09-03'
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] Getting recent activity for user: user-1756935788213 limit: 10 dateRange: { startDate: '2025-08-27', endDate: '2025-09-03' }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] Using date filter for recent activity: { startDate: '2025-08-27', endDate: '2025-09-03' }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] Executing recent activity query with date filter: AND te.date >= @startDate AND te.date <= @endDate
+0|fmb-timetracker  | 2025-09-03T15:19:59: 2025-09-03T22:19:59.423Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756937999377-8vawff', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Dashboard stats calculated: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 2 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Today check: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   todayStr: '2025-09-03',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   queryResult: { total_hours: 0 },
+0|fmb-timetracker  | 2025-09-03T15:19:59:   calculatedToday: 0
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [DASHBOARD-STATS] Response: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 2 }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] Time entries check: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   total_entries: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   unique_projects: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   earliest_date: null,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   latest_date: null,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   total_hours: null
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [FMB-STORAGE] No time entries found for user
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [PROJECT-BREAKDOWN] Response: 0 projects
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ¢ [FMB-STORAGE] Department hours query result: [
+0|fmb-timetracker  | 2025-09-03T15:19:59:   {
+0|fmb-timetracker  | 2025-09-03T15:19:59:     departmentName: 'Information Technology Services',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     departmentId: 'dept-1756935788407-c5vuvci2h',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     totalHours: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     employeeCount: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     entryCount: 0
+0|fmb-timetracker  | 2025-09-03T15:19:59:   },
+0|fmb-timetracker  | 2025-09-03T15:19:59:   {
+0|fmb-timetracker  | 2025-09-03T15:19:59:     departmentName: 'Information Technology',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     departmentId: 'dept-it',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     totalHours: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     employeeCount: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     entryCount: 0
+0|fmb-timetracker  | 2025-09-03T15:19:59:   }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ]
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š Department hours result: [
+0|fmb-timetracker  | 2025-09-03T15:19:59:   {
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "departmentName": "Information Technology Services",
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "departmentId": "dept-1756935788407-c5vuvci2h",
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "totalHours": 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "employeeCount": 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "entryCount": 0
+0|fmb-timetracker  | 2025-09-03T15:19:59:   },
+0|fmb-timetracker  | 2025-09-03T15:19:59:   {
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "departmentName": "Information Technology",
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "departmentId": "dept-it",
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "totalHours": 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "employeeCount": 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:     "entryCount": 0
+0|fmb-timetracker  | 2025-09-03T15:19:59:   }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ]
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] Recent activity raw result: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:   recordCount: 0,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   firstRecord: undefined,
+0|fmb-timetracker  | 2025-09-03T15:19:59:   dateFilter: 'AND te.date >= @startDate AND te.date <= @endDate',
+0|fmb-timetracker  | 2025-09-03T15:19:59:   queryParams: {
+0|fmb-timetracker  | 2025-09-03T15:19:59:     userId: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     startDate: '2025-08-27',
+0|fmb-timetracker  | 2025-09-03T15:19:59:     endDate: '2025-09-03'
+0|fmb-timetracker  | 2025-09-03T15:19:59:   }
+0|fmb-timetracker  | 2025-09-03T15:19:59: }
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] No recent activity found - checking all time entries for user
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“‹ [FMB-STORAGE] Debug - All recent time entries for user: []
+0|fmb-timetracker  | 2025-09-03T15:19:59: ðŸ“Š [RECENT-ACTIVITY] Response: []
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.461Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938001433-bon2u2', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.462Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.462Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/auth/user {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.462Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.464Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938001431-zeyd27', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.464Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.464Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/organizations {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.464Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.465Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938001434-mi9fl8', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.465Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.465Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/projects {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.465Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:01:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:20:01: }
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.492Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938001462-tvo5yx', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:01: 2025-09-03T22:20:01.502Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938001466-ovoksq', recordCount: 2 }
+0|fmb-timetracker  | 2025-09-03T15:20:01: ðŸ“ Projects API: Found 2 user projects and 0 enterprise projects for user user-1756935788213
+0|fmb-timetracker  | 2025-09-03T15:20:03: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:03: 2025-09-03T22:20:03.960Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938003930-ge1gei', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:03: 2025-09-03T22:20:03.960Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:03: }
+0|fmb-timetracker  | 2025-09-03T15:20:03: 2025-09-03T22:20:03.961Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for GET /api/projects/proj-1756935854564-ofa980dh8/tasks {
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:20:03: }
+0|fmb-timetracker  | 2025-09-03T15:20:03: 2025-09-03T22:20:03.961Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:03:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:20:03: }
+0|fmb-timetracker  | 2025-09-03T15:20:03: ðŸ“‹ [API] Fetching tasks for project: proj-1756935854564-ofa980dh8 user: user-1756935788213
+0|fmb-timetracker  | 2025-09-03T15:20:03: âœ… [API] Project access verified: Replicon Replacement enterprise: true
+0|fmb-timetracker  | 2025-09-03T15:20:03: ðŸ” [FMB-STORAGE] Fetching tasks for project: proj-1756935854564-ofa980dh8
+0|fmb-timetracker  | 2025-09-03T15:20:04: âœ… [FMB-STORAGE] Found 4 tasks for project proj-1756935854564-ofa980dh8
+0|fmb-timetracker  | 2025-09-03T15:20:04: ðŸ“‹ [API] Raw tasks result: [
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936301249-o2jkms8np',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     title: 'Documentation',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     description: 'product documentation',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     priority: 'medium',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     assigned_to: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_by: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_at: 2025-09-03T14:51:41.300Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     updated_at: 2025-09-03T14:51:41.300Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Documentation',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     projectId: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936261455-vt2iuh4x5',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     title: 'CICD',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     description: 'continuous integration and deployment',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     priority: 'medium',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     assigned_to: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_by: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_at: 2025-09-03T14:51:01.506Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     updated_at: 2025-09-03T14:51:01.506Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'CICD',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     projectId: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936240987-hiw4lwkm7',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     title: 'Development',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     description: 'application development',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     priority: 'medium',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     assigned_to: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_by: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_at: 2025-09-03T14:50:41.043Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     updated_at: 2025-09-03T14:50:41.043Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Development',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     projectId: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936226886-f6gw16w32',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     title: 'Design',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     description: 'System design',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     priority: 'medium',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     assigned_to: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_by: 'user-1756935788213',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     created_at: 2025-09-03T14:50:26.946Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     updated_at: 2025-09-03T14:50:26.946Z,
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Design',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     projectId: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   }
+0|fmb-timetracker  | 2025-09-03T15:20:04: ]
+0|fmb-timetracker  | 2025-09-03T15:20:04: ðŸ“‹ [API] Found tasks for project: 4
+0|fmb-timetracker  | 2025-09-03T15:20:04: ðŸ“‹ [API] Task details: [
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936301249-o2jkms8np',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Documentation',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936261455-vt2iuh4x5',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'CICD',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936240987-hiw4lwkm7',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Development',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   },
+0|fmb-timetracker  | 2025-09-03T15:20:04:   {
+0|fmb-timetracker  | 2025-09-03T15:20:04:     id: 'task-1756936226886-f6gw16w32',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     name: 'Design',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     status: 'active',
+0|fmb-timetracker  | 2025-09-03T15:20:04:     project_id: 'proj-1756935854564-ofa980dh8'
+0|fmb-timetracker  | 2025-09-03T15:20:04:   }
+0|fmb-timetracker  | 2025-09-03T15:20:04: ]
+0|fmb-timetracker  | 2025-09-03T15:20:04: ðŸ“‹ [API] Returning tasks count: 4
+0|fmb-timetracker  | 2025-09-03T15:20:30: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.210Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938030180-obc2fi', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.210Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.210Z ðŸŸ¢ [FMB-SAML] FMB Authentication check for POST /api/time-entries {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "ip": "192.168.210.23:62576",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "isAuthenticated": true
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.210Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "sessionId": "f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9"
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: ðŸ“ Time Entry Request Body: {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "projectId": "proj-1756935854564-ofa980dh8",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "taskId": "task-1756936226886-f6gw16w32",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "description": "design draft is ready for review.",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "date": "2025-09-03",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "startTime": "14:20",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "endTime": "15:20",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "hours": 1,
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "duration": "1"
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: âŒ Validation Error: [
+0|fmb-timetracker  | 2025-09-03T15:20:30:   {
+0|fmb-timetracker  | 2025-09-03T15:20:30:     code: 'invalid_type',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     expected: 'number',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     received: 'string',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     path: [ 'duration' ],
+0|fmb-timetracker  | 2025-09-03T15:20:30:     message: 'Expected number, received string'
+0|fmb-timetracker  | 2025-09-03T15:20:30:   }
+0|fmb-timetracker  | 2025-09-03T15:20:30: ]
+0|fmb-timetracker  | 2025-09-03T15:20:30: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:30: ðŸ—„ï¸ [SQL] Executing with 1 parameters
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.348Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938030318-7j8r47', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.348Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.286Z ðŸ”´ [FRONTEND-API] Request rul91wsdr exception {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   data: {
+0|fmb-timetracker  | 2025-09-03T15:20:30:     requestId: 'rul91wsdr',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     method: 'POST',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     url: '/api/time-entries',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     error: {
+0|fmb-timetracker  | 2025-09-03T15:20:30:       name: 'Error',
+0|fmb-timetracker  | 2025-09-03T15:20:30:       message: 'Invalid time entry data',
+0|fmb-timetracker  | 2025-09-03T15:20:30:       stack: 'Error: Invalid time entry data\n' +
+0|fmb-timetracker  | 2025-09-03T15:20:30:         '    at fe (https://timetracker.fmb.com/assets/index-CPuhwweB.js:1:3142)\n' +
+0|fmb-timetracker  | 2025-09-03T15:20:30:         '    at async Object.mutationFn (https://timetracker.fmb.com/assets/index-CPuhwweB.js:291:99078)'
+0|fmb-timetracker  | 2025-09-03T15:20:30:     }
+0|fmb-timetracker  | 2025-09-03T15:20:30:   },
+0|fmb-timetracker  | 2025-09-03T15:20:30:   url: 'https://timetracker.fmb.com/time-entry',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   ip: '192.168.210.23:62576',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   sessionId: 'f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9'
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.351Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756938030320-te81aw', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.351Z ðŸŸ¢ [FMB-SAML] User deserialized successfully {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "userId": "user-1756935788213",
+0|fmb-timetracker  | 2025-09-03T15:20:30:   "email": "Sravan.Modugula@fmb.com"
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
+0|fmb-timetracker  | 2025-09-03T15:20:30: 2025-09-03T22:20:30.286Z ðŸ”´ [FRONTEND-API] Request rul91wsdr failed {
+0|fmb-timetracker  | 2025-09-03T15:20:30:   data: {
+0|fmb-timetracker  | 2025-09-03T15:20:30:     requestId: 'rul91wsdr',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     method: 'POST',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     url: '/api/time-entries',
+0|fmb-timetracker  | 2025-09-03T15:20:30:     status: 400,
+0|fmb-timetracker  | 2025-09-03T15:20:30:     error: { message: 'Invalid time entry data', errors: [Array] },
+0|fmb-timetracker  | 2025-09-03T15:20:30:     duration: '134ms'
+0|fmb-timetracker  | 2025-09-03T15:20:30:   },
+0|fmb-timetracker  | 2025-09-03T15:20:30:   url: 'https://timetracker.fmb.com/time-entry',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   ip: '192.168.210.23:62576',
+0|fmb-timetracker  | 2025-09-03T15:20:30:   sessionId: 'f1f90925d2a3e91d18fe90927de964489c6c724ed7c94f0a3e9f1a05ffac08a9'
+0|fmb-timetracker  | 2025-09-03T15:20:30: }
