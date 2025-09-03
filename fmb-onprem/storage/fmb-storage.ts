@@ -1156,6 +1156,104 @@ export class FmbStorage implements IStorage {
     return result;
   }
 
+  async getTimeEntriesForProject(projectId: string): Promise<TimeEntryWithProject[]> {
+    try {
+      console.log('📊 [FMB-STORAGE] Fetching time entries for project reports:', projectId);
+
+      if (!this.pool) {
+        throw new Error('Database pool not available');
+      }
+
+      const request = this.pool.request();
+      request.input('projectId', sql.NVarChar(255), projectId);
+
+      const result = await request.query(`
+        SELECT 
+          te.id,
+          te.project_id,
+          te.task_id,
+          te.user_id,
+          te.date,
+          te.start_time,
+          te.end_time,
+          te.duration,
+          te.hours,
+          te.description,
+          te.created_at,
+          te.updated_at,
+          p.name as project_name,
+          p.project_number,
+          '#1976D2' as project_color,
+          t.title as task_name,
+          t.description as task_description,
+          u.first_name as user_first_name,
+          u.last_name as user_last_name,
+          u.email as user_email
+        FROM time_entries te
+        LEFT JOIN projects p ON te.project_id = p.id
+        LEFT JOIN tasks t ON te.task_id = t.id
+        LEFT JOIN users u ON te.user_id = u.id
+        WHERE te.project_id = @projectId
+        ORDER BY te.date DESC, te.created_at DESC
+      `);
+
+      console.log('📊 [FMB-STORAGE] Found time entries for project reports:', result.recordset?.length || 0);
+
+      if (!result.recordset || result.recordset.length === 0) {
+        return [];
+      }
+
+      // Transform to the expected format for reports
+      const timeEntries = result.recordset.map((row: any) => ({
+        id: row.id,
+        project_id: row.project_id,
+        projectId: row.project_id,
+        task_id: row.task_id,
+        taskId: row.task_id,
+        user_id: row.user_id,
+        userId: row.user_id,
+        date: row.date,
+        start_time: row.start_time,
+        startTime: row.start_time,
+        end_time: row.end_time,
+        endTime: row.end_time,
+        duration: parseFloat(row.duration || row.hours || 0),
+        hours: parseFloat(row.hours || row.duration || 0),
+        description: row.description || '',
+        created_at: row.created_at,
+        createdAt: row.created_at,
+        updated_at: row.updated_at,
+        updatedAt: row.updated_at,
+        project: {
+          id: row.project_id,
+          name: row.project_name || 'Unknown Project',
+          project_number: row.project_number,
+          projectNumber: row.project_number,
+          color: row.project_color || '#1976D2'
+        },
+        task: row.task_name ? {
+          id: row.task_id,
+          name: row.task_name,
+          title: row.task_name,
+          description: row.task_description
+        } : null,
+        employee: {
+          id: row.user_id,
+          first_name: row.user_first_name || 'Unknown',
+          last_name: row.user_last_name || 'User',
+          email: row.user_email
+        }
+      }));
+
+      console.log('📊 [FMB-STORAGE] Transformed time entries for project reports:', timeEntries.length);
+
+      return timeEntries;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching time entries for project reports:', error);
+      return [];
+    }
+  }
+
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
       const insertData = {
         id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,

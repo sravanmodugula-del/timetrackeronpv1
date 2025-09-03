@@ -2007,6 +2007,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
 
+      console.log('📊 [REPORTS] Fetching time entries for project:', projectId, 'user:', userId);
+
       if (!userId) {
         return res.status(401).json({ message: "User not authenticated" });
       }
@@ -2019,12 +2021,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Insufficient permissions to view reports" });
       }
 
-      // Get time entries for the project with employee information
-      const timeEntries = await activeStorage.getTimeEntriesForProject(projectId);
+      console.log('📊 [REPORTS] User has permission, role:', currentUser.role);
 
-      res.json(timeEntries);
+      // Verify project exists and user has access
+      const project = await activeStorage.getProject(projectId, userId);
+      if (!project) {
+        console.log('📊 [REPORTS] Project not found or access denied:', projectId);
+        return res.status(404).json({ message: "Project not found or access denied" });
+      }
+
+      console.log('📊 [REPORTS] Project found:', project.name);
+
+      // Get time entries for the project - use the standard getTimeEntries method with project filter
+      const timeEntries = await activeStorage.getTimeEntries(userId, {
+        projectId: projectId,
+        // Don't limit by date range for reports - show all entries
+      });
+
+      console.log('📊 [REPORTS] Found time entries:', timeEntries?.length || 0);
+
+      // Transform entries to include employee information for reports
+      const transformedEntries = timeEntries.map(entry => ({
+        ...entry,
+        employee: {
+          id: entry.user_id || userId,
+          first_name: currentUser.first_name || 'Unknown',
+          last_name: currentUser.last_name || 'User'
+        },
+        task: entry.task ? {
+          id: entry.task.id,
+          name: entry.task.name || entry.task.title,
+          description: entry.task.description,
+          status: entry.task.status
+        } : null
+      }));
+
+      console.log('📊 [REPORTS] Transformed entries:', transformedEntries.length);
+
+      res.json(transformedEntries);
     } catch (error) {
-      console.error("Error fetching project time entries:", error);
+      console.error("📊 [REPORTS] Error fetching project time entries:", error);
       res.status(500).json({ message: "Failed to fetch project time entries" });
     }
   });
