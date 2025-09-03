@@ -196,14 +196,14 @@ export class FmbStorage implements IStorage {
     if (existingUser) {
       // Update existing user - preserve role unless explicitly changed
       const roleToUpdate = userData.role || existingUser.role;
-      
+
       this.storageLog('UPSERT_USER', 'Updating existing user', {
         email: userData.email,
         existingRole: existingUser.role,
         newRole: userData.role,
         finalRole: roleToUpdate
       });
-      
+
       await this.execute(`
         UPDATE users
         SET first_name = @param0, last_name = @param1, profile_image_url = @param2,
@@ -281,32 +281,50 @@ export class FmbStorage implements IStorage {
 
       const result = await request.query(`
         SELECT o.*,
-          (SELECT d.id, d.name, d.description, d.manager_id
-           FROM departments d
-           WHERE d.organization_id = o.id
-           FOR JSON PATH) as departments
+               (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count,
+               (SELECT COUNT(*) FROM projects p WHERE p.organization_id = o.id) as project_count
         FROM organizations o
         WHERE o.user_id = @userId
         ORDER BY o.created_at DESC
       `);
 
-      const organizations = result.recordset.map((org: any) => ({
-        ...org,
-        departments: org.departments ? JSON.parse(org.departments) : []
-      }));
-
       this.storageLog('GET_USER_ORGS', 'User organizations fetched successfully', {
         userId,
-        count: organizations.length
+        count: result.length
       });
 
-      return organizations;
+      return result;
     } catch (error) {
       this.storageLog('GET_USER_ORGS', 'Failed to fetch user organizations', {
         userId,
         error: error.message
       });
       throw new Error(`Failed to fetch organizations for user: ${error.message}`);
+    }
+  }
+
+  async getAllOrganizations(): Promise<Organization[]> {
+    try {
+      const request = this.pool.request();
+
+      const result = await request.query(`
+        SELECT
+          id,
+          name,
+          description,
+          user_id,
+          created_at as createdAt,
+          updated_at as updatedAt,
+          (SELECT COUNT(*) FROM departments WHERE organization_id = organizations.id) as department_count,
+          (SELECT COUNT(*) FROM projects WHERE organization_id = organizations.id) as project_count
+        FROM organizations
+        ORDER BY created_at DESC
+      `);
+
+      return result.recordset;
+    } catch (error) {
+      console.error('Error fetching all organizations:', error);
+      throw error;
     }
   }
 
@@ -1702,10 +1720,10 @@ export class FmbStorage implements IStorage {
   async getUserById(userId: string): Promise<User | null> {
     try {
       console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
-      
+
       const request = this.pool!.request();
       request.input('userId', sql.NVarChar(255), userId);
-      
+
       const result = await request.query(`
         SELECT 
           id,
@@ -1729,7 +1747,7 @@ export class FmbStorage implements IStorage {
         role: user.role,
         email: user.email 
       } : 'Not found');
-      
+
       return user || null;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting user by ID:', error);
