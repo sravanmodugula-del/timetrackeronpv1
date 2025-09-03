@@ -1,0 +1,13 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .fmb-icon { fill: #2D4A2D; font-family: Arial, sans-serif; font-weight: bold; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="1" y="1" width="22" height="22" rx="3" fill="#F8F9FA" stroke="#2D4A2D" stroke-width="0.5"/>
+
+  <!-- FMB Text -->
+  <text x="12" y="16" font-size="8" text-anchor="middle" class="fmb-icon">FMB</text>
+</svg>

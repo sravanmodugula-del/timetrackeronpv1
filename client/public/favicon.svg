@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .fmb-favicon { fill: #2D4A2D; font-family: Arial, sans-serif; font-weight: bold; }
+    </style>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#F8F9FA" stroke="#2D4A2D" stroke-width="1"/>
+
+  <!-- FMB Text -->
+  <text x="16" y="20" font-size="10" text-anchor="middle" class="fmb-favicon">FMB</text>
+</svg>

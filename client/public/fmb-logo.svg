@@ -1,0 +1,14 @@
+<svg width="400" height="120" viewBox="0 0 400 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .fmb-text { fill: #2D4A2D; font-family: Arial, sans-serif; font-weight: bold; }
+      .tracker-text { fill: #666666; font-family: Arial, sans-serif; font-weight: normal; letter-spacing: 0.2em; }
+    </style>
+  </defs>
+
+  <!-- FMB Text -->
+  <text x="200" y="55" font-size="48" text-anchor="middle" class="fmb-text">FMB</text>
+
+  <!-- TIME TRACKER PRO Text -->
+  <text x="200" y="80" font-size="12" text-anchor="middle" class="tracker-text">TIME TRACKER PRO</text>
+</svg>

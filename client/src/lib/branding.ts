@@ -57,19 +57,20 @@ export interface BrandingConfig {
 
 // Default branding - customize this for your organization
 export const defaultBranding: BrandingConfig = {
-  companyName: "Your Company",
-  appName: "TimeTracker Pro",
-  tagline: "Professional Time Management Solution",
+  companyName: "Farmers & Merchants Bank",
+  appName: "FMB TimeTracker",
+  tagline: "Professional Time Management for Banking Excellence",
   
   logo: {
-    text: "TimeTracker Pro", // Will use this if no logo URL provided
+    url: "/fmb-logo.svg", // Custom FMB logo
+    text: "FMB TimeTracker", // Fallback text
   },
   
   colors: {
-    primary: "hsl(207, 90%, 54%)", // Blue
-    primaryForeground: "hsl(210, 40%, 98%)",
-    secondary: "hsl(210, 40%, 96%)",
-    accent: "hsl(210, 40%, 96%)",
+    primary: "hsl(43, 74%, 49%)", // Gold/Bronze matching FMB branding
+    primaryForeground: "hsl(33, 43%, 10%)", // Dark brown
+    secondary: "hsl(33, 43%, 95%)", // Light cream
+    accent: "hsl(43, 74%, 85%)", // Light gold
     success: "hsl(142, 71%, 45%)",
     warning: "hsl(38, 92%, 50%)",
     error: "hsl(0, 84%, 60%)",
@@ -118,6 +119,24 @@ export const defaultBranding: BrandingConfig = {
 // Custom branding configurations for different themes
 
 export const brandingThemes = {
+  // Modern FMB Theme (Default)
+  modern: {
+    ...defaultBranding,
+    colors: {
+      primary: "hsl(207, 90%, 54%)",
+      primaryForeground: "hsl(210, 40%, 98%)",
+      secondary: "hsl(210, 40%, 96%)",
+      accent: "hsl(220, 100%, 98%)",
+      success: "hsl(142, 71%, 45%)",
+      warning: "hsl(38, 92%, 50%)",
+      error: "hsl(0, 84%, 60%)",
+    },
+    fonts: {
+      heading: "'Inter', system-ui, -apple-system, sans-serif",
+      body: "'Inter', system-ui, -apple-system, sans-serif",
+    },
+  },
+  
   // Corporate Blue Theme
   corporate: {
     ...defaultBranding,
@@ -180,9 +199,9 @@ export function getBranding(): BrandingConfig {
   // You can add logic here to load branding from environment variables,
   // database, or local storage for multi-tenant applications
   
-  // For now, return the default branding
-  // You can change this to any theme: corporate, eco, professional, tech
-  return defaultBranding;
+  // For now, return the modern theme for FMB
+  // You can change this to any theme: modern, corporate, eco, professional, tech
+  return brandingThemes.modern;
 }
 
 // Apply branding colors to CSS variables
