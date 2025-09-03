@@ -74,8 +74,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       taskId: entry.task_id || "",
       description: entry.description,
       date: entry.date.toString().split('T')[0],
-      startTime: entry.start_time ? new Date(entry.start_time).toTimeString().slice(0, 5) : "",
-      endTime: entry.end_time ? new Date(entry.end_time).toTimeString().slice(0, 5) : "",
+      startTime: typeof entry.start_time === 'string' ? entry.start_time : "",
+      endTime: typeof entry.end_time === 'string' ? entry.end_time : "",
       duration: entry.duration?.toString() || "",
     },
   });
