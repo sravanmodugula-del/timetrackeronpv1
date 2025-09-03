@@ -1715,12 +1715,12 @@ export class FmbStorage implements IStorage {
       // ALWAYS calculate today's hours regardless of the date range filter
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-      
+
       // Get start of week (Monday)
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay() + 1);
       const weekStartStr = startOfWeek.toISOString().split('T')[0];
-      
+
       // Get start of month
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthStartStr = startOfMonth.toISOString().split('T')[0];
@@ -2155,7 +2155,7 @@ export class FmbStorage implements IStorage {
 
       if (!result.recordset || result.recordset.length === 0) {
         console.log('📋 [FMB-STORAGE] No recent activity found - checking all time entries for user');
-        
+
         // Debug query to see what time entries exist
         const debugRequest = this.pool.request();
         debugRequest.input('debugUserId', sql.NVarChar(255), userId);
@@ -2167,7 +2167,7 @@ export class FmbStorage implements IStorage {
           ORDER BY te.date DESC, te.created_at DESC
         `);
         console.log('📋 [FMB-STORAGE] Debug - All recent time entries for user:', debugResult.recordset);
-        
+
         return [];
       }
 
@@ -2177,7 +2177,7 @@ export class FmbStorage implements IStorage {
         type: 'time_entry',
         description: row.description || 'No description',
         date: row.date,
-        created_at: row.created_at || row.date,
+        created_at: row.created_at,
         hours: parseFloat(row.hours || 0),
         duration: parseFloat(row.duration || row.hours || 0),
         project: {
@@ -2343,14 +2343,14 @@ export class FmbStorage implements IStorage {
         procedure: error?.procName,
         lineNumber: error?.lineNumber
       });
-      
+
       // Return empty array instead of throwing to prevent 500 errors
       return [];
     }
   }
 
   // Department Hours Summary for Dashboard
-  async getDepartmentHoursSummary(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
+  async getDepartmentHoursSummary(userId: string, startDate: string, endDate: string): Promise<any> {
     try {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
@@ -2364,18 +2364,22 @@ export class FmbStorage implements IStorage {
 
       const result = await request.query(`
         SELECT
-          COALESCE(d.name, 'No Department') as department_name,
-          COALESCE(SUM(te.hours), 0) as total_hours,
-          COUNT(DISTINCT te.user_id) as employee_count,
-          COUNT(te.id) as entry_count
-        FROM time_entries te
-        LEFT JOIN users u ON te.user_id = u.id
-        LEFT JOIN departments d ON u.department = d.name
-        WHERE te.user_id = @userId ${dateFilter}
-        GROUP BY d.name
-        ORDER BY total_hours DESC
+          COALESCE(d.name, 'No Department') as departmentName,
+          d.id as departmentId,
+          CAST(COALESCE(SUM(te.hours), 0) AS FLOAT) as totalHours,
+          COUNT(DISTINCT te.user_id) as employeeCount,
+          COUNT(te.id) as entryCount
+        FROM departments d
+        LEFT JOIN users u ON u.department = d.name
+        LEFT JOIN time_entries te ON te.user_id = u.id ${dateFilter.replace('WHERE te.user_id = @userId', '')}
+        WHERE d.organization_id IN (
+          SELECT organization_id FROM users WHERE id = @userId
+        )
+        GROUP BY d.id, d.name
+        ORDER BY totalHours DESC
       `);
 
+      console.log('🏢 [FMB-STORAGE] Department hours query result:', result.recordset);
       return result.recordset;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting department hours summary:', error);
