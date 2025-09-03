@@ -220,12 +220,14 @@ export default function TimeEntryForm() {
         };
       } else {
         const manualData = data as ManualDurationFormData;
+        // Ensure duration is always a number, whether from hours or duration field
+        const durationValue = manualData.hours || manualData.duration;
         entryData = {
           projectId: manualData.projectId,
           taskId: manualData.taskId,
           description: manualData.description,
           date: manualData.date,
-          duration: parseFloat(manualData.duration),
+          duration: typeof durationValue === 'string' ? parseFloat(durationValue) : Number(durationValue),
         };
       }
 
