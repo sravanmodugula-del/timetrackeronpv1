@@ -982,7 +982,11 @@ export class FmbStorage implements IStorage {
     try {
       console.log('🕒 [FMB-STORAGE] Fetching time entries for user:', userId, 'filters:', filters);
 
-      const request = this.pool!.request();
+      if (!this.pool) {
+        throw new Error('Database pool not available');
+      }
+
+      const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
       let query = `
@@ -1002,6 +1006,7 @@ export class FmbStorage implements IStorage {
           p.name as project_name,
           p.project_number,
           p.status as project_status,
+          p.color as project_color,
           t.title as task_name,
           t.description as task_description
         FROM time_entries te
@@ -1013,27 +1018,45 @@ export class FmbStorage implements IStorage {
       if (filters?.projectId && filters.projectId !== 'all') {
         query += ` AND te.project_id = @projectId`;
         request.input('projectId', sql.NVarChar(255), filters.projectId);
+        console.log('🔍 [FMB-STORAGE] Filtering by project:', filters.projectId);
       }
 
       if (filters?.startDate) {
         query += ` AND te.date >= @startDate`;
         request.input('startDate', sql.Date, new Date(filters.startDate));
+        console.log('🔍 [FMB-STORAGE] Filtering start date:', filters.startDate);
       }
 
       if (filters?.endDate) {
         query += ` AND te.date <= @endDate`;
         request.input('endDate', sql.Date, new Date(filters.endDate));
+        console.log('🔍 [FMB-STORAGE] Filtering end date:', filters.endDate);
       }
 
       query += ` ORDER BY te.date DESC, te.created_at DESC`;
 
-      if (filters?.limit) {
+      if (filters?.limit && filters.limit > 0) {
         query += ` OFFSET ${filters.offset || 0} ROWS FETCH NEXT ${filters.limit} ROWS ONLY`;
       }
 
-      console.log('🔍 [FMB-STORAGE] Executing time entries query:', query.substring(0, 200) + '...');
+      console.log('🔍 [FMB-STORAGE] Executing time entries query:', query.substring(0, 300) + '...');
 
       const result = await request.query(query);
+
+      console.log('🔍 [FMB-STORAGE] Time entries raw result:', {
+        recordCount: result.recordset?.length || 0,
+        firstRecord: result.recordset?.[0] ? {
+          id: result.recordset[0].id,
+          date: result.recordset[0].date,
+          hours: result.recordset[0].hours,
+          project_name: result.recordset[0].project_name
+        } : null
+      });
+
+      if (!result.recordset || result.recordset.length === 0) {
+        console.log('🔍 [FMB-STORAGE] No time entries found for the given criteria');
+        return [];
+      }
 
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
@@ -1043,17 +1066,24 @@ export class FmbStorage implements IStorage {
         date: row.date,
         start_time: row.start_time,
         end_time: row.end_time,
-        duration: row.duration || row.hours,
-        hours: row.hours || row.duration,
-        description: row.description,
+        duration: parseFloat(row.duration || row.hours || 0),
+        hours: parseFloat(row.hours || row.duration || 0),
+        description: row.description || '',
         created_at: row.created_at,
         updated_at: row.updated_at,
         project: row.project_name ? {
           id: row.project_id,
           name: row.project_name,
           project_number: row.project_number,
-          status: row.project_status
-        } : undefined,
+          status: row.project_status,
+          color: row.project_color || '#1976D2'
+        } : {
+          id: row.project_id,
+          name: 'Unknown Project',
+          project_number: null,
+          status: 'unknown',
+          color: '#1976D2'
+        },
         task: row.task_name ? {
           id: row.task_id,
           name: row.task_name,
@@ -1062,6 +1092,14 @@ export class FmbStorage implements IStorage {
       }));
 
       console.log(`✅ [FMB-STORAGE] Found ${timeEntries.length} time entries for user ${userId}`);
+      console.log('✅ [FMB-STORAGE] Sample entries:', timeEntries.slice(0, 3).map(e => ({
+        id: e.id,
+        date: e.date,
+        hours: e.hours,
+        project: e.project?.name,
+        description: e.description?.substring(0, 50)
+      })));
+
       return timeEntries;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error fetching time entries:', {
@@ -1069,7 +1107,8 @@ export class FmbStorage implements IStorage {
         userId,
         filters
       });
-      throw error;
+      // Return empty array instead of throwing to prevent crashes
+      return [];
     }
   }
 
@@ -1667,66 +1706,96 @@ export class FmbStorage implements IStorage {
   // Dashboard Stats
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
     try {
-      const request = this.pool.request();
-      request.input('userId', sql.NVarChar(255), userId);
+      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId);
 
-      // Get today's date for filtering
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+      if (!this.pool) {
+        throw new Error('Database pool not available');
+      }
+
+      // Get current date in UTC
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
       
       // Get start of week (Monday)
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay() + 1);
       const weekStartStr = startOfWeek.toISOString().split('T')[0];
       
       // Get start of month
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const monthStartStr = startOfMonth.toISOString().split('T')[0];
 
-      let dateFilter = '';
-      if (startDate && endDate) {
-        request.input('startDate', sql.Date, startDate);
-        request.input('endDate', sql.Date, endDate);
-        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+      console.log('📊 [FMB-STORAGE] Date ranges:', {
+        today: todayStr,
+        weekStart: weekStartStr,
+        monthStart: monthStartStr
+      });
+
+      // Create separate requests for each query to avoid parameter conflicts
+      const todayRequest = this.pool.request();
+      todayRequest.input('userId', sql.NVarChar(255), userId);
+      todayRequest.input('todayDate', sql.Date, new Date(todayStr));
+
+      const weekRequest = this.pool.request();
+      weekRequest.input('userId', sql.NVarChar(255), userId);
+      weekRequest.input('weekStartDate', sql.Date, new Date(weekStartStr));
+
+      const monthRequest = this.pool.request();
+      monthRequest.input('userId', sql.NVarChar(255), userId);
+      monthRequest.input('monthStartDate', sql.Date, new Date(monthStartStr));
+
+      const projectsRequest = this.pool.request();
+      projectsRequest.input('userId', sql.NVarChar(255), userId);
+
+      // Execute queries with proper error handling
+      try {
+        const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
+          todayRequest.query(`
+            SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
+            FROM time_entries te
+            WHERE te.user_id = @userId AND te.date = @todayDate
+          `),
+          weekRequest.query(`
+            SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
+            FROM time_entries te
+            WHERE te.user_id = @userId AND te.date >= @weekStartDate
+          `),
+          monthRequest.query(`
+            SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
+            FROM time_entries te
+            WHERE te.user_id = @userId AND te.date >= @monthStartDate
+          `),
+          projectsRequest.query(`
+            SELECT COUNT(DISTINCT p.id) as count
+            FROM projects p
+            WHERE p.user_id = @userId AND p.status = 'active'
+          `)
+        ]);
+
+        const stats = {
+          todayHours: parseFloat(todayResult.recordset[0]?.total_hours || 0),
+          weekHours: parseFloat(weekResult.recordset[0]?.total_hours || 0),
+          monthHours: parseFloat(monthResult.recordset[0]?.total_hours || 0),
+          activeProjects: parseInt(projectsResult.recordset[0]?.count || 0)
+        };
+
+        console.log('📊 [FMB-STORAGE] Dashboard stats calculated:', stats);
+        console.log('📊 [FMB-STORAGE] Raw results:', {
+          today: todayResult.recordset[0],
+          week: weekResult.recordset[0],
+          month: monthResult.recordset[0],
+          projects: projectsResult.recordset[0]
+        });
+
+        return stats;
+      } catch (queryError) {
+        console.error('🔴 [FMB-STORAGE] Query execution error in dashboard stats:', queryError);
+        throw queryError;
       }
 
-      // Get various time period stats
-      const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
-        request.query(`
-          SELECT COALESCE(SUM(hours), 0) as total_hours
-          FROM time_entries te
-          WHERE te.user_id = @userId AND te.date = '${todayStr}'
-        `),
-        request.query(`
-          SELECT COALESCE(SUM(hours), 0) as total_hours
-          FROM time_entries te
-          WHERE te.user_id = @userId AND te.date >= '${weekStartStr}'
-        `),
-        request.query(`
-          SELECT COALESCE(SUM(hours), 0) as total_hours
-          FROM time_entries te
-          WHERE te.user_id = @userId AND te.date >= '${monthStartStr}'
-        `),
-        request.query(`
-          SELECT COUNT(DISTINCT p.id) as count
-          FROM projects p
-          LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
-          WHERE p.user_id = @userId AND p.status = 'active'
-        `)
-      ]);
-
-      const stats = {
-        todayHours: parseFloat(todayResult.recordset[0]?.total_hours || 0),
-        weekHours: parseFloat(weekResult.recordset[0]?.total_hours || 0),
-        monthHours: parseFloat(monthResult.recordset[0]?.total_hours || 0),
-        activeProjects: parseInt(projectsResult.recordset[0]?.count || 0)
-      };
-
-      console.log('📊 [FMB-STORAGE] Dashboard stats result:', stats);
-
-      return stats;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting dashboard stats:', error);
+      // Return safe defaults instead of throwing
       return {
         todayHours: 0,
         weekHours: 0,
@@ -2027,56 +2096,90 @@ export class FmbStorage implements IStorage {
   // Dashboard Methods
   async getRecentActivity(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<any[]> {
     try {
+      console.log('📋 [FMB-STORAGE] Getting recent activity for user:', userId, 'limit:', limit);
+
+      if (!this.pool) {
+        throw new Error('Database pool not available');
+      }
+
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
       let limitClause = '';
-      if (limit) {
+      if (limit && limit > 0) {
         limitClause = `TOP ${limit}`;
       }
 
       let dateFilter = '';
       if (startDate && endDate) {
-        request.input('startDate', sql.Date, startDate);
-        request.input('endDate', sql.Date, endDate);
+        request.input('startDate', sql.Date, new Date(startDate));
+        request.input('endDate', sql.Date, new Date(endDate));
         dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+        console.log('📋 [FMB-STORAGE] Using date filter for recent activity:', { startDate, endDate });
       }
 
-      const result = await request.query(`
+      const query = `
         SELECT ${limitClause}
           te.id,
-          'time_entry' as type,
           te.description,
-          te.date as created_at,
+          te.date,
           te.hours,
           te.duration,
+          te.created_at,
           p.id as project_id,
-          p.name as project_name
+          p.name as project_name,
+          p.color as project_color
         FROM time_entries te
         INNER JOIN projects p ON te.project_id = p.id
         WHERE te.user_id = @userId ${dateFilter}
-        ORDER BY te.created_at DESC, te.date DESC
-      `);
+        ORDER BY te.date DESC, te.created_at DESC
+      `;
+
+      console.log('📋 [FMB-STORAGE] Executing recent activity query:', query.substring(0, 200) + '...');
+
+      const result = await request.query(query);
+
+      console.log('📋 [FMB-STORAGE] Recent activity raw result:', {
+        recordCount: result.recordset?.length || 0,
+        firstRecord: result.recordset?.[0]
+      });
+
+      if (!result.recordset || result.recordset.length === 0) {
+        console.log('📋 [FMB-STORAGE] No recent activity found');
+        return [];
+      }
 
       // Transform the results to match the expected frontend structure
       const activities = result.recordset.map(row => ({
         id: row.id,
-        type: row.type,
-        description: row.description || '',
-        created_at: row.created_at,
-        date: row.created_at,
-        hours: row.hours,
-        duration: row.duration || row.hours,
+        description: row.description || 'No description',
+        date: row.date,
+        created_at: row.created_at || row.date,
+        hours: parseFloat(row.hours || 0),
+        duration: parseFloat(row.duration || row.hours || 0),
         project: {
           id: row.project_id,
-          name: row.project_name
+          name: row.project_name || 'Unknown Project',
+          color: row.project_color || '#1976D2'
         }
       }));
+
+      console.log('📋 [FMB-STORAGE] Recent activity transformed:', {
+        count: activities.length,
+        activities: activities.map(a => ({
+          id: a.id,
+          description: a.description?.substring(0, 50),
+          project: a.project.name,
+          hours: a.hours,
+          date: a.date
+        }))
+      });
 
       return activities;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting recent activity:', error);
-      throw error;
+      // Return empty array instead of throwing
+      return [];
     }
   }
 
@@ -2088,50 +2191,57 @@ export class FmbStorage implements IStorage {
         throw new Error('Database pool not available');
       }
 
-      const request = this.pool.request();
-      request.input('userId', sql.NVarChar(255), userId);
+      // First, let's check what time entries exist for this user
+      const checkRequest = this.pool.request();
+      checkRequest.input('userId', sql.NVarChar(255), userId);
 
-      // Add date parameters if provided
-      if (startDate && endDate) {
-        request.input('startDate', sql.Date, new Date(startDate));
-        request.input('endDate', sql.Date, new Date(endDate));
-        console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
-      }
-
-      // First, let's check if there are any time entries for this user
-      const timeEntriesCheck = await request.query(`
+      const timeEntriesCheck = await checkRequest.query(`
         SELECT COUNT(*) as total_entries, 
                COUNT(DISTINCT project_id) as unique_projects,
                MIN(date) as earliest_date,
                MAX(date) as latest_date,
-               SUM(hours) as total_hours
+               SUM(CAST(hours as DECIMAL(10,2))) as total_hours
         FROM time_entries 
         WHERE user_id = @userId
       `);
 
       console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
 
-      // Build the query with proper date filtering
+      // If no time entries, return empty breakdown
+      if (timeEntriesCheck.recordset[0]?.total_entries === 0) {
+        console.log('📊 [FMB-STORAGE] No time entries found for user');
+        return [];
+      }
+
+      // Create a new request for the main query
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+
+      // Build the query to get project breakdown
       let breakdownQuery = `
         SELECT
           p.id,
           p.name,
           COALESCE(p.color, '#1976D2') as color,
-          COALESCE(SUM(te.hours), 0) as total_hours,
+          COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
           COUNT(te.id) as entry_count
         FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
+        INNER JOIN time_entries te ON p.id = te.project_id
+        WHERE te.user_id = @userId
       `;
 
-      // Add date filter to the JOIN condition if dates are provided
+      // Add date filter if provided
       if (startDate && endDate) {
+        request.input('startDate', sql.Date, new Date(startDate));
+        request.input('endDate', sql.Date, new Date(endDate));
         breakdownQuery += ` AND te.date >= @startDate AND te.date <= @endDate`;
+        console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
       }
 
       breakdownQuery += `
-        WHERE p.user_id = @userId
         GROUP BY p.id, p.name, p.color
-        ORDER BY COALESCE(SUM(te.hours), 0) DESC
+        HAVING SUM(CAST(te.hours as DECIMAL(10,2))) > 0
+        ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
       `;
 
       console.log('📊 [FMB-STORAGE] Executing breakdown query:', breakdownQuery);
@@ -2145,26 +2255,40 @@ export class FmbStorage implements IStorage {
         return [];
       }
 
-      // Transform to camelCase and calculate percentages
+      // Calculate total hours for percentage calculation
       const totalHours = result.recordset.reduce((sum, item) => sum + parseFloat(item.total_hours || 0), 0);
 
-      const breakdown = result.recordset.map(row => ({
-        project: {
-          id: row.id,
-          name: row.name,
-          color: row.color || '#1976D2'
-        },
-        totalHours: parseFloat(row.total_hours || 0),
-        total_hours: parseFloat(row.total_hours || 0), // Add snake_case for compatibility
-        entryCount: parseInt(row.entry_count || 0),
-        entry_count: parseInt(row.entry_count || 0), // Add snake_case for compatibility
-        percentage: totalHours > 0 ? Math.round((parseFloat(row.total_hours || 0) / totalHours) * 100) : 0
-      }));
+      console.log('📊 [FMB-STORAGE] Total hours across all projects:', totalHours);
+
+      // Transform to the expected format
+      const breakdown = result.recordset.map(row => {
+        const hours = parseFloat(row.total_hours || 0);
+        const entryCount = parseInt(row.entry_count || 0);
+        const percentage = totalHours > 0 ? Math.round((hours / totalHours) * 100) : 0;
+
+        return {
+          project: {
+            id: row.id,
+            name: row.name,
+            color: row.color || '#1976D2'
+          },
+          totalHours: hours,
+          total_hours: hours, // Add snake_case for compatibility
+          entryCount: entryCount,
+          entry_count: entryCount, // Add snake_case for compatibility
+          percentage: percentage
+        };
+      });
 
       console.log('📊 [FMB-STORAGE] Project breakdown result:', {
         totalRecords: breakdown.length,
         totalHours,
-        breakdown: breakdown
+        breakdown: breakdown.map(b => ({
+          project: b.project.name,
+          hours: b.totalHours,
+          entries: b.entryCount,
+          percentage: b.percentage
+        }))
       });
 
       return breakdown;
