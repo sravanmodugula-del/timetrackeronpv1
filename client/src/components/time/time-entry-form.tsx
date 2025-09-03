@@ -206,6 +206,8 @@ export default function TimeEntryForm() {
         const end = new Date(`2000-01-01T${timeData.endTime}:00`);
         const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
+        const durationValue = parseFloat(duration.toFixed(2));
+        
         entryData = {
           projectId: timeData.projectId,
           taskId: timeData.taskId,
@@ -213,17 +215,25 @@ export default function TimeEntryForm() {
           date: timeData.date,
           startTime: timeData.startTime,
           endTime: timeData.endTime,
-          duration: parseFloat(duration.toFixed(2))
+          duration: durationValue,
+          hours: durationValue // Also set hours field for compatibility
         };
       } else {
         const manualData = data as ManualDurationFormData;
+        
+        // Ensure duration is sent as a number, not string
+        const durationValue = parseFloat(manualData.duration);
+        if (isNaN(durationValue)) {
+          throw new Error("Invalid duration value");
+        }
         
         entryData = {
           projectId: manualData.projectId,
           taskId: manualData.taskId,
           description: manualData.description || "",
           date: manualData.date,
-          duration: parseFloat(manualData.duration)
+          duration: durationValue,
+          hours: durationValue // Also set hours field for compatibility
         };
       }
 
