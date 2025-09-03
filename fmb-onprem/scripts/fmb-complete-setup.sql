@@ -217,8 +217,8 @@ CREATE TABLE time_entries (
     hours DECIMAL(5,2) NOT NULL DEFAULT 0,
     duration DECIMAL(5,2) NOT NULL,
     date DATE NOT NULL,
-    start_time NVARCHAR(8), -- Changed to VARCHAR to match frontend format "HH:MM"
-    end_time NVARCHAR(8), -- Changed to VARCHAR to match frontend format "HH:MM"
+    start_time NVARCHAR(8), -- Format: "HH:MM" (e.g., "09:00")
+    end_time NVARCHAR(8), -- Format: "HH:MM" (e.g., "17:30")
     status NVARCHAR(50) NOT NULL DEFAULT 'draft',
     billable BIT NOT NULL DEFAULT 0,
     is_billable BIT NOT NULL DEFAULT 0,
@@ -583,9 +583,9 @@ VALUES
 -- Sample time entries
 INSERT INTO time_entries (id, user_id, project_id, task_id, description, hours, duration, date, start_time, end_time, is_billable, created_at, updated_at)
 VALUES 
-('te-001', 'admin-001', 'proj-sample', 'task-001', 'Morning development work', 1.5, 1.5, '2024-01-15', '2024-01-15 09:00:00', '2024-01-15 10:30:00', 1, GETDATE(), GETDATE()),
-('te-002', 'admin-001', 'proj-sample', 'task-002', 'Testing and debugging', 1.25, 1.25, '2024-01-15', '2024-01-15 10:45:00', '2024-01-15 12:00:00', 1, GETDATE(), GETDATE()),
-('te-003', 'admin-001', 'proj-sample', 'task-001', 'System configuration', 2.5, 2.5, '2024-01-15', '2024-01-15 14:00:00', '2024-01-15 16:30:00', 1, GETDATE(), GETDATE());
+('te-001', 'admin-001', 'proj-sample', 'task-001', 'Morning development work', 1.5, 1.5, '2024-01-15', '09:00', '10:30', 1, GETDATE(), GETDATE()),
+('te-002', 'admin-001', 'proj-sample', 'task-002', 'Testing and debugging', 1.25, 1.25, '2024-01-15', '10:45', '12:00', 1, GETDATE(), GETDATE()),
+('te-003', 'admin-001', 'proj-sample', 'task-001', 'System configuration', 2.5, 2.5, '2024-01-15', '14:00', '16:30', 1, GETDATE(), GETDATE());
 GO
 
 -- =============================================================================
