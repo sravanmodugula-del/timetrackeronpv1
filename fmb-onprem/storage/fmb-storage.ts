@@ -589,13 +589,11 @@ export class FmbStorage implements IStorage {
   async getProjects(): Promise<Project[]> {
     try {
       const result = await this.pool.request()
-        .input('user_id', this.userId)
         .query(`
           SELECT p.*, o.name as organization_name, d.name as department_name
           FROM projects p
           LEFT JOIN organizations o ON p.organization_id = o.id
           LEFT JOIN departments d ON p.department_id = d.id
-          WHERE p.user_id = @user_id OR p.is_enterprise_wide = 1
           ORDER BY p.created_at DESC
         `);
 
@@ -760,7 +758,7 @@ export class FmbStorage implements IStorage {
       const result = await this.pool.request()
         .input('user_id', this.userId)
         .query(`
-          SELECT t.*, p.name as project_name
+          SELECT t.*, p.name as project_name, p.is_enterprise_wide
           FROM tasks t
           INNER JOIN projects p ON t.project_id = p.id
           WHERE p.user_id = @user_id OR p.is_enterprise_wide = 1
@@ -780,7 +778,7 @@ export class FmbStorage implements IStorage {
         .input('task_id', id)
         .input('user_id', userId || this.userId)
         .query(`
-          SELECT t.*, p.name as project_name
+          SELECT t.*, p.name as project_name, p.is_enterprise_wide
           FROM tasks t
           INNER JOIN projects p ON t.project_id = p.id
           WHERE t.id = @task_id
@@ -810,15 +808,13 @@ export class FmbStorage implements IStorage {
       console.log("📋 [FMB-STORAGE] Fetching all tasks with project info for user:", userId);
 
       const request = this.pool.request();
-      request.input('userId', this.sql.NVarChar, userId);
+      request.input('userId', sql.NVarChar, userId);
 
-      const result = await this.executeWithRetry(
-        request,
-        `
+      const result = await request.query(`
         SELECT 
           t.id,
           t.project_id,
-          t.name,
+          t.title as name,
           t.title,
           t.description,
           t.status,
@@ -831,14 +827,13 @@ export class FmbStorage implements IStorage {
           t.created_at,
           t.updated_at,
           p.name as project_name,
-          p.color as project_color
+          p.color as project_color,
+          p.is_enterprise_wide
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
-        WHERE p.user_id = @userId
+        WHERE p.user_id = @userId OR p.is_enterprise_wide = 1
         ORDER BY t.created_at DESC
-        `,
-        executeId
-      );
+      `);
 
       const tasks = result.recordset.map((row: any) => ({
         id: row.id,
@@ -862,7 +857,7 @@ export class FmbStorage implements IStorage {
         }
       }));
 
-      console.log("📋 [FMB-STORAGE] Found all user tasks with project info:", tasks.length);
+      console.log("📋 [FMB-STORAGE] Found all user tasks including enterprise-wide:", tasks.length);
       console.log("📋 [FMB-STORAGE] All user task details:", tasks.map(t => ({
         id: t.id,
         name: t.name,
@@ -1527,12 +1522,31 @@ export class FmbStorage implements IStorage {
 
   // Department Methods
   async getDepartments(): Promise<Department[]> {
-    const result = await this.execute(`
-      SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name
-      FROM departments d
-      LEFT JOIN employees e ON d.manager_id = e.id
-    `);
-    return result;
+    try {
+      this.storageLog('GET_ALL_DEPARTMENTS', 'Fetching all departments for all users');
+      
+      const result = await this.execute(`
+        SELECT d.*, 
+               e.first_name as manager_first_name, 
+               e.last_name as manager_last_name,
+               o.name as organization_name
+        FROM departments d
+        LEFT JOIN employees e ON d.manager_id = e.id
+        LEFT JOIN organizations o ON d.organization_id = o.id
+        ORDER BY d.created_at DESC
+      `);
+      
+      this.storageLog('GET_ALL_DEPARTMENTS', 'All departments fetched successfully', {
+        count: result.length
+      });
+      
+      return result;
+    } catch (error) {
+      this.storageLog('GET_ALL_DEPARTMENTS', 'Failed to fetch all departments', {
+        error: error.message
+      });
+      throw new Error(`Failed to fetch departments: ${error.message}`);
+    }
   }
 
   async getDepartmentsByUserId(userId: string): Promise<Department[]> {
