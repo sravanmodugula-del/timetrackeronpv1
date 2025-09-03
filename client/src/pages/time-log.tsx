@@ -22,6 +22,14 @@ export default function TimeLog() {
   const [dateRange, setDateRange] = useState<string>("month");
   const [editingEntry, setEditingEntry] = useState<TimeEntryWithProject | null>(null);
 
+  // Debug logging for state changes
+  console.log('🕒 [TIME-LOG] Component state:', {
+    selectedProject,
+    dateRange,
+    isAuthenticated,
+    isLoading
+  });
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -90,20 +98,37 @@ export default function TimeLog() {
   const { data: timeEntries, isLoading: entriesLoading, refetch } = useQuery<TimeEntryWithProject[]>({
     queryKey: ["/api/time-entries", { projectId: selectedProject, startDate, endDate }],
     queryFn: async () => {
+      console.log('🕒 [TIME-LOG] Fetching time entries with params:', {
+        projectId: selectedProject,
+        startDate,
+        endDate
+      });
+      
       const params = new URLSearchParams({
         projectId: selectedProject,
         startDate,
         endDate,
       });
       const response = await fetch(`/api/time-entries?${params}`);
+      
+      console.log('🕒 [TIME-LOG] API response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🕒 [TIME-LOG] API error:', errorText);
         throw new Error(`${response.status}: ${response.statusText}`);
       }
+      
       const data = await response.json();
+      console.log('🕒 [TIME-LOG] Received time entries:', data?.length || 0);
+      
       return Array.isArray(data) ? data : [];
     },
     enabled: isAuthenticated,
-    select: (data) => Array.isArray(data) ? data : [],
+    select: (data) => {
+      console.log('🕒 [TIME-LOG] Selected time entries:', data?.length || 0);
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   const handleDeleteEntry = async (entryId: string) => {
