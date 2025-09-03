@@ -417,6 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         start_date: data.startDate || null,
         end_date: data.endDate || null,
         project_number: data.projectNumber?.trim() || null,
+        color: data.color || null,
         is_enterprise_wide: !!data.isEnterpriseWide,
       };
 
@@ -462,6 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         start_date: data.startDate || null,
         end_date: data.endDate || null,
         project_number: data.projectNumber?.trim() || null,
+        color: data.color || null,
         is_enterprise_wide: !!data.isEnterpriseWide,
       };
 
