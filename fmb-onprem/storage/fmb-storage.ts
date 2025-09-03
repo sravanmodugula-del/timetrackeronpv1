@@ -1314,32 +1314,87 @@ export class FmbStorage implements IStorage {
     return result[0];
   }
 
-  async updateTimeEntry(id: string, timeEntryData: Partial<InsertTimeEntry>): Promise<TimeEntry> {
-    const fields = [];
-    const params = [];
-    let paramIndex = 0;
+  async updateTimeEntry(id: string, timeEntryData: Partial<InsertTimeEntry>, userId?: string): Promise<TimeEntry | null> {
+    try {
+      console.log(`🔧 [FMB-STORAGE] Updating time entry: ${id} for user: ${userId}`);
+      console.log(`🔧 [FMB-STORAGE] Update data:`, timeEntryData);
 
-    for (const [key, value] of Object.entries(timeEntryData)) {
-      if (value !== undefined) {
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = @param${paramIndex}`);
-        params.push(value);
-        paramIndex++;
+      // Check if entry exists and belongs to user
+      const existingEntry = await this.getTimeEntry(id, userId);
+      if (!existingEntry) {
+        console.log(`❌ [FMB-STORAGE] Time entry not found or access denied: ${id}`);
+        return null;
       }
+
+      const request = this.pool.request();
+      request.input('id', sql.NVarChar(255), id);
+
+      const fields: string[] = [];
+      let paramIndex = 1;
+
+      // Map specific fields with proper database column names
+      const fieldMappings: { [key: string]: string } = {
+        userId: 'user_id',
+        projectId: 'project_id',
+        taskId: 'task_id',
+        description: 'description',
+        date: 'date',
+        startTime: 'start_time',
+        endTime: 'end_time',
+        duration: 'duration',
+        hours: 'hours'
+      };
+
+      for (const [key, value] of Object.entries(timeEntryData)) {
+        // Use the correct key from fieldMappings or the original key if it's a direct match
+        const dbFieldKey = fieldMappings[key] || key;
+        if (value !== undefined && fieldMappings[key]) {
+          const dbField = fieldMappings[key];
+          const paramName = `param${paramIndex}`;
+
+          if (key === 'date') {
+            request.input(paramName, sql.Date, new Date(value as string));
+          } else if (key === 'duration' || key === 'hours') {
+            request.input(paramName, sql.Decimal(10, 2), parseFloat(value as string));
+          } else {
+            request.input(paramName, sql.NVarChar(255), value);
+          }
+
+          fields.push(`${dbField} = @${paramName}`);
+          paramIndex++;
+        }
+      }
+
+      if (fields.length > 0) {
+        fields.push('updated_at = GETDATE()');
+
+        const updateQuery = `
+          UPDATE time_entries
+          SET ${fields.join(', ')}
+          WHERE id = @id
+        `;
+
+        console.log(`🔧 [FMB-STORAGE] Executing update query:`, updateQuery);
+
+        const result = await request.query(updateQuery);
+
+        if (result.rowsAffected[0] === 0) {
+          console.log(`❌ [FMB-STORAGE] No rows updated for time entry: ${id}`);
+          return null;
+        }
+
+        console.log(`✅ [FMB-STORAGE] Time entry updated successfully: ${id}`);
+      }
+
+      // Retrieve and return the updated entry
+      const updatedEntry = await this.getTimeEntryById(id);
+      console.log(`🔧 [FMB-STORAGE] Retrieved updated entry:`, updatedEntry ? 'Found' : 'Not found');
+
+      return updatedEntry;
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error updating time entry:', error);
+      throw error;
     }
-
-    if (fields.length > 0) {
-      fields.push('updated_at = GETDATE()');
-      params.push(id);
-
-      await this.execute(`
-        UPDATE time_entries
-        SET ${fields.join(', ')}
-        WHERE id = @param${paramIndex}
-      `, params);
-    }
-
-    return await this.getTimeEntryById(id) as TimeEntry;
   }
 
   async deleteTimeEntry(id: string, userId?: string): Promise<boolean> {
