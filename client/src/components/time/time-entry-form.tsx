@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -197,7 +196,7 @@ export default function TimeEntryForm() {
   const createTimeEntry = useMutation({
     mutationFn: async (data: TimeRangeFormData | ManualDurationFormData) => {
       console.log("📝 Time Entry Request Data:", data);
-      
+
       let entryData: any;
 
       if (inputMode === "timeRange") {
@@ -207,33 +206,33 @@ export default function TimeEntryForm() {
         const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
         const durationValue = parseFloat(duration.toFixed(2));
-        
+
         entryData = {
-          projectId: timeData.projectId,
-          taskId: timeData.taskId,
+          project_id: timeData.projectId, // Changed to snake_case
+          task_id: timeData.taskId,       // Changed to snake_case
           description: timeData.description || "",
           date: timeData.date,
-          startTime: timeData.startTime,
-          endTime: timeData.endTime,
+          start_time: timeData.startTime, // Changed to snake_case
+          end_time: timeData.endTime,     // Changed to snake_case
           duration: durationValue,
-          hours: durationValue // Also set hours field for compatibility
+          hours: durationValue // This field is already present and correct
         };
       } else {
         const manualData = data as ManualDurationFormData;
-        
+
         // Ensure duration is sent as a number, not string
         const durationValue = parseFloat(manualData.duration);
         if (isNaN(durationValue)) {
           throw new Error("Invalid duration value");
         }
-        
+
         entryData = {
-          projectId: manualData.projectId,
-          taskId: manualData.taskId,
+          project_id: manualData.projectId, // Changed to snake_case
+          task_id: manualData.taskId,       // Changed to snake_case
           description: manualData.description || "",
           date: manualData.date,
           duration: durationValue,
-          hours: durationValue // Also set hours field for compatibility
+          hours: durationValue // This field is already present and correct
         };
       }
 
@@ -277,7 +276,7 @@ export default function TimeEntryForm() {
     },
     onError: (error) => {
       console.error("❌ Time entry creation error:", error);
-      
+
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -289,7 +288,7 @@ export default function TimeEntryForm() {
         }, 500);
         return;
       }
-      
+
       toast({
         title: "Error",
         description: error?.message || "Failed to create time entry",
