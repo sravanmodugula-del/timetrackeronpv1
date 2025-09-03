@@ -149,7 +149,7 @@ export default function Projects() {
         color: "#1976D2",
         startDate: "",
         endDate: "",
-        isEnterpriseWide: false,
+        isEnterpriseWide: true,
         assignedEmployeeIds: [],
       });
       toast({
@@ -230,7 +230,7 @@ export default function Projects() {
         color: "#1976D2",
         startDate: "",
         endDate: "",
-        isEnterpriseWide: false,
+        isEnterpriseWide: true,
         assignedEmployeeIds: [],
       });
       toast({
@@ -354,7 +354,7 @@ export default function Projects() {
       color: "#1976D2",
       startDate: "",
       endDate: "",
-      isEnterpriseWide: false,
+      isEnterpriseWide: true,
       assignedEmployeeIds: [],
     });
     setActiveTab("details");
@@ -372,7 +372,7 @@ export default function Projects() {
       color: "#1976D2",
       startDate: "",
       endDate: "",
-      isEnterpriseWide: false,
+      isEnterpriseWide: true,
       assignedEmployeeIds: [],
     });
   };
