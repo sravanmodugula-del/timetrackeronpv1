@@ -314,9 +314,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user_id: userId
       };
 
+      // Convert camelCase to snake_case for database
+      const formattedData = {
+        name: projectData.name,
+        description: projectData.description,
+        status: projectData.status,
+        organization_id: projectData.organizationId,
+        department_id: projectData.departmentId,
+        budget: projectData.budget,
+        start_date: projectData.startDate,
+        end_date: projectData.endDate,
+        project_number: projectData.projectNumber,
+        user_id: projectData.user_id,
+        is_enterprise_wide: !!req.body.isEnterpriseWide, // Assuming isEnterpriseWide is directly in req.body
+      };
+
+
       console.log(`📁 Creating project: "${projectData.name}" by user: ${user.email} (${userRole})`);
 
-      const project = await activeStorage.createProject(projectData);
+      const project = await activeStorage.createProject(formattedData);
 
       console.log(`✅ Project created successfully: ${project.id} - "${project.name}"`);
 
@@ -388,8 +404,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      const projectData = insertProjectSchema.partial().parse(req.body);
-      const project = await activeStorage.updateProject(id, projectData, userId);
+
+      // Validate and map request body to snake_case
+      const data = req.body;
+      const formattedData = {
+        name: data.name?.trim(),
+        description: data.description?.trim() || null,
+        status: data.status || 'active',
+        organization_id: data.organizationId || null,
+        department_id: data.departmentId || null,
+        budget: data.budget || null,
+        start_date: data.startDate || null,
+        end_date: data.endDate || null,
+        project_number: data.projectNumber?.trim() || null,
+        is_enterprise_wide: !!data.isEnterpriseWide,
+      };
+
+      // Filter out undefined values to allow partial updates
+      const updateData = Object.fromEntries(
+        Object.entries(formattedData).filter(([_, value]) => value !== undefined)
+      );
+
+      const project = await activeStorage.updateProject(id, updateData, userId);
 
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
@@ -413,8 +449,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
-      const projectData = insertProjectSchema.partial().parse(req.body);
-      const project = await activeStorage.updateProject(id, projectData, userId);
+
+      // Validate and map request body to snake_case
+      const data = req.body;
+      const formattedData = {
+        name: data.name?.trim(),
+        description: data.description?.trim() || null,
+        status: data.status || 'active',
+        organization_id: data.organizationId || null,
+        department_id: data.departmentId || null,
+        budget: data.budget || null,
+        start_date: data.startDate || null,
+        end_date: data.endDate || null,
+        project_number: data.projectNumber?.trim() || null,
+        is_enterprise_wide: !!data.isEnterpriseWide,
+      };
+
+      const project = await activeStorage.updateProject(id, formattedData, userId);
 
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
@@ -587,11 +638,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("📋 [API] Found tasks for project:", tasks?.length || 0);
 
       if (tasks && tasks.length > 0) {
-        console.log("📋 [API] Task details:", tasks.map(t => ({ 
-          id: t.id, 
-          name: t.name, 
+        console.log("📋 [API] Task details:", tasks.map(t => ({
+          id: t.id,
+          name: t.name,
           status: t.status,
-          project_id: t.project_id 
+          project_id: t.project_id
         })));
       }
 
@@ -614,12 +665,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const {projectId } = req.params;
       const { name, description, status } = req.body;
 
-      console.log("📝 Project Task Creation Request:", { 
-        projectId, 
-        name, 
-        description, 
+      console.log("📝 Project Task Creation Request:", {
+        projectId,
+        name,
+        description,
         status,
-        userId 
+        userId
       });
 
       if (!name?.trim()) {
@@ -670,7 +721,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code: error.code,
         stack: error.stack?.split('\n')
       });
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to create task",
         error: "Internal server error"
       });
@@ -711,9 +762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("✅ [API] Found tasks with project info:", allTasksWithProjects.length);
 
         if (allTasksWithProjects.length > 0) {
-          console.log("📋 [API] Task details with projects:", allTasksWithProjects.map(t => ({ 
-            id: t.id, 
-            name: t.name, 
+          console.log("📋 [API] Task details with projects:", allTasksWithProjects.map(t => ({
+            id: t.id,
+            name: t.name,
             status: t.status,
             project_id: t.project_id,
             project_name: t.project?.name
@@ -755,13 +806,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { name, title, description, status, project_id, projectId } = req.body;
 
-      console.log("📝 Task Creation Request:", { 
-        name, 
-        title, 
-        description, 
-        status, 
-        project_id: project_id || projectId, 
-        userId 
+      console.log("📝 Task Creation Request:", {
+        name,
+        title,
+        description,
+        status,
+        project_id: project_id || projectId,
+        userId
       });
 
       const taskName = name || title;
@@ -771,9 +822,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!taskName || !taskProjectId) {
         return res.status(400).json({
           message: "Name and projectId are required fields",
-          received: { 
-            name: !!taskName, 
-            projectId: !!taskProjectId 
+          received: {
+            name: !!taskName,
+            projectId: !!taskProjectId
           }
         });
       }
@@ -783,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verify project exists and user has access
       const project = await activeStorage.getProject(taskProjectId, userId);
       if (!project) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           message: "Project not found or access denied",
           projectId: taskProjectId
         });
@@ -823,19 +874,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid task data", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Invalid task data",
+          errors: error.errors
         });
       }
 
       if (error?.message?.includes('does not exist')) {
-        return res.status(404).json({ 
-          message: error.message 
+        return res.status(404).json({
+          message: error.message
         });
       }
 
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Failed to create task",
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
@@ -1344,7 +1395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user_id: userId
       };
 
-      console.log(`👤 Creating employee: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employee_id}) by user: ${user.email} (${userRole})`);
+      console.log(`👤 Creating employee: ${employeeData.first_name} ${employeeData.last_name} (${employeeData.employee_id}) by user: ${user.email} (${userRole})`);
 
       const employee = await activeStorage.createEmployee(employeeData);
 
