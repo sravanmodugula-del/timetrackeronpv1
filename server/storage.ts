@@ -108,7 +108,7 @@ export interface IStorage {
   // Dashboard and analytics
   getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any>;
   getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any>;
-  getRecentActivity(userId: string, limit?: number): Promise<any>;
+  getRecentActivity(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<any>;
   getDepartmentHoursSummary(userId: string, startDate: string, endDate: string): Promise<any>;
 
   // Database utilities
@@ -380,10 +380,10 @@ class StorageImplementation implements IStorage {
     return {};
   }
 
-  async getRecentActivity(userId: string, limit?: number): Promise<any> {
+  async getRecentActivity(userId: string, limit?: number, startDate?: string, endDate?: string): Promise<any> {
     const db = await this.getDb();
     if (typeof db.getRecentActivity === 'function') {
-      return await db.getRecentActivity(userId, limit);
+      return await db.getRecentActivity(userId, limit, startDate, endDate);
     }
     return [];
   }
