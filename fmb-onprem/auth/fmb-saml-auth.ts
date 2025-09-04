@@ -37,29 +37,29 @@ export async function setupFmbSamlAuth(app: Express) {
       // SP Configuration
       issuer: fmbConfig.saml.issuer,
       callbackUrl: fmbConfig.saml.callbackUrl,
-      
+
       // IDP Configuration
       idpCert: fmbConfig.saml.cert,
       entryPoint: fmbConfig.saml.entryPoint,
-      
+
       // NameID Configuration
       identifierFormat: fmbConfig.saml.nameIdFormat,
-      
+
       // Security Settings for IdP-initiated flow
       wantAssertionsSigned: true,
       wantAuthnResponseSigned: false,
       signatureAlgorithm: 'sha256',
-      
+
       // Validation Settings
       validateInResponseTo: 'never', // Critical for IdP-initiated flow
       audience: false, // Disable for flexibility
       acceptedClockSkewMs: 10000,
-      
+
       // Flow Optimization
       disableRequestedAuthnContext: true,
       skipRequestCompression: true,
       forceAuthn: false,
-      
+
       // Additional params
       additionalParams: {},
       additionalAuthorizeParams: {}
@@ -84,10 +84,10 @@ export async function setupFmbSamlAuth(app: Express) {
 
         // Check if user already exists to preserve their role
         const existingUser = await fmbStorage.getUserByEmail(email);
-        
+
         // Determine role: preserve existing role or use proper default from Role enum
         let userRole = Role.EMPLOYEE; // Default role from Role enum instead of 'user'
-        
+
         if (existingUser) {
           // Preserve existing role if user already exists
           userRole = existingUser.role;
@@ -113,7 +113,8 @@ export async function setupFmbSamlAuth(app: Express) {
           profile_image_url: null,
           role: userRole,
           organization_id: 'org-fmb', // Default organization ID since not provided by SAML
-          department: department
+          department: department,
+          last_login_at: new Date() // Update login timestamp during authentication
         });
 
         authLog('INFO', 'User upserted in database', { email });
@@ -343,14 +344,14 @@ export async function setupFmbSamlAuth(app: Express) {
   app.get('/login-error', (req, res) => {
     const reason = req.query.reason || 'unknown';
     authLog('ERROR', 'SAML login error page accessed', { reason, timestamp: new Date().toISOString() });
-    
+
     let errorMessage = 'There was an error during the authentication process.';
     if (reason === 'auth_error') {
       errorMessage = 'SAML authentication failed. Please check your credentials and try again.';
     } else if (reason === 'no_user') {
       errorMessage = 'Unable to retrieve user information from SAML response.';
     }
-    
+
     res.status(401).send(`
       <html>
         <head><title>FMB TimeTracker - Login Error</title></head>
@@ -373,7 +374,7 @@ export async function setupFmbSamlAuth(app: Express) {
 // SAML metadata generation function
 export function getFmbSamlMetadata(): string {
   const fmbConfig = getFmbConfig();
-  
+
   const metadata = `<?xml version="1.0" encoding="UTF-8"?>
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" 
                      entityID="${fmbConfig.saml.issuer}">

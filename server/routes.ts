@@ -126,6 +126,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Update last login timestamp
+      const activeStorage = getStorage();
+      try {
+        await activeStorage.updateUser(dbUser.id, { 
+          last_login_at: new Date() 
+        });
+        console.log('🔐 [AUTH] Updated last login timestamp for user:', dbUser.email);
+      } catch (updateError) {
+        console.error('⚠️ [AUTH] Failed to update last login timestamp:', updateError);
+        // Continue even if update fails - don't block authentication
+      }
+
       res.json({
         id: dbUser.id,
         email: dbUser.email,

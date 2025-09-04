@@ -193,47 +193,54 @@ export class FmbStorage implements IStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     const existingUser = await this.getUserByEmail(userData.email);
 
-    if (existingUser) {
-      // Update existing user - preserve role unless explicitly changed
-      const roleToUpdate = userData.role || existingUser.role;
+    // Prepare parameters for the MERGE statement
+    const request = this.pool!.request();
+    request.input('id', sql.NVarChar(255), `user-${Date.now()}`); // Generate ID if new user
+    request.input('email', sql.NVarChar(255), userData.email);
+    request.input('firstName', sql.NVarChar(100), userData.first_name);
+    request.input('lastName', sql.NVarChar(100), userData.last_name);
+    request.input('profileImageUrl', sql.NVarChar(sql.MAX), userData.profile_image_url);
+    request.input('role', sql.NVarChar(50), userData.role);
+    request.input('organizationId', sql.NVarChar(255), userData.organization_id);
+    request.input('department', sql.NVarChar(100), userData.department);
+    request.input('isActive', sql.Bit, userData.is_active !== undefined ? userData.is_active : true); // Default to active
 
-      this.storageLog('UPSERT_USER', 'Updating existing user', {
-        email: userData.email,
-        existingRole: existingUser.role,
-        newRole: userData.role,
-        finalRole: roleToUpdate
-      });
-
-      await this.execute(`
-        UPDATE users
-        SET first_name = @param0, last_name = @param1, profile_image_url = @param2,
-            role = @param3, organization_id = @param4, department = @param5,
-            last_login_at = GETDATE(), updated_at = GETDATE()
-        WHERE email = @param6
-      `, [
-        userData.first_name, userData.last_name, userData.profile_image_url,
-        roleToUpdate, userData.organization_id, userData.department, userData.email
-      ]);
-      return await this.getUserByEmail(userData.email) as User;
-    } else {
-      // Insert new user
-      const userId = `user-${Date.now()}`;
-      const request = this.pool!.request();
-      request.input('id', sql.NVarChar(255), userId);
-      request.input('email', sql.NVarChar(255), userData.email);
-      request.input('firstName', sql.NVarChar(255), userData.first_name);
-      request.input('lastName', sql.NVarChar(255), userData.last_name);
-      request.input('profileImageUrl', sql.NVarChar(sql.MAX), userData.profile_image_url);
-      request.input('role', sql.NVarChar(50), userData.role);
-      request.input('organizationId', sql.NVarChar(255), userData.organization_id);
-      request.input('department', sql.NVarChar(255), userData.department);
-
-      await request.query(`
-        INSERT INTO users (id, email, first_name, last_name, profile_image_url, role, organization_id, department, is_active, created_at, updated_at)
-        VALUES (@id, @email, @firstName, @lastName, @profileImageUrl, @role, @organizationId, @department, 1, GETDATE(), GETDATE())
-      `);
-      return await this.getUser(userId) as User;
+    // Add last_login_at parameter if provided
+    if (userData.last_login_at !== undefined) {
+      request.input('lastLoginAt', sql.DateTime2, userData.last_login_at);
     }
+
+    // Insert or update user
+    const upsertQuery = `
+      MERGE users AS target
+      USING (SELECT 
+        @id as id, 
+        @email as email, 
+        @firstName as first_name, 
+        @lastName as last_name, 
+        @role as role, 
+        @isActive as is_active
+        ${userData.last_login_at !== undefined ? ', @lastLoginAt as last_login_at' : ', NULL as last_login_at'}
+      ) AS source
+      ON target.id = source.id OR target.email = source.email
+      WHEN MATCHED THEN
+        UPDATE SET 
+          email = source.email,
+          first_name = source.first_name,
+          last_name = source.last_name,
+          role = source.role,
+          is_active = source.is_active,
+          ${userData.last_login_at !== undefined ? 'last_login_at = source.last_login_at,' : ''}
+          updated_at = GETDATE()
+      WHEN NOT MATCHED THEN
+        INSERT (id, email, first_name, last_name, role, is_active, last_login_at, created_at, updated_at)
+        VALUES (source.id, source.email, source.first_name, source.last_name, source.role, source.is_active, source.last_login_at, GETDATE(), GETDATE());
+    `;
+
+    await request.query(upsertQuery);
+
+    // Fetch the user after upserting
+    return await this.getUserByEmail(userData.email) as User;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -1900,32 +1907,73 @@ export class FmbStorage implements IStorage {
     return await this.upsertUser(userData);
   }
 
-  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User> {
-    const fields = [];
-    const params = [];
-    let paramIndex = 0;
+  async updateUser(userId: string, userData: Partial<any>): Promise<any> {
+    try {
+      console.log('👤 [FMB-STORAGE] Updating user:', userId, 'with data:', userData);
 
-    for (const [key, value] of Object.entries(userData)) {
-      if (value !== undefined) {
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = @param${paramIndex}`);
-        params.push(value);
-        paramIndex++;
+      if (!this.pool) {
+        throw new Error('Database pool not available');
       }
+
+      const request = this.pool.request();
+      request.input('userId', sql.NVarChar(255), userId);
+
+      const updateFields = [];
+      const updateValues = [];
+
+      // Handle different update fields
+      if (userData.first_name !== undefined) {
+        updateFields.push('first_name = @firstName');
+        request.input('firstName', sql.NVarChar(100), userData.first_name);
+      }
+      if (userData.last_name !== undefined) {
+        updateFields.push('last_name = @lastName');
+        request.input('lastName', sql.NVarChar(100), userData.last_name);
+      }
+      if (userData.email !== undefined) {
+        updateFields.push('email = @email');
+        request.input('email', sql.NVarChar(255), userData.email);
+      }
+      if (userData.role !== undefined) {
+        updateFields.push('role = @role');
+        request.input('role', sql.NVarChar(50), userData.role);
+      }
+      if (userData.last_login_at !== undefined) {
+        updateFields.push('last_login_at = @lastLoginAt');
+        request.input('lastLoginAt', sql.DateTime2, userData.last_login_at);
+      }
+      if (userData.is_active !== undefined) {
+        updateFields.push('is_active = @isActive');
+        request.input('isActive', sql.Bit, userData.is_active);
+      }
+
+      if (updateFields.length === 0) {
+        console.log('👤 [FMB-STORAGE] No fields to update');
+        return await this.getUser(userId);
+      }
+
+      // Always update the updated_at field
+      updateFields.push('updated_at = GETDATE()');
+
+      const updateQuery = `
+        UPDATE users 
+        SET ${updateFields.join(', ')}
+        WHERE id = @userId
+      `;
+
+      console.log('👤 [FMB-STORAGE] Update query:', updateQuery);
+
+      await request.query(updateQuery);
+
+      // Return the updated user
+      const updatedUser = await this.getUser(userId);
+      console.log('✅ [FMB-STORAGE] User updated successfully:', updatedUser?.email);
+
+      return updatedUser;
+    } catch (error) {
+      console.error('❌ [FMB-STORAGE] Error updating user:', error);
+      throw error;
     }
-
-    if (fields.length > 0) {
-      fields.push('updated_at = GETDATE()');
-      params.push(id);
-
-      await this.execute(`
-        UPDATE users
-        SET ${fields.join(', ')}
-        WHERE id = @param${paramIndex}
-      `, params);
-    }
-
-    return await this.getUser(id) as User;
   }
 
   async deleteUser(id: string): Promise<void> {
