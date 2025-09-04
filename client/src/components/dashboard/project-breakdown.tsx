@@ -39,7 +39,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
     },
   });
 
-  
+
 
   if (isLoading) {
     return (
@@ -47,7 +47,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <PieChart className="w-5 h-5 mr-2 text-primary" />
-            Project Time Breakdown
+            Team Project Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -76,7 +76,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <PieChart className="w-5 h-5 mr-2 text-primary" />
-            Project Time Breakdown
+            Team Project Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -106,7 +106,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       <CardHeader>
         <CardTitle className="flex items-center">
           <PieChart className="w-5 h-5 mr-2 text-primary" />
-          Project Time Breakdown
+          Team Project Breakdown
         </CardTitle>
       </CardHeader>
       <CardContent>
