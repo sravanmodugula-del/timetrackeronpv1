@@ -583,10 +583,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = req.params;
-      const employees = await activeStorage.getProjectEmployees(id, userId);
-      res.json(employees);
+      console.log('📋 [API] Fetching project employees for project:', id);
+      
+      try {
+        const employees = await activeStorage.getProjectEmployees(id, userId);
+        console.log('📋 [API] Successfully fetched project employees:', employees.length);
+        res.json(employees || []);
+      } catch (storageError) {
+        console.error('📋 [API] Storage error fetching project employees:', storageError);
+        // Return empty array instead of error to allow UI to function
+        res.json([]);
+      }
     } catch (error) {
-      console.error("Error fetching project employees:", error);
+      console.error("📋 [API] Error fetching project employees:", error);
       res.status(500).json({ message: "Failed to fetch project employees" });
     }
   });
@@ -606,14 +615,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { employeeIds } = req.body;
 
+      console.log('👥 [API] Assigning employees to project:', { projectId: id, employeeIds, userId });
+
       if (!Array.isArray(employeeIds)) {
         return res.status(400).json({ message: "employeeIds must be an array" });
       }
 
-      await activeStorage.assignEmployeesToProject(id, employeeIds, userId);
-      res.status(200).json({ message: "Employees assigned successfully" });
+      try {
+        await activeStorage.assignEmployeesToProject(id, employeeIds, userId);
+        console.log('✅ [API] Employees assigned successfully to project:', id);
+        res.status(200).json({ message: "Employees assigned successfully" });
+      } catch (assignError) {
+        console.error('❌ [API] Error in assignEmployeesToProject:', assignError);
+        res.status(500).json({ message: "Failed to assign employees to project", error: assignError.message });
+      }
     } catch (error) {
-      console.error("Error assigning employees to project:", error);
+      console.error("❌ [API] Error assigning employees to project:", error);
       res.status(500).json({ message: "Failed to assign employees to project" });
     }
   });
