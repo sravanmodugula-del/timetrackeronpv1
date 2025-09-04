@@ -845,7 +845,7 @@ export class FmbStorage implements IStorage {
         status: row.status,
         priority: row.priority,
         assigned_to: row.assigned_to,
-        creat�ed_by: row.created_by,
+        created_by: row.created_by,
         due_date: row.due_date,
         estimated_hours: row.estimated_hours,
         actual_hours: row.actual_hours || 0,
@@ -1075,7 +1075,7 @@ export class FmbStorage implements IStorage {
         console.log('🔍 [FMB-STORAGE] No time entries found for the given criteria');
         return [];
       }
-�
+
       // Transform to the expected frontend format with consistent camelCase
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
@@ -1313,7 +1313,7 @@ export class FmbStorage implements IStorage {
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
       const insertData = {
         id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        user_id: �timeEntryData.userId || timeEntryData.user_id,
+        user_id: timeEntryData.userId || timeEntryData.user_id,
         project_id: timeEntryData.projectId || timeEntryData.project_id,
         task_id: timeEntryData.taskId || timeEntryData.task_id,
         description: timeEntryData.description,
@@ -1370,7 +1370,7 @@ export class FmbStorage implements IStorage {
       const fields: string[] = [];
       let paramIndex = 1;
 
-      // Comprehensive field mappings for all time entry fields
+      // Comprehensive field mappings for all time entry fields including both camelCase and snake_case
       const fieldMappings: { [key: string]: { dbField: string; sqlType: any } } = {
         userId: { dbField: 'user_id', sqlType: sql.NVarChar(255) },
         user_id: { dbField: 'user_id', sqlType: sql.NVarChar(255) },
@@ -1380,18 +1380,23 @@ export class FmbStorage implements IStorage {
         task_id: { dbField: 'task_id', sqlType: sql.NVarChar(255) },
         description: { dbField: 'description', sqlType: sql.NText },
         date: { dbField: 'date', sqlType: sql.Date },
-        startTime: { dbField: 'start_time', sqlType: sql.VarChar(5) },
-        start_time: { dbField: 'start_time', sqlType: sql.VarChar(5) },
-        endTime: { dbField: 'end_time', sqlType: sql.VarChar(5) },
-        end_time: { dbField: 'end_time', sqlType: sql.VarChar(5) },
+        startTime: { dbField: 'start_time', sqlType: sql.VarChar(8) },
+        start_time: { dbField: 'start_time', sqlType: sql.VarChar(8) },
+        endTime: { dbField: 'end_time', sqlType: sql.VarChar(8) },
+        end_time: { dbField: 'end_time', sqlType: sql.VarChar(8) },
         duration: { dbField: 'duration', sqlType: sql.Decimal(10, 2) },
         hours: { dbField: 'hours', sqlType: sql.Decimal(10, 2) },
         status: { dbField: 'status', sqlType: sql.NVarChar(50) },
         billable: { dbField: 'billable', sqlType: sql.Bit },
+        isBillable: { dbField: 'is_billable', sqlType: sql.Bit },
         is_billable: { dbField: 'is_billable', sqlType: sql.Bit },
+        isApproved: { dbField: 'is_approved', sqlType: sql.Bit },
         is_approved: { dbField: 'is_approved', sqlType: sql.Bit },
+        isManualEntry: { dbField: 'is_manual_entry', sqlType: sql.Bit },
         is_manual_entry: { dbField: 'is_manual_entry', sqlType: sql.Bit },
+        isTimerEntry: { dbField: 'is_timer_entry', sqlType: sql.Bit },
         is_timer_entry: { dbField: 'is_timer_entry', sqlType: sql.Bit },
+        isTemplate: { dbField: 'is_template', sqlType: sql.Bit },
         is_template: { dbField: 'is_template', sqlType: sql.Bit }
       };
 
@@ -1399,6 +1404,8 @@ export class FmbStorage implements IStorage {
         if (value !== undefined && fieldMappings[key]) {
           const { dbField, sqlType } = fieldMappings[key];
           const paramName = `param${paramIndex}`;
+
+          console.log(`🔧 [FMB-STORAGE] Processing field: ${key} = ${value} -> ${dbField}`);
 
           // Handle different data types appropriately
           if (key === 'date') {
@@ -1417,6 +1424,8 @@ export class FmbStorage implements IStorage {
 
           fields.push(`${dbField} = @${paramName}`);
           paramIndex++;
+        } else if (value !== undefined) {
+          console.log(`⚠️ [FMB-STORAGE] Field ${key} with value ${value} not found in fieldMappings`);
         }
       }
 
@@ -1489,7 +1498,7 @@ export class FmbStorage implements IStorage {
 
   async getEmployeeById(id: string): Promise<Employee | null> {
     const result = await this.execute('SELECT * FROM employees WHERE id = @param0', [id]);
-    return res�ult[0] || null;
+    return result[0] || null;
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
@@ -1709,7 +1718,7 @@ export class FmbStorage implements IStorage {
       // Check if department exists by name and organization_id
       const existingDepartment = await this.execute(
         'SELECT * FROM departments WHERE name = @param0 AND organization_id = @param1',
-    �    [departmentData.name, departmentData.organization_id]
+        [departmentData.name, departmentData.organization_id]
       );
 
       if (existingDepartment && existingDepartment.length > 0) {
@@ -1959,7 +1968,7 @@ export class FmbStorage implements IStorage {
         error: error.message
       });
       throw new Error(`Failed to fetch organization: ${error.message}`);
-    �}
+    }
   }
 
   async updateOrganization(id: string, orgData: Partial<InsertOrganization>): Promise<Organization> {
@@ -2198,7 +2207,7 @@ export class FmbStorage implements IStorage {
 
       const weekRequest = this.pool.request();
       weekRequest.input('userId', sql.NVarChar(255), userId);
-      weekRequest.input('weekStartDat�e', sql.NVarChar(10), weekStartStr);
+      weekRequest.input('weekStartDate', sql.NVarChar(10), weekStartStr);
 
       const monthRequest = this.pool.request();
       monthRequest.input('userId', sql.NVarChar(255), userId);
@@ -2437,7 +2446,7 @@ export class FmbStorage implements IStorage {
   async close(): Promise<void> {
     if (this.pool) {
       await this.pool.close();
-      co�nsole.log('🔴 [FMB-STORAGE] Database connection closed');
+      console.log('🔴 [FMB-STORAGE] Database connection closed');
     }
   }
 
@@ -2669,7 +2678,7 @@ export class FmbStorage implements IStorage {
 
   async getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
     try {
-      console.log('📊 [FMB-STORAGE] Starting project breakdown query for user:', userId, 'dateRange:', { s�tartDate, endDate });
+      console.log('📊 [FMB-STORAGE] Starting project breakdown query for user:', userId, 'dateRange:', { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
@@ -2900,7 +2909,7 @@ export class FmbStorage implements IStorage {
         WHERE id = @targetUserId
       `);
 
-      if (updateResult.rowsAffected[0] ===� 0) {
+      if (updateResult.rowsAffected[0] === 0) {
         throw new Error('User not found or role not updated');
       }
 
