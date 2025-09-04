@@ -2988,7 +2988,18 @@ export class FmbStorage implements IStorage {
 
     const request = this.pool!.request();
     const result = await request.query(`
-      SELECT id, email, first_name, last_name, role, profile_image_url, created_at, updated_at, is_active
+      SELECT 
+        id,
+        email,
+        first_name,
+        last_name,
+        role,
+        organization_id,
+        department,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at
       FROM users
       ORDER BY created_at DESC
     `);
