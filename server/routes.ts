@@ -2410,8 +2410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         transformedEntries.push({
           ...entry,
+          // Ensure dates are properly formatted as ISO strings
+          date: entry.date ? (entry.date instanceof Date ? entry.date.toISOString().split('T')[0] : entry.date) : null,
+          created_at: entry.created_at ? (entry.created_at instanceof Date ? entry.created_at.toISOString() : entry.created_at) : null,
+          updated_at: entry.updated_at ? (entry.updated_at instanceof Date ? entry.updated_at.toISOString() : entry.updated_at) : null,
           employee,
-          task: entry.task ? {
+          task: entry.task && (entry.task.name || entry.task.title) ? {
             id: entry.task.id,
             name: entry.task.name || entry.task.title,
             description: entry.task.description,
