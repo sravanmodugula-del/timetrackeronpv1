@@ -541,11 +541,10 @@ export default function Departments() {
                     <div className="pt-2">
                       <Select
                         value={department.manager_id || "none"}
-                        onValueChange={(value) => handleAssignManager(department.id, value === "none" ? null : value)}
-                        disabled={assignManager.isPending}
+                        disabled={true}
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Assign manager" />
+                        <SelectTrigger className="w-full cursor-not-allowed opacity-60">
+                          <SelectValue placeholder="Manager assignment (readonly)" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No manager</SelectItem>
