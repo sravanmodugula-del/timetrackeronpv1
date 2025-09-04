@@ -845,7 +845,7 @@ export class FmbStorage implements IStorage {
         status: row.status,
         priority: row.priority,
         assigned_to: row.assigned_to,
-        created_by: row.created_by,
+        creat�ed_by: row.created_by,
         due_date: row.due_date,
         estimated_hours: row.estimated_hours,
         actual_hours: row.actual_hours || 0,
@@ -1075,7 +1075,7 @@ export class FmbStorage implements IStorage {
         console.log('🔍 [FMB-STORAGE] No time entries found for the given criteria');
         return [];
       }
-
+�
       // Transform to the expected frontend format with consistent camelCase
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
@@ -1086,10 +1086,10 @@ export class FmbStorage implements IStorage {
         user_id: row.user_id,
         userId: row.user_id, // Add camelCase alias
         date: row.date,
-        start_time: row.start_time,
-        startTime: row.start_time, // Add camelCase alias
-        end_time: row.end_time,
-        endTime: row.end_time, // Add camelCase alias
+        start_time: row.start_time ? row.start_time.substring(0, 5) : row.start_time,
+        startTime: row.start_time ? row.start_time.substring(0, 5) : row.start_time, // Add camelCase alias
+        end_time: row.end_time ? row.end_time.substring(0, 5) : row.end_time,
+        endTime: row.end_time ? row.end_time.substring(0, 5) : row.end_time, // Add camelCase alias
         duration: parseFloat(row.duration || row.hours || 0),
         hours: parseFloat(row.hours || row.duration || 0),
         description: row.description || '',
@@ -1187,8 +1187,8 @@ export class FmbStorage implements IStorage {
         task_id: entry.task_id,
         description: entry.description,
         date: entry.date,
-        start_time: entry.start_time,
-        end_time: entry.end_time,
+        start_time: entry.start_time ? entry.start_time.substring(0, 5) : entry.start_time,
+        end_time: entry.end_time ? entry.end_time.substring(0, 5) : entry.end_time,
         duration: parseFloat(entry.duration) || 0,
         hours: parseFloat(entry.hours) || parseFloat(entry.duration) || 0,
         created_at: entry.created_at,
@@ -1305,7 +1305,7 @@ export class FmbStorage implements IStorage {
 
       return timeEntries;
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error fetching time entries for project reports:', error);
+      console.error('🔴 [F�MB-STORAGE] Error fetching time entries for project reports:', error);
       return [];
     }
   }
@@ -1416,8 +1416,13 @@ export class FmbStorage implements IStorage {
             // Handle boolean fields
             request.input(paramName, sqlType, Boolean(value));
           } else if (key === 'start_time' || key === 'startTime' || key === 'end_time' || key === 'endTime') {
-            // Handle time fields as strings in HH:MM format
-            request.input(paramName, sqlType, value as string);
+            // Handle time fields as strings in HH:MM format - ensure we only store HH:MM
+            const timeValue = value as string;
+            const formattedTime = timeValue && timeValue.includes(':') 
+              ? timeValue.substring(0, 5)  // Only take HH:MM part
+              : timeValue;
+            request.input(paramName, sqlType, formattedTime);
+            console.log(`🔧 [FMB-STORAGE] Time field ${key} formatted: ${timeValue} -> ${formattedTime}`);
           } else {
             request.input(paramName, sqlType, value);
           }
@@ -1460,7 +1465,7 @@ export class FmbStorage implements IStorage {
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error updating time entry:', error);
       throw error;
-    }
+ �   }
   }
 
   async deleteTimeEntry(id: string, userId?: string): Promise<boolean> {
@@ -1686,7 +1691,7 @@ export class FmbStorage implements IStorage {
     return result[0] || null;
   }
 
-  async createDepartment(deptData: InsertDepartment): Promise<Department> {
+  async createDepartment(deptData:� InsertDepartment): Promise<Department> {
     const insertData = {
       id: `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: deptData.name,
@@ -1929,7 +1934,7 @@ export class FmbStorage implements IStorage {
       request.input('id', sql.NVarChar(255), id);
       await request.query('DELETE FROM users WHERE id = @id');
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error deleting user:', error);
+�      console.error('🔴 [FMB-STORAGE] Error deleting user:', error);
       throw error;
     }
   }
@@ -2174,7 +2179,7 @@ export class FmbStorage implements IStorage {
   // Dashboard Stats
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
     try {
-      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId, 'dateRange:', { startDate, endDate });
+      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId, 'dateRange:',� { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
@@ -2404,7 +2409,7 @@ export class FmbStorage implements IStorage {
       hours: row.hours,
       duration: row.duration,
       date: row.date,
-      start_time: row.start_time,
+      st�art_time: row.start_time,
       end_time: row.end_time,
       status: row.status,
       billable: row.billable,
@@ -2636,7 +2641,7 @@ export class FmbStorage implements IStorage {
           INNER JOIN projects p ON te.project_id = p.id
           WHERE te.user_id = @debugUserId
           ORDER BY te.date DESC, te.created_at DESC
-        `);
+        �`);
         console.log('📋 [FMB-STORAGE] Debug - All recent time entries for user:', debugResult.recordset);
 
         return [];
@@ -2866,7 +2871,7 @@ export class FmbStorage implements IStorage {
   //   try {
   //     console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
 
-  //     const request = this.pool.request();
+  //�     const request = this.pool.request();
   //     request.input('userId', sql.NVarChar(255), userId);
 
   //     const result = await request.query(`
