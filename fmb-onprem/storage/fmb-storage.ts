@@ -2471,14 +2471,11 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  // Helper method to validate and convert UUIDs
+  // Simple UUID validation - adjust as needed for your ID format
   private validateUUID(id: string): string {
-    // Simple UUID validation - adjust as needed for your ID format
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       return id;
     }
-
-    // Return the ID as-is if it doesn't match UUID format
     return id;
   }
 
@@ -2969,46 +2966,54 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Employee Assignment
-  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId?: string): Promise<void> {
+  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId: string): Promise<void> {
     try {
-      console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', { projectId, employeeIds, userId });
+      console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', {
+        projectId,
+        employeeIds,
+        userId
+      });
 
-      // First verify the project exists
-      const projectExists = await this.execute('SELECT id FROM projects WHERE id = @param0', [projectId]);
-      if (!projectExists || projectExists.length === 0) {
-        throw new Error(`Project with ID ${projectId} not found`);
+      // First verify project exists and user has access
+      const project = await this.getProject(projectId, userId);
+      if (!project) {
+        console.log('❌ [FMB-STORAGE] Project not found for employee assignment:', projectId);
+        throw new Error(`Project not found: ${projectId}`);
       }
 
-      // Clear existing assignments for this project
-      const clearRequest = this.pool!.request();
-      clearRequest.input('projectId', sql.NVarChar(255), projectId);
+      console.log('✅ [FMB-STORAGE] Project validated for employee assignment:', project.name);
 
-      await clearRequest.query(`
-        DELETE FROM project_employees WHERE project_id = @projectId
-      `);
+      // Clear existing assignments first
+      const request = this.pool!.request();
+      request.input('projectId', sql.NVarChar(255), projectId);
 
+      await request.query('DELETE FROM project_employees WHERE project_id = @projectId');
       console.log('🗑️ [FMB-STORAGE] Cleared existing project employee assignments');
 
-      // Add new assignments
+      // Assign new employees
       for (const employeeId of employeeIds) {
-        // Verify employee exists
-        const employeeExists = await this.execute('SELECT id FROM employees WHERE id = @param0', [employeeId]);
-        if (!employeeExists || employeeExists.length === 0) {
-          console.error(`Employee with ID ${employeeId} not found, skipping`);
-          continue;
+        try {
+          await this.createProjectEmployee({
+            project_id: projectId,
+            employee_id: employeeId,
+            user_id: userId
+          });
+          console.log(`✅ [FMB-STORAGE] Assigned employee ${employeeId} to project ${projectId}`);
+        } catch (employeeError) {
+          console.error(`❌ [FMB-STORAGE] Failed to assign employee ${employeeId}:`, employeeError);
+          throw employeeError;
         }
-
-        await this.createProjectEmployee({
-          project_id: projectId,
-          employee_id: employeeId,
-          user_id: userId || null
-        });
       }
 
       console.log('✅ [FMB-STORAGE] Successfully assigned employees to project');
     } catch (error) {
-      console.error('🔴 [FMB-STORAGE] Error assigning employees to project:', error);
-      throw error;
+      console.error('❌ [FMB-STORAGE] Failed to assign employees to project:', {
+        error: error.message,
+        projectId,
+        employeeIds,
+        userId
+      });
+      throw new Error(`Failed to assign employees to project: ${error.message}`);
     }
   }
 
