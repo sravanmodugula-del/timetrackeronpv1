@@ -1429,9 +1429,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   app.get('/api/employees', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = extractUserId(req.user);
       const activeStorage = getStorage();
-      const employees = await activeStorage.getEmployees(userId);
+      // Get all employees without filtering by userId for employee management
+      const employees = await activeStorage.getEmployees();
       res.json(employees);
     } catch (error) {
       console.error("Error fetching employees:", error);
