@@ -2374,29 +2374,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('📊 [REPORTS] Project found:', project.name);
 
-      // Get time entries for the project - use the standard getTimeEntries method with project filter
-      const timeEntries = await activeStorage.getTimeEntries(userId, {
-        projectId: projectId,
-        // Don't limit by date range for reports - show all entries
-      });
+      // Get ALL time entries for the project from ALL users (not filtered by current user)
+      const timeEntries = await activeStorage.getTimeEntriesByProject(projectId);
 
-      console.log('📊 [REPORTS] Found time entries:', timeEntries?.length || 0);
+      console.log('📊 [REPORTS] Found time entries from all users:', timeEntries?.length || 0);
 
       // Transform entries to include employee information for reports
-      const transformedEntries = timeEntries.map(entry => ({
-        ...entry,
-        employee: {
-          id: entry.user_id || userId,
-          first_name: currentUser.first_name || 'Unknown',
-          last_name: currentUser.last_name || 'User'
-        },
-        task: entry.task ? {
-          id: entry.task.id,
-          name: entry.task.name || entry.task.title,
-          description: entry.task.description,
-          status: entry.task.status
-        } : null
-      }));
+      const transformedEntries = [];
+      for (const entry of timeEntries) {
+        // Get the actual user/employee info for each entry
+        let employee = null;
+        if (entry.user_id) {
+          try {
+            const entryUser = await activeStorage.getUser(entry.user_id);
+            if (entryUser) {
+              employee = {
+                id: entryUser.id,
+                first_name: entryUser.first_name || 'Unknown',
+                last_name: entryUser.last_name || 'User'
+              };
+            }
+          } catch (error) {
+            console.log('📊 [REPORTS] Could not get user info for entry:', entry.user_id);
+          }
+        }
+
+        // Fallback if no employee info found
+        if (!employee) {
+          employee = {
+            id: entry.user_id || 'unknown',
+            first_name: 'Unknown',
+            last_name: 'User'
+          };
+        }
+
+        transformedEntries.push({
+          ...entry,
+          employee,
+          task: entry.task ? {
+            id: entry.task.id,
+            name: entry.task.name || entry.task.title,
+            description: entry.task.description,
+            status: entry.task.status
+          } : null
+        });
+      }
 
       console.log('📊 [REPORTS] Transformed entries:', transformedEntries.length);
 

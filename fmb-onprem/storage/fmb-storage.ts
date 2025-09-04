@@ -1045,6 +1045,78 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
+  async getTimeEntriesByProject(projectId: string): Promise<TimeEntryWithProject[]> {
+    try {
+      console.log('📊 [FMB-STORAGE] Getting ALL time entries for project:', projectId);
+
+      const request = this.pool.request();
+      request.input('projectId', this.sql.NVarChar(255), projectId);
+
+      const result = await request.query(`
+        SELECT 
+          te.id,
+          te.user_id,
+          te.project_id,
+          te.task_id,
+          te.date,
+          te.start_time,
+          te.end_time,
+          te.duration,
+          te.hours,
+          te.description,
+          te.created_at,
+          te.updated_at,
+          p.name as project_name,
+          p.color as project_color,
+          t.name as task_name,
+          t.title as task_title,
+          t.description as task_description,
+          t.status as task_status
+        FROM time_entries te
+        LEFT JOIN projects p ON te.project_id = p.id
+        LEFT JOIN tasks t ON te.task_id = t.id
+        WHERE te.project_id = @projectId
+        ORDER BY te.date DESC, te.created_at DESC
+      `);
+
+      const timeEntries = result.recordset.map(record => ({
+        id: record.id,
+        user_id: record.user_id,
+        project_id: record.project_id,
+        task_id: record.task_id,
+        date: record.date,
+        start_time: record.start_time,
+        end_time: record.end_time,
+        duration: record.duration,
+        hours: record.hours,
+        description: record.description,
+        created_at: record.created_at,
+        updated_at: record.updated_at,
+        project: record.project_name ? {
+          id: record.project_id,
+          name: record.project_name,
+          color: record.project_color || '#1976D2'
+        } : undefined,
+        task: record.task_name || record.task_title ? {
+          id: record.task_id,
+          name: record.task_name || record.task_title,
+          title: record.task_title || record.task_name,
+          description: record.task_description,
+          status: record.task_status
+        } : undefined
+      }));
+
+      console.log('✅ [FMB-STORAGE] Found time entries for project:', timeEntries.length);
+      return timeEntries;
+    } catch (error) {
+      console.error('❌ [FMB-STORAGE] Failed to get time entries by project:', {
+        error: error.message,
+        projectId
+      });
+      throw error;
+    }
+  }
+
   async getTimeEntries(userId: string, filters?: {
     projectId?: string;
     startDate?: string;
