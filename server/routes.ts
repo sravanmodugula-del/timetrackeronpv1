@@ -2408,6 +2408,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         }
 
+        // Enhanced task mapping - check multiple possible sources for task data
+        let task = null;
+        if (entry.task_id) {
+          try {
+            // Try to get task from storage
+            const taskData = await activeStorage.getTask(entry.task_id, userId);
+            if (taskData) {
+              task = {
+                id: taskData.id,
+                name: taskData.name || taskData.title,
+                description: taskData.description,
+                status: taskData.status
+              };
+            } else {
+              // Fallback to entry.task data if available
+              if (entry.task && (entry.task.name || entry.task.title || entry.task_name)) {
+                task = {
+                  id: entry.task_id,
+                  name: entry.task.name || entry.task.title || entry.task_name,
+                  description: entry.task.description,
+                  status: entry.task.status || 'active'
+                };
+              }
+            }
+          } catch (error) {
+            console.log('📊 [REPORTS] Could not get task info for entry:', entry.task_id, error);
+            // Use entry-level task data if available
+            if (entry.task && (entry.task.name || entry.task.title || entry.task_name)) {
+              task = {
+                id: entry.task_id,
+                name: entry.task.name || entry.task.title || entry.task_name,
+                description: entry.task.description,
+                status: entry.task.status || 'active'
+              };
+            }
+          }
+        } else if (entry.task && (entry.task.name || entry.task.title || entry.task_name)) {
+          // Use task data from the entry itself
+          task = {
+            id: entry.task.id || entry.task_id,
+            name: entry.task.name || entry.task.title || entry.task_name,
+            description: entry.task.description,
+            status: entry.task.status || 'active'
+          };
+        }
+
+        console.log('📊 [REPORTS] Task mapping for entry:', {
+          entryId: entry.id,
+          taskId: entry.task_id,
+          taskData: task,
+          rawTask: entry.task,
+          taskName: entry.task_name
+        });
+
         transformedEntries.push({
           ...entry,
           // Ensure dates are properly formatted as ISO strings
@@ -2415,16 +2469,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           created_at: entry.created_at ? (entry.created_at instanceof Date ? entry.created_at.toISOString() : entry.created_at) : null,
           updated_at: entry.updated_at ? (entry.updated_at instanceof Date ? entry.updated_at.toISOString() : entry.updated_at) : null,
           employee,
-          task: entry.task && (entry.task.name || entry.task.title) ? {
-            id: entry.task.id,
-            name: entry.task.name || entry.task.title,
-            description: entry.task.description,
-            status: entry.task.status
-          } : null
+          task
         });
       }
 
       console.log('📊 [REPORTS] Transformed entries:', transformedEntries.length);
+      console.log('📊 [REPORTS] Sample entry with task:', transformedEntries[0] ? {
+        id: transformedEntries[0].id,
+        task: transformedEntries[0].task,
+        task_id: transformedEntries[0].task_id
+      } : 'No entries');
 
       res.json(transformedEntries);
     } catch (error) {
