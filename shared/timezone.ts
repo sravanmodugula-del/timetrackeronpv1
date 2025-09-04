@@ -92,14 +92,80 @@ export function getPSTDateRange(range: 'today' | 'week' | 'month' | 'quarter' | 
 /**
  * Format a date string for display in PST context
  */
-export function formatPSTDate(dateString: string): string {
-  const date = new Date(dateString + 'T12:00:00Z');
-  return date.toLocaleDateString('en-US', { 
-    timeZone: PST_TIMEZONE,
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
-  });
+export function formatPSTDate(dateString: string, formatString?: string): string {
+  if (!dateString) return "Invalid Date";
+  
+  try {
+    let date: Date;
+    
+    // Handle different date formats
+    if (typeof dateString === 'string') {
+      // If it's already an ISO string with time, use it directly
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+      } else {
+        // Add time to avoid timezone shift issues
+        date = new Date(dateString + 'T12:00:00Z');
+      }
+    } else {
+      date = new Date(dateString);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+    
+    // Handle different format strings
+    if (formatString) {
+      if (formatString === "MM/dd/yyyy") {
+        return date.toLocaleDateString('en-US', { 
+          timeZone: PST_TIMEZONE,
+          month: '2-digit',
+          day: '2-digit', 
+          year: 'numeric' 
+        });
+      } else if (formatString === "MMM dd, yyyy") {
+        return date.toLocaleDateString('en-US', { 
+          timeZone: PST_TIMEZONE,
+          month: 'short', 
+          day: '2-digit', 
+          year: 'numeric' 
+        });
+      } else if (formatString === "MMM dd, HH:mm") {
+        return date.toLocaleString('en-US', { 
+          timeZone: PST_TIMEZONE,
+          month: 'short', 
+          day: '2-digit', 
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+      } else if (formatString === "MM/dd/yyyy HH:mm:ss") {
+        return date.toLocaleString('en-US', { 
+          timeZone: PST_TIMEZONE,
+          month: '2-digit',
+          day: '2-digit', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        });
+      }
+    }
+    
+    // Default format
+    return date.toLocaleDateString('en-US', { 
+      timeZone: PST_TIMEZONE,
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  } catch (error) {
+    console.warn('Date formatting error:', error, 'for value:', dateString);
+    return "Invalid Date";
+  }
 }
 
 /**

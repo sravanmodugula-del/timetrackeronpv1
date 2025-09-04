@@ -1045,9 +1045,9 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntriesByProject(projectId: string): Promise<TimeEntry[]> {
+  async getTimeEntriesByProject(projectId: string): Promise<TimeEntryWithProject[]> {
     try {
-      console.log(`📊 [FMB-STORAGE] Getting ALL time entries for project: ${projectId}`);
+      console.log('📊 [FMB-STORAGE] Getting ALL time entries for project:', projectId);
 
       const request = this.pool.request();
       request.input('projectId', sql.NVarChar(255), projectId);
