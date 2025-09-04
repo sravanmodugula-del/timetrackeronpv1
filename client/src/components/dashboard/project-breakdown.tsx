@@ -47,7 +47,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <PieChart className="w-5 h-5 mr-2 text-primary" />
-            Team Project Breakdown
+            Project Time Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -76,7 +76,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <PieChart className="w-5 h-5 mr-2 text-primary" />
-            Team Project Breakdown
+            Project Time Breakdown
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -106,7 +106,7 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       <CardHeader>
         <CardTitle className="flex items-center">
           <PieChart className="w-5 h-5 mr-2 text-primary" />
-          Team Project Breakdown
+          Project Time Breakdown
         </CardTitle>
       </CardHeader>
       <CardContent>
