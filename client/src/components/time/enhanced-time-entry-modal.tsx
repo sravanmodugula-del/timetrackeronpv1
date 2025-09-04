@@ -198,8 +198,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        startTime: data.startTime,
-        endTime: data.endTime,
+        startTime: data.startTime, // This will be mapped to start_time on server
+        endTime: data.endTime,     // This will be mapped to end_time on server
         duration: parseFloat(hours.toFixed(2)),
         hours: parseFloat(hours.toFixed(2)),
       };
@@ -234,6 +234,9 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         date: data.date,
         duration: durationNum,
         hours: durationNum,
+        // Clear start/end times for manual duration entries
+        startTime: undefined,
+        endTime: undefined,
       };
 
       console.log("🔧 [MANUAL-DURATION] Submitting data:", submissionData);
