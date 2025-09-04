@@ -19,8 +19,16 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { insertEmployeeSchema, type Employee, type Department, type Organization } from "@shared/schema";
 import Header from "@/components/layout/header";
 
-// Form schema
-const employeeFormSchema = insertEmployeeSchema.omit({ userId: true });
+// Form schema - define all employee fields including optional ones
+const employeeFormSchema = z.object({
+  employeeId: z.string().min(1, "Employee ID is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  department: z.string().min(1, "Department is required"),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  position: z.string().optional().or(z.literal(""))
+});
 type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
 export default function Employees() {
@@ -193,10 +201,24 @@ export default function Employees() {
   );
 
   const handleSubmit = (data: EmployeeFormData) => {
+    // Map frontend form data to backend expected format
+    const mappedData = {
+      employeeId: data.employeeId,
+      employee_id: data.employeeId, // Add snake_case alias
+      firstName: data.firstName,
+      first_name: data.firstName, // Add snake_case alias
+      lastName: data.lastName,
+      last_name: data.lastName, // Add snake_case alias
+      department: data.department,
+      email: data.email,
+      phone: data.phone,
+      position: data.position
+    };
+
     if (editingEmployee) {
-      updateEmployee.mutate(data);
+      updateEmployee.mutate(mappedData);
     } else {
-      createEmployee.mutate(data);
+      createEmployee.mutate(mappedData);
     }
   };
 
@@ -207,6 +229,9 @@ export default function Employees() {
       firstName: "",
       lastName: "",
       department: "",
+      email: "",
+      phone: "",
+      position: "",
     });
     setIsModalOpen(true);
   };
@@ -214,10 +239,13 @@ export default function Employees() {
   const openEditModal = (employee: Employee) => {
     setEditingEmployee(employee);
     form.reset({
-      employeeId: employee.employee_id,
-      firstName: employee.first_name,
-      lastName: employee.last_name,
+      employeeId: employee.employeeId || employee.employee_id,
+      firstName: employee.firstName || employee.first_name,
+      lastName: employee.lastName || employee.last_name,
       department: employee.department,
+      email: employee.email,
+      phone: employee.phone,
+      position: employee.position,
     });
     setIsModalOpen(true);
   };
@@ -309,10 +337,10 @@ export default function Employees() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">
-                      {employee.first_name} {employee.last_name}
+                      {employee.firstName || employee.first_name} {employee.lastName || employee.last_name}
                     </CardTitle>
                     <div className="space-y-1">
-                      <span>ID: {employee.employee_id}</span>
+                      <span>ID: {employee.employeeId || employee.employee_id}</span>
                       <span>•</span>
                       <span>{employee.department}</span>
                     </div>
@@ -446,6 +474,65 @@ export default function Employees() {
                         )}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Email */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter email address"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Phone */}
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Enter phone number"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Position */}
+              <FormField
+                control={form.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Position (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter job position/title"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
