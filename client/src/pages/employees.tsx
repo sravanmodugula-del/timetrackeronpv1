@@ -194,10 +194,12 @@ export default function Employees() {
 
   // Filter employees by search term
   const filteredEmployees = employees.filter(employee =>
-    employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchTerm.toLowerCase())
+    (employee.first_name || employee.firstName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.last_name || employee.lastName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.employee_id || employee.employeeId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.department || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.position || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSubmit = (data: EmployeeFormData) => {
@@ -210,9 +212,9 @@ export default function Employees() {
       lastName: data.lastName,
       last_name: data.lastName, // Add snake_case alias
       department: data.department,
-      email: data.email,
-      phone: data.phone,
-      position: data.position
+      email: data.email || "",
+      phone: data.phone || "",
+      position: data.position || ""
     };
 
     if (editingEmployee) {
@@ -239,13 +241,13 @@ export default function Employees() {
   const openEditModal = (employee: Employee) => {
     setEditingEmployee(employee);
     form.reset({
-      employeeId: employee.employeeId || employee.employee_id,
-      firstName: employee.firstName || employee.first_name,
-      lastName: employee.lastName || employee.last_name,
-      department: employee.department,
-      email: employee.email,
-      phone: employee.phone,
-      position: employee.position,
+      employeeId: employee.employeeId || employee.employee_id || "",
+      firstName: employee.firstName || employee.first_name || "",
+      lastName: employee.lastName || employee.last_name || "",
+      department: employee.department || "",
+      email: employee.email || "",
+      phone: employee.phone || "",
+      position: employee.position || "",
     });
     setIsModalOpen(true);
   };
@@ -337,12 +339,28 @@ export default function Employees() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">
-                      {employee.firstName || employee.first_name} {employee.lastName || employee.last_name}
+                      {(employee.firstName || employee.first_name || 'Unknown')} {(employee.lastName || employee.last_name || 'Employee')}
                     </CardTitle>
                     <div className="space-y-1">
-                      <span>ID: {employee.employeeId || employee.employee_id}</span>
+                      <span>ID: {employee.employeeId || employee.employee_id || 'N/A'}</span>
                       <span>•</span>
-                      <span>{employee.department}</span>
+                      <span>{employee.department || 'No Department'}</span>
+                      {(employee.email || employee.phone || employee.position) && (
+                        <>
+                          {employee.email && (
+                            <>
+                              <span>•</span>
+                              <span>{employee.email}</span>
+                            </>
+                          )}
+                          {employee.position && (
+                            <>
+                              <span>•</span>
+                              <span>{employee.position}</span>
+                            </>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
