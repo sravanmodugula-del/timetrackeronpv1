@@ -985,8 +985,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { id } = req.params;
-      const taskData = insertTaskSchema.partial().parse(req.body);
-      const task = await activeStorage.updateTask(id, taskData, userId);
+
+      // Create explicit update schema for task updates
+      const updateTaskSchema = z.object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        status: z.enum(['pending', 'active', 'completed', 'archived']).optional(),
+        priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+        projectId: z.string().optional(),
+        assignedTo: z.string().optional(),
+        dueDate: z.date().optional()
+      });
+
+      const validatedData = updateTaskSchema.parse(req.body);
+
+      const task = await activeStorage.updateTask(id, validatedData, userId);
 
       if (!task) {
         return res.status(404).json({ message: "Task not found" });
@@ -1694,7 +1707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all departments for all users with access to departments page
       const departments = await activeStorage.getDepartments();
       console.log(`📋 Departments API: Found ${departments.length} departments (all departments visible to all users)`);
-      
+
       // Debug: Log department manager data
       console.log(`🔍 [DEPARTMENTS-API] Manager data sample:`, departments.slice(0, 3).map(d => ({
         id: d.id,
@@ -1969,7 +1982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await activeStorage.getAllUsers();
-      
+
       // Users are already mapped in the storage layer
       res.json(users);
     } catch (error) {
