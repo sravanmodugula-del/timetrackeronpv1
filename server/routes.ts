@@ -1778,7 +1778,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Validate manager if provided
       if (managerId) {
-        const manager = await activeStorage.getUser(managerId);
+        // First try to get as employee, then as user
+        let manager = await activeStorage.getEmployeeById(managerId);
+        if (!manager) {
+          manager = await activeStorage.getUser(managerId);
+        }
         if (!manager) {
           return res.status(404).json({
             message: "Manager not found",
