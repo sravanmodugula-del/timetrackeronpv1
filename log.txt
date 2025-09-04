@@ -1,22 +1,53 @@
-0|fmb-timetracker  | 2025-09-03T18:52:50: 2025-09-04T01:52:50.766Z ðŸ”´ [FRONTEND-API] Request al0lggxbp exception {
-0|fmb-timetracker  | 2025-09-03T18:52:50:   data: {
-0|fmb-timetracker  | 2025-09-03T18:52:50:     requestId: 'al0lggxbp',
-0|fmb-timetracker  | 2025-09-03T18:52:50:     method: '/api/departments/dept-1756939450826-fz9pwwdj9/manager',
-0|fmb-timetracker  | 2025-09-03T18:52:50:     url: 'POST',
-0|fmb-timetracker  | 2025-09-03T18:52:50:     error: {
-0|fmb-timetracker  | 2025-09-03T18:52:50:       name: 'TypeError',
-0|fmb-timetracker  | 2025-09-03T18:52:50:       message: "Failed to execute 'fetch' on 'Window': '/api/departments/dept-1756939450826-fz9pwwdj9/manager' is not a valid HTTP method.",
-0|fmb-timetracker  | 2025-09-03T18:52:50:       stack: "TypeError: '/api/departments/dept-1756939450826-fz9pwwdj9/manager' is not a valid HTTP method.\n" +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at fe (https://timetracker.fmb.com/assets/index-afD7NAC1.js:1:2645)\n' +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at Object.mutationFn (https://timetracker.fmb.com/assets/index-afD7NAC1.js:297:15634)\n' +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at Object.fn (https://timetracker.fmb.com/assets/query-skQegACk.js:1:14123)\n' +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at y (https://timetracker.fmb.com/assets/query-skQegACk.js:1:5237)\n' +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at Object.start (https://timetracker.fmb.com/assets/query-skQegACk.js:1:5686)\n' +
-0|fmb-timetracker  | 2025-09-03T18:52:50:         '    at Dt.execute (https://timetracker.fmb.com/assets/query-skQegACk.js:1:14748)'
-0|fmb-timetracker  | 2025-09-03T18:52:50:     }
-0|fmb-timetracker  | 2025-09-03T18:52:50:   },
-0|fmb-timetracker  | 2025-09-03T18:52:50:   url: 'https://timetracker.fmb.com/departments',
-0|fmb-timetracker  | 2025-09-03T18:52:50:   userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0',
-0|fmb-timetracker  | 2025-09-03T18:52:50:   ip: '192.168.210.23:59234',
-0|fmb-timetracker  | 2025-09-03T18:52:50:   sessionId: '3cfc6effe08cf5a13360dc57fae2c8d8eb2a9f5da5f80af4a94923980d197784'
-0|fmb-timetracker  | 2025-09-03T18:52:50: }
+0|fmb-timetracker  | 2025-09-03T19:14:12: 2025-09-04T02:14:12.227Z ðŸŸ¢ [FMB-SAML] FMB Authentication successful {
+0|fmb-timetracker  | 2025-09-03T19:14:12:   "userId": "user-1756939450669",
+0|fmb-timetracker  | 2025-09-03T19:14:12:   "sessionId": "9801e664e52fbf3fb506153441198921578bf6b2a5eb2d1b77901f4a0fad22bc"
+0|fmb-timetracker  | 2025-09-03T19:14:12: }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ¢ Fetching department hours for user: user-1756939450669 dates: 2025-08-27 2025-09-03
+0|fmb-timetracker  | 2025-09-03T19:14:12: 2025-09-04T02:14:12.231Z ðŸ—„ï¸ [FMB-STORAGE] EXECUTE: Query completed successfully { executeId: 'exec-1756952052162-7of65i', recordCount: 1 }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [FMB-STORAGE] Time entries check: {
+0|fmb-timetracker  | 2025-09-03T19:14:12:   total_entries: 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   unique_projects: 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   earliest_date: null,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   latest_date: null,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   total_hours: null
+0|fmb-timetracker  | 2025-09-03T19:14:12: }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [FMB-STORAGE] No time entries found for user
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [PROJECT-BREAKDOWN] Response: 0 projects
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“‹ [FMB-STORAGE] Recent activity raw result: {
+0|fmb-timetracker  | 2025-09-03T19:14:12:   recordCount: 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   firstRecord: undefined,
+0|fmb-timetracker  | 2025-09-03T19:14:12:   dateFilter: 'AND te.date >= @startDate AND te.date <= @endDate',
+0|fmb-timetracker  | 2025-09-03T19:14:12:   queryParams: {
+0|fmb-timetracker  | 2025-09-03T19:14:12:     userId: 'user-1756939450669',
+0|fmb-timetracker  | 2025-09-03T19:14:12:     startDate: '2025-08-27',
+0|fmb-timetracker  | 2025-09-03T19:14:12:     endDate: '2025-09-03'
+0|fmb-timetracker  | 2025-09-03T19:14:12:   }
+0|fmb-timetracker  | 2025-09-03T19:14:12: }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“‹ [FMB-STORAGE] No recent activity found - checking all time entries for user
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [FMB-STORAGE] Dashboard stats calculated: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 0 }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [FMB-STORAGE] Today check: {
+0|fmb-timetracker  | 2025-09-03T19:14:12:   todayStr: '2025-09-04',
+0|fmb-timetracker  | 2025-09-03T19:14:12:   queryResult: { total_hours: 0 },
+0|fmb-timetracker  | 2025-09-03T19:14:12:   calculatedToday: 0
+0|fmb-timetracker  | 2025-09-03T19:14:12: }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [DASHBOARD-STATS] Response: { todayHours: 0, weekHours: 0, monthHours: 0, activeProjects: 0 }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ¢ [FMB-STORAGE] Department hours query result: [
+0|fmb-timetracker  | 2025-09-03T19:14:12:   {
+0|fmb-timetracker  | 2025-09-03T19:14:12:     departmentName: 'Information Technology Services',
+0|fmb-timetracker  | 2025-09-03T19:14:12:     departmentId: 'dept-1756939450826-fz9pwwdj9',
+0|fmb-timetracker  | 2025-09-03T19:14:12:     totalHours: 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:     employeeCount: 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:     entryCount: 0
+0|fmb-timetracker  | 2025-09-03T19:14:12:   }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ]
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š Department hours result: [
+0|fmb-timetracker  | 2025-09-03T19:14:12:   {
+0|fmb-timetracker  | 2025-09-03T19:14:12:     "departmentName": "Information Technology Services",
+0|fmb-timetracker  | 2025-09-03T19:14:12:     "departmentId": "dept-1756939450826-fz9pwwdj9",
+0|fmb-timetracker  | 2025-09-03T19:14:12:     "totalHours": 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:     "employeeCount": 0,
+0|fmb-timetracker  | 2025-09-03T19:14:12:     "entryCount": 0
+0|fmb-timetracker  | 2025-09-03T19:14:12:   }
+0|fmb-timetracker  | 2025-09-03T19:14:12: ]
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“‹ [FMB-STORAGE] Debug - All recent time entries for user: []
+0|fmb-timetracker  | 2025-09-03T19:14:12: ðŸ“Š [RECENT-ACTIVITY] Response: []
