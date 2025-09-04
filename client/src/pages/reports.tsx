@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Calendar, Clock } from "lucide-react";
 import type { Project, TimeEntry, Employee } from "@shared/schema";
 import { format } from "date-fns";
+import { formatPSTDate } from "@shared/timezone";
 
 interface TimeEntryWithEmployee extends TimeEntry {
   employee?: Employee;
@@ -115,14 +116,14 @@ export default function Reports() {
       const duration = typeof entry.duration === 'number' ? entry.duration : parseFloat(entry.duration as string) || 0;
       const selectedProjectData = projects.find(p => p.id === selectedProject);
       return [
-        entry.date ? format(new Date(entry.date), "MM/dd/yyyy") : "Unknown Date",
+        entry.date ? formatPSTDate(entry.date, "MM/dd/yyyy") : "Unknown Date",
         selectedProjectData?.project_number || "",
         selectedProjectData?.name || "Unknown Project",
         entry.employee ? `${entry.employee.first_name} ${entry.employee.last_name}` : "Unknown Employee",
         entry.task ? entry.task.name : "No Task",
         entry.description || "",
         duration.toFixed(2),
-        entry.created_at ? format(new Date(entry.created_at), "MM/dd/yyyy HH:mm:ss") : "Unknown"
+        entry.created_at ? formatPSTDate(entry.created_at, "MM/dd/yyyy HH:mm:ss") : "Unknown"
       ];
     });
 
@@ -137,7 +138,7 @@ export default function Reports() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `${selectedProjectName}_time_entries_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.setAttribute("download", `${selectedProjectName}_time_entries_${formatPSTDate(new Date().toISOString(), "yyyy-MM-dd")}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -324,7 +325,7 @@ export default function Reports() {
                           <TableRow key={entry.id}>
                             <TableCell>
                               <Badge variant="outline">
-                                {entry.date ? format(new Date(entry.date), "MMM dd, yyyy") : "Unknown Date"}
+                                {entry.date ? formatPSTDate(entry.date, "MMM dd, yyyy") : "Unknown Date"}
                               </Badge>
                             </TableCell>
                             <TableCell>
@@ -362,7 +363,7 @@ export default function Reports() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">
-                              {entry.created_at ? format(new Date(entry.created_at), "MMM dd, HH:mm") : "Unknown"}
+                              {entry.created_at ? formatPSTDate(entry.created_at, "MMM dd, HH:mm") : "Unknown"}
                             </TableCell>
                           </TableRow>
                         );
