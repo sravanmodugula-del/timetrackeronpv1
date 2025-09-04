@@ -498,7 +498,7 @@ export class FmbStorage implements IStorage {
       request.input('user_id', sql.NVarChar(255), sanitizedUserId);
       console.log(`✅ [CHECKPOINT-10-${requestId}] Parameter 'user_id' bound successfully`);
 
-      // CHECKPOINT 11: Verify bound parameters before execution
+      // CHECKPOINT 11: Verify all bound parameters before execution
       console.log(`🎯 [CHECKPOINT-11-${requestId}] Verifying all bound parameters:`, {
         boundParameterNames: Object.keys(request.parameters || {}),
         boundParameterDetails: Object.entries(request.parameters || {}).map(([name, param]: [string, any]) => ({
@@ -2973,22 +2973,23 @@ export class FmbStorage implements IStorage {
     try {
       console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', { projectId, employeeIds, userId });
 
+      // Clear existing assignments first
+      const clearRequest = this.pool!.request();
+      clearRequest.input('projectId', sql.NVarChar(255), projectId);
+
+      await clearRequest.query('DELETE FROM project_employees WHERE project_id = @projectId');
+      console.log('🗑️ [FMB-STORAGE] Cleared existing project employee assignments');
+
+      // Add new assignments
       for (const employeeId of employeeIds) {
-        const assignmentId = `pe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        const request = this.pool!.request();
-        request.input('id', sql.NVarChar(255), assignmentId);
-        request.input('projectId', sql.NVarChar(255), projectId);
-        request.input('employeeId', sql.NVarChar(255), employeeId);
-        request.input('userId', sql.NVarChar(255), userId || null);
-
-        await request.query(`
-        INSERT INTO project_employees (id, project_id, employee_id, user_id, created_at)
-        VALUES (@id, @projectId, @employeeId, @userId, GETDATE())
-      `);
-
-        console.log('✅ [FMB-STORAGE] Project employee assignment created:', assignmentId);
+        await this.createProjectEmployee({
+          project_id: projectId,
+          employee_id: employeeId,
+          user_id: userId
+        });
       }
+
+      console.log('✅ [FMB-STORAGE] Successfully assigned employees to project');
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error assigning employees to project:', error);
       throw error;
@@ -2997,9 +2998,9 @@ export class FmbStorage implements IStorage {
 
   async removeEmployeeFromProject(projectId: string, employeeId: string, userId?: string): Promise<boolean> {
     try {
-      console.log('🗑️ [FMB-STORAGE] REMOVE_EMPLOYEE_FROM_PROJECT:', { projectId, employeeId, userId });
+      console.log('❌ [FMB-STORAGE] REMOVE_EMPLOYEE_FROM_PROJECT:', { projectId, employeeId, userId });
 
-      const request = this.pool.request();
+      const request = this.pool!.request();
       request.input('projectId', sql.NVarChar(255), projectId);
       request.input('employeeId', sql.NVarChar(255), employeeId);
 
@@ -3009,7 +3010,7 @@ export class FmbStorage implements IStorage {
       `);
 
       const removed = result.rowsAffected[0] > 0;
-      console.log('✅ [FMB-STORAGE] Employee removed from project:', { projectId, employeeId, removed });
+      console.log('✅ [FMB-STORAGE] Employee removed from project:', removed);
 
       return removed;
     } catch (error) {
@@ -3018,18 +3019,34 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  async getProjectEmployees(projectId: string, userId?: string): Promise<any[]> {
+  async getProjectEmployees(projectId: string, userId?: string): Promise<Employee[]> {
     try {
       console.log('👥 [FMB-STORAGE] GET_PROJECT_EMPLOYEES:', { projectId, userId });
 
-      const request = this.pool.request();
+      const request = this.pool!.request();
       request.input('projectId', sql.NVarChar(255), projectId);
+      if (userId) {
+        request.input('userId', sql.NVarChar(255), userId);
+      }
 
+      // Fixed query - removed 'email' column reference that doesn't exist in employees table
       const result = await request.query(`
-        SELECT pe.*, e.first_name, e.last_name, e.employee_id, e.email, e.department
+        SELECT DISTINCT
+          e.id,
+          e.employee_id,
+          e.first_name,
+          e.last_name,
+          e.department,
+          e.phone,
+          e.position,
+          e.user_id,
+          e.created_at,
+          e.updated_at
         FROM project_employees pe
-        JOIN employees e ON pe.employee_id = e.id
+        INNER JOIN employees e ON pe.employee_id = e.id
         WHERE pe.project_id = @projectId
+        ${userId ? 'AND pe.user_id = @userId' : ''}
+        ORDER BY e.last_name, e.first_name
       `);
 
       console.log('✅ [FMB-STORAGE] Found project employees:', result.recordset?.length || 0);
