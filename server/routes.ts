@@ -367,6 +367,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`✅ Project created successfully: ${project.id} - "${project.name}"`);
 
+      // Handle employee assignments if provided and not enterprise-wide
+      if (req.body.assignedEmployeeIds && Array.isArray(req.body.assignedEmployeeIds) && req.body.assignedEmployeeIds.length > 0 && !req.body.isEnterpriseWide) {
+        try {
+          console.log(`👥 Assigning ${req.body.assignedEmployeeIds.length} employees to project: ${project.id}`);
+          
+          // Assign employees to the project
+          for (const employeeId of req.body.assignedEmployeeIds) {
+            const projEmpData = {
+              project_id: project.id,
+              employee_id: employeeId,
+              user_id: userId
+            };
+            
+            await activeStorage.createProjectEmployee(projEmpData);
+            console.log(`✅ Assigned employee ${employeeId} to project ${project.id}`);
+          }
+          
+          console.log(`✅ All employees assigned successfully to project: ${project.id}`);
+        } catch (employeeError) {
+          console.error(`❌ Error assigning employees to project ${project.id}:`, employeeError);
+          // Note: Project was created successfully, but employee assignment failed
+          return res.status(201).json({
+            ...project,
+            message: "Project created successfully, but failed to assign some employees. You can assign employees later from the project details page.",
+            warning: "Employee assignment failed"
+          });
+        }
+      }
+
       res.status(201).json({
         ...project,
         message: "Project created successfully"
