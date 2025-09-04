@@ -118,7 +118,7 @@ export default function WorkingTimeEntryForm() {
     gcTime: 0, // Don't cache results
   });
 
-  // Filter tasks to show active and completed tasks for time entry
+  // Filter tasks to show only active tasks for time entry
   const availableTasks = React.useMemo(() => {
     console.log("🔍 Working Time Entry - Raw tasks:", tasks);
     if (!tasks || !Array.isArray(tasks)) {
@@ -127,7 +127,7 @@ export default function WorkingTimeEntryForm() {
     }
 
     const filtered = tasks.filter(task => {
-      const isValidStatus = task.status === "active" || task.status === "completed";
+      const isValidStatus = task.status === "active";
       console.log(`📋 Working Time Entry - Task ${task.name}: status=${task.status}, valid=${isValidStatus}`);
       return isValidStatus;
     });
