@@ -193,7 +193,7 @@ export default function Departments() {
   // Assign manager mutation
   const assignManager = useMutation({
     mutationFn: async ({ departmentId, managerId }: { departmentId: string; managerId: string | null }) => {
-      await apiRequest("POST", `/api/departments/${departmentId}/manager`, { managerId });
+      await apiRequest(`/api/departments/${departmentId}/manager`, "POST", { managerId });
     },
     onSuccess: () => {
       toast({
