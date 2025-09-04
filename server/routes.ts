@@ -144,7 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: dbUser.first_name,
         lastName: dbUser.last_name,
         role: dbUser.role,
-        profileImageUrl: dbUser.profile_image_url
+        profileImageUrl: dbUser.profile_image_url,
+        lastLoginAt: dbUser.last_login_at,
+        createdAt: dbUser.created_at
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -1943,7 +1945,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await activeStorage.getAllUsers();
-      res.json(users);
+      
+      // Map database field names to frontend expected names
+      const mappedUsers = users.map(user => ({
+        ...user,
+        lastLoginAt: user.last_login_at,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        createdAt: user.created_at
+      }));
+      
+      res.json(mappedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
