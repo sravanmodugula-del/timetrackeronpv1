@@ -12,6 +12,11 @@ import type { Project, Task, TimeEntry } from "@shared/schema";
 import { insertTimeEntrySchema, type TimeEntryWithProject } from "@shared/schema";
 import { getActiveProjects } from "@/lib/projectUtils";
 import { z } from "zod";
+
+// Helper function to extract user ID from time entry
+function extractUserId(entry: TimeEntryWithProject): string {
+  return entry.user_id;
+}
 import {
   Dialog,
   DialogContent,
@@ -120,8 +125,15 @@ export default function TimeEntryModal({ entry, onClose, onSuccess }: TimeEntryM
       const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
       const entryData = {
-        ...data,
-        duration: duration.toFixed(2),
+        userId: extractUserId(entry), // Ensure userId is included
+        projectId: data.projectId,
+        taskId: data.taskId,
+        description: data.description || "",
+        date: data.date,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration: parseFloat(duration.toFixed(2)),
+        hours: parseFloat(duration.toFixed(2)),
       };
 
       return await apiRequest(`/api/time-entries/${entry.id}`, "PUT", entryData);

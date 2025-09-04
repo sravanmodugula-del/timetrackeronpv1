@@ -74,8 +74,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       taskId: entry.task_id || "",
       description: entry.description,
       date: entry.date.toString().split('T')[0],
-      startTime: typeof entry.start_time === 'string' ? entry.start_time : "",
-      endTime: typeof entry.end_time === 'string' ? entry.end_time : "",
+      startTime: entry.start_time ? (typeof entry.start_time === 'string' ? entry.start_time : new Date(entry.start_time).toTimeString().slice(0, 5)) : "",
+      endTime: entry.end_time ? (typeof entry.end_time === 'string' ? entry.end_time : new Date(entry.end_time).toTimeString().slice(0, 5)) : "",
       duration: entry.duration?.toString() || "",
     },
   });
@@ -193,15 +193,15 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       const hours = diffMs / (1000 * 60 * 60);
 
       const submissionData = {
+        userId: entry.user_id,
         projectId: data.projectId,
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        startTime: data.startTime, // Keep camelCase for frontend
-        endTime: data.endTime,     // Keep camelCase for frontend
+        startTime: data.startTime,
+        endTime: data.endTime,
         duration: parseFloat(hours.toFixed(2)),
         hours: parseFloat(hours.toFixed(2)),
-        userId: entry.user_id, // Include userId for server validation
       };
 
       console.log("🔧 [TIME-RANGE] Submitting data:", submissionData);
@@ -227,13 +227,13 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
       }
 
       const submissionData = {
+        userId: entry.user_id,
         projectId: data.projectId,
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
         duration: durationNum,
         hours: durationNum,
-        userId: entry.user_id, // Include userId for server validation
       };
 
       console.log("🔧 [MANUAL-DURATION] Submitting data:", submissionData);
