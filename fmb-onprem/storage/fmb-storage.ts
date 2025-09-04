@@ -2451,14 +2451,14 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  
+
 
   async getProjectEmployeesByProjectId(projectId: string): Promise<ProjectEmployee[]> {
     const result = await this.execute('SELECT * FROM project_employees WHERE project_id = @param0', [projectId]);
     return result;
   }
 
-  
+
 
   async deleteProjectEmployee(id: string): Promise<void> {
     try {
@@ -2969,31 +2969,26 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Employee Assignment
-  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId?: string): Promise<void> {
+  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId: string): Promise<void> {
     try {
       console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', { projectId, employeeIds, userId });
 
-      // Clear existing assignments
-      const deleteRequest = this.pool.request();
-      deleteRequest.input('projectId', sql.NVarChar(255), projectId);
-      await deleteRequest.query(`
-        DELETE FROM project_employees 
-        WHERE project_id = @projectId
+      for (const employeeId of employeeIds) {
+        const assignmentId = `pe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const request = this.pool!.request();
+        request.input('id', sql.NVarChar(255), assignmentId);
+        request.input('projectId', sql.NVarChar(255), projectId);
+        request.input('employeeId', sql.NVarChar(255), employeeId);
+        request.input('userId', sql.NVarChar(255), userId || null);
+
+        await request.query(`
+        INSERT INTO project_employees (id, project_id, employee_id, user_id, created_at)
+        VALUES (@id, @projectId, @employeeId, @userId, GETDATE())
       `);
 
-      // Add new assignments
-      for (const employeeId of employeeIds) {
-        const insertRequest = this.pool.request();
-        insertRequest.input('projectId', sql.NVarChar(255), projectId);
-        insertRequest.input('employeeId', sql.NVarChar(255), employeeId);
-        
-        await insertRequest.query(`
-          INSERT INTO project_employees (project_id, employee_id)
-          VALUES (@projectId, @employeeId)
-        `);
+        console.log('✅ [FMB-STORAGE] Project employee assignment created:', assignmentId);
       }
-
-      console.log('✅ [FMB-STORAGE] Successfully assigned employees to project:', { projectId, count: employeeIds.length });
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error assigning employees to project:', error);
       throw error;
@@ -3007,7 +3002,7 @@ export class FmbStorage implements IStorage {
       const request = this.pool.request();
       request.input('projectId', sql.NVarChar(255), projectId);
       request.input('employeeId', sql.NVarChar(255), employeeId);
-      
+
       const result = await request.query(`
         DELETE FROM project_employees 
         WHERE project_id = @projectId AND employee_id = @employeeId
@@ -3015,7 +3010,7 @@ export class FmbStorage implements IStorage {
 
       const removed = result.rowsAffected[0] > 0;
       console.log('✅ [FMB-STORAGE] Employee removed from project:', { projectId, employeeId, removed });
-      
+
       return removed;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error removing employee from project:', error);
@@ -3029,7 +3024,7 @@ export class FmbStorage implements IStorage {
 
       const request = this.pool.request();
       request.input('projectId', sql.NVarChar(255), projectId);
-      
+
       const result = await request.query(`
         SELECT pe.*, e.first_name, e.last_name, e.employee_id, e.email, e.department
         FROM project_employees pe
@@ -3054,7 +3049,7 @@ export class FmbStorage implements IStorage {
       request.input('projectId', sql.NVarChar(255), data.project_id);
       request.input('employeeId', sql.NVarChar(255), data.employee_id);
       request.input('userId', sql.NVarChar(255), data.user_id || null);
-      
+
       await request.query(`
         INSERT INTO project_employees (id, project_id, employee_id, user_id, created_at)
         VALUES (@id, @projectId, @employeeId, @userId, GETDATE())
