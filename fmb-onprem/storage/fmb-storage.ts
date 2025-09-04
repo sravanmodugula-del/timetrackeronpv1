@@ -2986,6 +2986,38 @@ export class FmbStorage implements IStorage {
     }
   }
 
+  // Project Employee Assignment
+  async assignEmployeesToProject(projectId: string, employeeIds: string[]): Promise<void> {
+    try {
+      console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', { projectId, employeeIds });
+
+      // Clear existing assignments
+      const deleteRequest = this.pool.request();
+      deleteRequest.input('projectId', sql.NVarChar(255), projectId);
+      await deleteRequest.query(`
+        DELETE FROM project_employees 
+        WHERE project_id = @projectId
+      `);
+
+      // Add new assignments
+      for (const employeeId of employeeIds) {
+        const insertRequest = this.pool.request();
+        insertRequest.input('projectId', sql.NVarChar(255), projectId);
+        insertRequest.input('employeeId', sql.NVarChar(255), employeeId);
+        
+        await insertRequest.query(`
+          INSERT INTO project_employees (project_id, employee_id)
+          VALUES (@projectId, @employeeId)
+        `);
+      }
+
+      console.log('✅ [FMB-STORAGE] Successfully assigned employees to project:', { projectId, count: employeeIds.length });
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error assigning employees to project:', error);
+      throw error;
+    }
+  }
+
   // User Role Management
   async updateUserRole(userId: string, newRole: string): Promise<User> {
     try {
