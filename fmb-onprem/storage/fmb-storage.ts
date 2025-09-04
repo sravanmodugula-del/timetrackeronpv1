@@ -1068,8 +1068,11 @@ export class FmbStorage implements IStorage {
           te.task_id,
           p.name as project_name,
           p.color as project_color,
+          t.id as task_table_id,
+          t.title as task_title,
           t.name as task_name,
           t.description as task_description,
+          t.status as task_status,
           u.first_name as user_first_name,
           u.last_name as user_last_name,
           u.email as user_email
@@ -1083,36 +1086,57 @@ export class FmbStorage implements IStorage {
 
       console.log(`📊 [FMB-STORAGE] Found ${result.recordset.length} time entries for project: ${projectId}`);
 
-      return result.recordset.map(row => ({
-        id: row.id,
-        description: row.description,
-        date: row.date,
-        start_time: row.start_time,
-        end_time: row.end_time,
-        hours: parseFloat(row.hours) || 0,
-        duration: parseFloat(row.duration) || parseFloat(row.hours) || 0,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-        user_id: row.user_id,
-        project_id: row.project_id,
-        task_id: row.task_id,
-        project: {
-          id: row.project_id,
-          name: row.project_name,
-          color: row.project_color
-        },
-        task: row.task_id ? {
-          id: row.task_id,
-          name: row.task_name,
-          description: row.task_description
-        } : null,
-        employee: {
-          id: row.user_id,
-          first_name: row.user_first_name || 'Unknown',
-          last_name: row.user_last_name || 'User',
-          email: row.user_email
+      return result.recordset.map(row => {
+        // Enhanced task mapping with proper fallbacks
+        let taskData = null;
+        if (row.task_id) {
+          const taskName = row.task_title || row.task_name;
+          if (taskName) {
+            taskData = {
+              id: row.task_id,
+              name: taskName,
+              title: row.task_title,
+              description: row.task_description,
+              status: row.task_status || 'active'
+            };
+          }
         }
-      }));
+
+        console.log(`📊 [FMB-STORAGE] Entry ${row.id} task mapping:`, {
+          task_id: row.task_id,
+          task_title: row.task_title,
+          task_name: row.task_name,
+          mapped_task: taskData
+        });
+
+        return {
+          id: row.id,
+          description: row.description,
+          date: row.date,
+          start_time: row.start_time,
+          end_time: row.end_time,
+          hours: parseFloat(row.hours) || 0,
+          duration: parseFloat(row.duration) || parseFloat(row.hours) || 0,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          user_id: row.user_id,
+          project_id: row.project_id,
+          task_id: row.task_id,
+          task_name: row.task_title || row.task_name, // Add direct task_name property
+          project: {
+            id: row.project_id,
+            name: row.project_name,
+            color: row.project_color
+          },
+          task: taskData,
+          employee: {
+            id: row.user_id,
+            first_name: row.user_first_name || 'Unknown',
+            last_name: row.user_last_name || 'User',
+            email: row.user_email
+          }
+        };
+      });
 
     } catch (error) {
       console.error(`❌ [FMB-STORAGE] Failed to get time entries by project:`, {
