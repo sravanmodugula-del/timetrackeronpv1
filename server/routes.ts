@@ -465,6 +465,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const activeStorage = getStorage();
 
+      console.log('🔧 [API] PATCH project update request:', { id, userId });
+
       // Validate and map request body to snake_case
       const data = req.body;
       const formattedData = {
@@ -488,19 +490,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const project = await activeStorage.updateProject(id, updateData, userId);
 
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-
+      console.log('✅ [API] Project updated successfully:', project.name);
       res.json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid project data", errors: error.errors });
       }
+      if (error instanceof Error && error.message.includes('Project not found')) {
+        return res.status(404).json({ message: error.message });
+      }
       if (error instanceof Error && error.message.includes('Insufficient permissions')) {
         return res.status(403).json({ message: error.message });
       }
-      console.error("Error updating project:", error);
+      console.error("❌ [API] Error updating project:", error);
       res.status(500).json({ message: "Failed to update project" });
     }
   });
@@ -510,6 +512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const { id } = req.params;
       const activeStorage = getStorage();
+
+      console.log('🔧 [API] PUT project update request:', { id, userId });
 
       // Validate and map request body to snake_case
       const data = req.body;
@@ -529,16 +533,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const project = await activeStorage.updateProject(id, formattedData, userId);
 
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-
+      console.log('✅ [API] Project updated successfully:', project.name);
       res.json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid project data", errors: error.errors });
       }
-      console.error("Error updating project:", error);
+      if (error instanceof Error && error.message.includes('Project not found')) {
+        return res.status(404).json({ message: error.message });
+      }
+      console.error("❌ [API] Error updating project:", error);
       res.status(500).json({ message: "Failed to update project" });
     }
   });
