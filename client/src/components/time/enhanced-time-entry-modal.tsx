@@ -131,7 +131,17 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
 
   // Update time entry mutation
   const updateTimeEntry = useMutation({
-    mutationFn: async (data: TimeEntryFormData) => {
+    mutationFn: async (data: {
+      userId: string;
+      projectId: string;
+      taskId: string;
+      description: string;
+      date: string;
+      startTime?: string;
+      endTime?: string;
+      duration: string;
+      hours: string;
+    }) => {
       // Construct the URL with the entry ID
       return apiRequest(`/api/time-entries/${entry.id}`, "PUT", data);
     },
@@ -198,8 +208,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         taskId: data.taskId,
         description: data.description || "",
         date: data.date,
-        startTime: data.startTime, // This will be mapped to start_time on server
-        endTime: data.endTime,     // This will be mapped to end_time on server
+        startTime: data.startTime,
+        endTime: data.endTime,
         duration: hours.toFixed(2),
         hours: hours.toFixed(2),
       };
@@ -235,8 +245,8 @@ export default function EnhancedTimeEntryModal({ entry, onClose, onSuccess }: En
         duration: durationNum.toString(),
         hours: durationNum.toString(),
         // Clear start/end times for manual duration entries
-        startTime: undefined,
-        endTime: undefined,
+        startTime: null,
+        endTime: null,
       };
 
       console.log("🔧 [MANUAL-DURATION] Submitting data:", submissionData);
