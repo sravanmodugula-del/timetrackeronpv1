@@ -3045,7 +3045,7 @@ export class FmbStorage implements IStorage {
         request.input('userId', sql.NVarChar(255), userId);
       }
 
-      // Fixed query - removed 'email' column reference that doesn't exist in employees table
+      // Fixed query - removed 'phone' and 'position' columns from the SELECT list as they do not exist in the employees table
       const result = await request.query(`
         SELECT DISTINCT
           e.id,
@@ -3053,8 +3053,6 @@ export class FmbStorage implements IStorage {
           e.first_name,
           e.last_name,
           e.department,
-          e.phone,
-          e.position,
           e.user_id,
           e.created_at,
           e.updated_at
