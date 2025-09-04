@@ -1471,19 +1471,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/employees', isAuthenticated, async (req: any, res: any) => {
+  app.post('/api/employees', isAuthenticated, async (req: any, res) => {
     try {
       const userId = extractUserId(req.user);
-      // Support both camelCase and snake_case field names from frontend
-      const { 
-        employeeId, employee_id,
-        firstName, first_name,
-        lastName, last_name,
-        department, 
-        email, 
-        phone, 
-        position 
-      } = req.body;
+      const { employeeId, firstName, lastName, department, email, phone, position } = req.body;
 
       // Validate user session
       if (!userId || typeof userId !== 'string') {
@@ -1493,48 +1484,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Use the correct field names, prioritizing snake_case if provided
-      const empId = employee_id || employeeId;
-      const fName = first_name || firstName;
-      const lName = last_name || lastName;
-
       // Validate request data
-      if (!empId || typeof empId !== 'string' || empId.trim().length === 0) {
+      if (!employeeId || typeof employeeId !== 'string' || employeeId.trim().length === 0) {
         return res.status(400).json({
           message: "Employee ID is required",
           code: "INVALID_EMPLOYEE_ID"
         });
       }
 
-      if (empId.trim().length > 50) {
+      if (employeeId.trim().length > 50) {
         return res.status(400).json({
           message: "Employee ID must be less than 50 characters",
           code: "INVALID_EMPLOYEE_ID"
         });
       }
 
-      if (!fName || typeof fName !== 'string' || fName.trim().length === 0) {
+      if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
         return res.status(400).json({
           message: "First name is required",
           code: "INVALID_FIRST_NAME"
         });
       }
 
-      if (fName.trim().length > 100) {
+      if (firstName.trim().length > 100) {
         return res.status(400).json({
           message: "First name must be less than 100 characters",
           code: "INVALID_FIRST_NAME"
         });
       }
 
-      if (!lName || typeof lName !== 'string' || lName.trim().length === 0) {
+      if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
         return res.status(400).json({
           message: "Last name is required",
           code: "INVALID_LAST_NAME"
         });
       }
 
-      if (lName.trim().length > 100) {
+      if (lastName.trim().length > 100) {
         return res.status(400).json({
           message: "Last name must be less than 100 characters",
           code: "INVALID_LAST_NAME"
@@ -1586,9 +1572,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create employee
       const employeeData = {
-        employee_id: empId.trim(),
-        first_name: fName.trim(),
-        last_name: lName.trim(),
+        employee_id: employeeId.trim(),
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
         department: department.trim(),
         email: email?.trim() || null,
         phone: phone?.trim() || null,
@@ -1708,7 +1694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all departments for all users with access to departments page
       const departments = await activeStorage.getDepartments();
       console.log(`📋 Departments API: Found ${departments.length} departments (all departments visible to all users)`);
-
+      
       // Debug: Log department manager data
       console.log(`🔍 [DEPARTMENTS-API] Manager data sample:`, departments.slice(0, 3).map(d => ({
         id: d.id,
@@ -1983,7 +1969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const users = await activeStorage.getAllUsers();
-
+      
       // Users are already mapped in the storage layer
       res.json(users);
     } catch (error) {
@@ -2296,7 +2282,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reports routes
   app.get('/api/reports/project-time-entries/:projectId', isAuthenticated, async (req: any, res) => {
     try {
-      const {projectId } = req.params;
+      const { projectId } = req.params;
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
 

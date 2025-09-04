@@ -1502,22 +1502,7 @@ export class FmbStorage implements IStorage {
       return await this.getEmployeesByUserId(userId);
     }
     
-    const result = await this.execute(`
-      SELECT 
-        id,
-        employee_id,
-        first_name,
-        last_name,
-        department,
-        email,
-        phone,
-        position,
-        user_id,
-        created_at,
-        updated_at
-      FROM employees 
-      ORDER BY created_at DESC
-    `);
+    const result = await this.execute('SELECT * FROM employees ORDER BY created_at DESC');
     
     console.log(`✅ [FMB-STORAGE] GET_EMPLOYEES: Found ${result.length} employees`);
     console.log(`🔍 [FMB-STORAGE] Employee user_id distribution:`, {
@@ -1526,111 +1511,26 @@ export class FmbStorage implements IStorage {
       totalEmployees: result.length
     });
     
-    // Map database fields to frontend expected format with both snake_case and camelCase
+    // Map database fields to frontend expected format
     return result.map(employee => ({
-      id: employee.id,
-      employee_id: employee.employee_id,
-      employeeId: employee.employee_id, // camelCase alias
-      first_name: employee.first_name,
-      firstName: employee.first_name, // camelCase alias
-      last_name: employee.last_name,
-      lastName: employee.last_name, // camelCase alias
-      department: employee.department,
-      email: employee.email,
-      phone: employee.phone,
-      position: employee.position,
-      user_id: employee.user_id,
-      userId: employee.user_id, // camelCase alias
-      created_at: employee.created_at,
-      createdAt: employee.created_at, // camelCase alias
-      updated_at: employee.updated_at,
-      updatedAt: employee.updated_at // camelCase alias
+      ...employee,
+      employeeId: employee.employee_id,
+      firstName: employee.first_name,
+      lastName: employee.last_name,
+      userId: employee.user_id,
+      createdAt: employee.created_at,
+      updatedAt: employee.updated_at
     }));
   }
 
   async getEmployeesByUserId(userId: string): Promise<Employee[]> {
-    const result = await this.execute(`
-      SELECT 
-        id,
-        employee_id,
-        first_name,
-        last_name,
-        department,
-        email,
-        phone,
-        position,
-        user_id,
-        created_at,
-        updated_at
-      FROM employees 
-      WHERE user_id = @param0
-      ORDER BY created_at DESC
-    `, [userId]);
-    
-    // Map database fields to frontend expected format with both formats
-    return result.map(employee => ({
-      id: employee.id,
-      employee_id: employee.employee_id,
-      employeeId: employee.employee_id,
-      first_name: employee.first_name,
-      firstName: employee.first_name,
-      last_name: employee.last_name,
-      lastName: employee.last_name,
-      department: employee.department,
-      email: employee.email,
-      phone: employee.phone,
-      position: employee.position,
-      user_id: employee.user_id,
-      userId: employee.user_id,
-      created_at: employee.created_at,
-      createdAt: employee.created_at,
-      updated_at: employee.updated_at,
-      updatedAt: employee.updated_at
-    }));
+    const result = await this.execute('SELECT * FROM employees WHERE user_id = @param0', [userId]);
+    return result;
   }
 
   async getEmployeeById(id: string): Promise<Employee | null> {
-    const result = await this.execute(`
-      SELECT 
-        id,
-        employee_id,
-        first_name,
-        last_name,
-        department,
-        email,
-        phone,
-        position,
-        user_id,
-        created_at,
-        updated_at
-      FROM employees 
-      WHERE id = @param0
-    `, [id]);
-    
-    if (!result[0]) {
-      return null;
-    }
-    
-    const employee = result[0];
-    return {
-      id: employee.id,
-      employee_id: employee.employee_id,
-      employeeId: employee.employee_id,
-      first_name: employee.first_name,
-      firstName: employee.first_name,
-      last_name: employee.last_name,
-      lastName: employee.last_name,
-      department: employee.department,
-      email: employee.email,
-      phone: employee.phone,
-      position: employee.position,
-      user_id: employee.user_id,
-      userId: employee.user_id,
-      created_at: employee.created_at,
-      createdAt: employee.created_at,
-      updated_at: employee.updated_at,
-      updatedAt: employee.updated_at
-    };
+    const result = await this.execute('SELECT * FROM employees WHERE id = @param0', [id]);
+    return result[0] || null;
   }
 
   async createEmployee(employeeData: InsertEmployee): Promise<Employee> {
