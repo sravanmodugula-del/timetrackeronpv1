@@ -26,7 +26,7 @@ export default function StatsCards({ dateRange }: StatsCardsProps) {
           endDate: dateRange.endDate,
         });
         const response = await fetch(`/api/dashboard/stats?${params}`);
-        
+
         if (!response.ok) {
           console.error("Dashboard stats API error:", response.status, response.statusText);
           // Return safe defaults instead of throwing
@@ -37,10 +37,10 @@ export default function StatsCards({ dateRange }: StatsCardsProps) {
             activeProjects: 0
           };
         }
-        
+
         const data = await response.json();
         console.log("📊 [STATS-CARDS] Received data:", data);
-        
+
         // Ensure all values are valid numbers
         return {
           todayHours: Number(data.todayHours || 0),

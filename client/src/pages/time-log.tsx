@@ -14,6 +14,7 @@ import type { TimeEntryWithProject, Project } from "@shared/schema";
 import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
 import { apiRequest } from "@/lib/queryClient";
 import { format } from "date-fns";
+import { formatPSTDate } from "@shared/timezone";
 
 export default function TimeLog() {
   const { toast } = useToast();
@@ -204,8 +205,14 @@ export default function TimeLog() {
   };
 
   const formatDate = (dateString: string | number | Date) => {
+    // Use PST formatting to avoid timezone conversion issues
+    if (typeof dateString === 'string') {
+      return formatPSTDate(dateString);
+    }
+    // For Date objects or numbers, convert to string first
     const date = new Date(dateString);
-    return format(date, 'MMM dd, yyyy');
+    const dateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+    return formatPSTDate(dateStr);
   };
 
   const getProjectColor = (color?: string) => {

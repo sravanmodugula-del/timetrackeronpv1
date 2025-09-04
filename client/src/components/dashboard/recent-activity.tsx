@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { History } from "lucide-react";
 import type { TimeEntryWithProject } from "@shared/schema";
 import { Clock } from "lucide-react";
+import { formatPSTDate } from "@shared/timezone";
 
 interface RecentActivityProps {
   dateRange: {
@@ -38,44 +39,50 @@ export default function RecentActivity({ dateRange }: RecentActivityProps) {
 
   const formatDate = (dateString: string | Date) => {
     try {
-      // Handle different date formats
-      let date: Date;
+      // Get today's date in PST
+      const now = new Date();
+      const todayPST = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      
+      // Extract date part from the input
+      let entryDateStr: string;
       if (typeof dateString === 'string') {
-        // Try parsing the date string directly first
-        date = new Date(dateString);
-        // If that doesn't work, try appending time
-        if (isNaN(date.getTime())) {
-          date = new Date(dateString + 'T00:00:00');
-        }
-        // If still invalid, try parsing as ISO date
-        if (isNaN(date.getTime())) {
-          date = new Date(dateString + 'T00:00:00.000Z');
+        // If it's already in YYYY-MM-DD format, use it directly
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          entryDateStr = dateString;
+        } else {
+          // Otherwise try to extract date part
+          const dateObj = new Date(dateString);
+          if (!isNaN(dateObj.getTime())) {
+            entryDateStr = dateObj.toISOString().split('T')[0];
+          } else {
+            console.warn('Invalid date in recent activity:', dateString);
+            return "Unknown date";
+          }
         }
       } else {
-        date = new Date(dateString);
+        const dateObj = new Date(dateString);
+        if (!isNaN(dateObj.getTime())) {
+          entryDateStr = dateObj.toISOString().split('T')[0];
+        } else {
+          console.warn('Invalid date in recent activity:', dateString);
+          return "Unknown date";
+        }
       }
 
-      // Check if date is valid
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date in recent activity:', dateString);
-        return "Unknown date";
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset time for comparison
-      
-      const yesterday = new Date(today);
+      // Calculate yesterday's date in PST
+      const yesterday = new Date(now);
       yesterday.setDate(yesterday.getDate() - 1);
-      
-      const compareDate = new Date(date);
-      compareDate.setHours(0, 0, 0, 0); // Reset time for comparison
+      const yesterdayPST = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-      if (compareDate.getTime() === today.getTime()) {
+      if (entryDateStr === todayPST) {
         return "Today";
-      } else if (compareDate.getTime() === yesterday.getTime()) {
+      } else if (entryDateStr === yesterdayPST) {
         return "Yesterday";
       } else {
-        const diffTime = Math.abs(today.getTime() - compareDate.getTime());
+        // Calculate days difference using PST dates
+        const entryDate = new Date(entryDateStr + 'T00:00:00');
+        const todayDate = new Date(todayPST + 'T00:00:00');
+        const diffTime = Math.abs(todayDate.getTime() - entryDate.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
       }
