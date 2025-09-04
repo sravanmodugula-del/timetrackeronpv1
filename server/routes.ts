@@ -1207,15 +1207,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Handle time fields - ensure proper format
       if (req.body.startTime) {
-        // Convert HH:MM to HH:MM:SS format if needed
         const startTime = req.body.startTime;
-        entryData.start_time = startTime.includes(':') && startTime.split(':').length === 2 ? `${startTime}:00` : startTime;
+        // Keep HH:MM format - don't append seconds
+        entryData.start_time = startTime.includes(":") && startTime.split(":").length >= 2 
+          ? startTime.substring(0, 5) : startTime; // Only take HH:MM part
         console.log("🔧 [API] Mapped start_time:", entryData.start_time);
       }
+
       if (req.body.endTime) {
-        // Convert HH:MM to HH:MM:SS format if needed
         const endTime = req.body.endTime;
-        entryData.end_time = endTime.includes(':') && endTime.split(':').length === 2 ? `${endTime}:00` : endTime;
+        // Keep HH:MM format - don't append seconds
+        entryData.end_time = endTime.includes(":") && endTime.split(":").length >= 2 
+          ? endTime.substring(0, 5) : endTime; // Only take HH:MM part
         console.log("🔧 [API] Mapped end_time:", entryData.end_time);
       }
 
@@ -1233,7 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete entryData[key];
         }
       });
-      
+
       console.log("🔧 [API] Final entry data for update:", entryData);
 
       const timeEntry = await activeStorage.updateTimeEntry(id, entryData, userId);
