@@ -762,10 +762,16 @@ export class FmbStorage implements IStorage {
         `, params);
       }
 
-      const updatedProject = await this.getProjectById(id);
-      console.log('✅ [FMB-STORAGE] Project updated successfully:', updatedProject?.name);
+      // Use the same method that works for fetching projects with proper access control
+      const updatedProject = await this.getProject(id, userId);
+      if (!updatedProject) {
+        console.log('❌ [FMB-STORAGE] Could not retrieve updated project:', id);
+        throw new Error(`Failed to retrieve updated project: ${id}`);
+      }
       
-      return updatedProject as Project;
+      console.log('✅ [FMB-STORAGE] Project updated successfully:', updatedProject.name);
+      
+      return updatedProject;
     } catch (error) {
       console.error('❌ [FMB-STORAGE] Failed to update project:', {
         error: error.message,
