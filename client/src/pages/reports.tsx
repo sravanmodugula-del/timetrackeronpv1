@@ -22,22 +22,16 @@ const safeDateFormat = (dateValue: any, formatString: string): string => {
     if (!dateValue) return "Unknown Date";
     
     // Handle different date formats from database
-    let date: Date;
+    let dateString: string;
     if (typeof dateValue === 'string') {
-      // Try parsing as ISO string first, then as date string
-      date = dateValue.includes('T') ? new Date(dateValue) : new Date(dateValue + 'T00:00:00.000Z');
+      dateString = dateValue;
     } else if (dateValue instanceof Date) {
-      date = dateValue;
+      dateString = dateValue.toISOString();
     } else {
       return "Invalid Date";
     }
     
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return "Invalid Date";
-    }
-    
-    return formatPSTDate(date.toISOString(), formatString);
+    return formatPSTDate(dateString, formatString);
   } catch (error) {
     console.warn('Date formatting error:', error, 'for value:', dateValue);
     return "Invalid Date";
