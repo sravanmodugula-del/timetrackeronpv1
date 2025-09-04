@@ -768,9 +768,9 @@ export class FmbStorage implements IStorage {
         console.log('❌ [FMB-STORAGE] Could not retrieve updated project:', id);
         throw new Error(`Failed to retrieve updated project: ${id}`);
       }
-      
+
       console.log('✅ [FMB-STORAGE] Project updated successfully:', updatedProject.name);
-      
+
       return updatedProject;
     } catch (error) {
       console.error('❌ [FMB-STORAGE] Failed to update project:', {
@@ -1045,71 +1045,77 @@ export class FmbStorage implements IStorage {
   }
 
   // Time Entry Methods
-  async getTimeEntriesByProject(projectId: string): Promise<TimeEntryWithProject[]> {
+  async getTimeEntriesByProject(projectId: string): Promise<TimeEntry[]> {
     try {
-      console.log('📊 [FMB-STORAGE] Getting ALL time entries for project:', projectId);
+      console.log(`📊 [FMB-STORAGE] Getting ALL time entries for project: ${projectId}`);
 
       const request = this.pool.request();
-      request.input('projectId', this.sql.NVarChar(255), projectId);
+      request.input('projectId', sql.NVarChar(255), projectId);
 
       const result = await request.query(`
         SELECT 
           te.id,
-          te.user_id,
-          te.project_id,
-          te.task_id,
+          te.description,
           te.date,
           te.start_time,
           te.end_time,
-          te.duration,
           te.hours,
-          te.description,
+          te.duration,
           te.created_at,
           te.updated_at,
+          te.user_id,
+          te.project_id,
+          te.task_id,
           p.name as project_name,
           p.color as project_color,
           t.name as task_name,
-          t.title as task_title,
           t.description as task_description,
-          t.status as task_status
+          u.first_name as user_first_name,
+          u.last_name as user_last_name,
+          u.email as user_email
         FROM time_entries te
         LEFT JOIN projects p ON te.project_id = p.id
         LEFT JOIN tasks t ON te.task_id = t.id
+        LEFT JOIN users u ON te.user_id = u.id
         WHERE te.project_id = @projectId
         ORDER BY te.date DESC, te.created_at DESC
       `);
 
-      const timeEntries = result.recordset.map(record => ({
-        id: record.id,
-        user_id: record.user_id,
-        project_id: record.project_id,
-        task_id: record.task_id,
-        date: record.date,
-        start_time: record.start_time,
-        end_time: record.end_time,
-        duration: record.duration,
-        hours: record.hours,
-        description: record.description,
-        created_at: record.created_at,
-        updated_at: record.updated_at,
-        project: record.project_name ? {
-          id: record.project_id,
-          name: record.project_name,
-          color: record.project_color || '#1976D2'
-        } : undefined,
-        task: record.task_name || record.task_title ? {
-          id: record.task_id,
-          name: record.task_name || record.task_title,
-          title: record.task_title || record.task_name,
-          description: record.task_description,
-          status: record.task_status
-        } : undefined
+      console.log(`📊 [FMB-STORAGE] Found ${result.recordset.length} time entries for project: ${projectId}`);
+
+      return result.recordset.map(row => ({
+        id: row.id,
+        description: row.description,
+        date: row.date,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        hours: parseFloat(row.hours) || 0,
+        duration: parseFloat(row.duration) || parseFloat(row.hours) || 0,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        user_id: row.user_id,
+        project_id: row.project_id,
+        task_id: row.task_id,
+        project: {
+          id: row.project_id,
+          name: row.project_name,
+          color: row.project_color
+        },
+        task: row.task_id ? {
+          id: row.task_id,
+          name: row.task_name,
+          description: row.task_description
+        } : null,
+        employee: {
+          id: row.user_id,
+          first_name: row.user_first_name || 'Unknown',
+          last_name: row.user_last_name || 'User',
+          email: row.user_email
+        }
       }));
 
-      console.log('✅ [FMB-STORAGE] Found time entries for project:', timeEntries.length);
-      return timeEntries;
     } catch (error) {
-      console.error('❌ [FMB-STORAGE] Failed to get time entries by project:', {
+      console.error(`❌ [FMB-STORAGE] Failed to get time entries by project:`, {
         error: error.message,
         projectId
       });
@@ -2857,7 +2863,7 @@ export class FmbStorage implements IStorage {
         description: row.description || 'No description',
         date: row.date,
         created_at: row.created_at,
-        hours: parseFloat(row.hours || 0),
+        hours: parseFloat(row.hours) || 0,
         duration: parseFloat(row.duration || row.hours || 0),
         project: {
           id: row.project_id,
