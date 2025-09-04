@@ -2919,103 +2919,87 @@ export class FmbStorage implements IStorage {
 
   async getProjectTimeBreakdown(userId: string, startDate?: string, endDate?: string): Promise<any[]> {
     try {
-      console.log('📊 [FMB-STORAGE] Starting project breakdown query for user:', userId, 'dateRange:', { startDate, endDate });
+      console.log('📊 [FMB-STORAGE] Starting project breakdown query for ALL USERS (team performance), accessed by user:', userId, 'dateRange:', { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
       }
 
-      // First, let's check what time entries exist for this user
+      // First, let's check what time entries exist across ALL users
       const checkRequest = this.pool.request();
-      checkRequest.input('userId', sql.NVarChar(255), userId);
 
       const timeEntriesCheck = await checkRequest.query(`
         SELECT COUNT(*) as total_entries,
                COUNT(DISTINCT project_id) as unique_projects,
+               COUNT(DISTINCT user_id) as unique_users,
                MIN(date) as earliest_date,
                MAX(date) as latest_date,
                SUM(CAST(hours as DECIMAL(10,2))) as total_hours
         FROM time_entries
-        WHERE user_id = @userId
       `);
 
-      console.log('📊 [FMB-STORAGE] Time entries check:', timeEntriesCheck.recordset[0]);
+      console.log('📊 [FMB-STORAGE] ALL USERS time entries check:', timeEntriesCheck.recordset[0]);
 
       // If no time entries, return empty breakdown
       if (timeEntriesCheck.recordset[0]?.total_entries === 0) {
-        console.log('📊 [FMB-STORAGE] No time entries found for user');
+        console.log('📊 [FMB-STORAGE] No time entries found across all users');
         return [];
       }
 
       // Create a new request for the main query
       const request = this.pool.request();
-      request.input('userId', sql.NVarChar(255), userId);
 
-      // Build the query to get project breakdown - use LEFT JOIN to include all projects
+      // Build the query to get project breakdown for ALL USERS
       let breakdownQuery = `
         SELECT
           p.id,
           p.name,
           p.color,
           COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
-          COUNT(te.id) as entry_count
+          COUNT(te.id) as entry_count,
+          COUNT(DISTINCT te.user_id) as user_count
         FROM projects p
-        LEFT JOIN time_entries te ON p.id = te.project_id AND te.user_id = @userId
+        INNER JOIN time_entries te ON p.id = te.project_id
       `;
 
-      // Add date filter to the JOIN condition if provided
+      // Add date filter if provided
       if (startDate && endDate) {
         request.input('startDate', sql.Date, new Date(startDate));
         request.input('endDate', sql.Date, new Date(endDate));
-        // Reconstruct query with INNER JOIN for filtered date range
-        breakdownQuery = `
-        SELECT
-          p.id,
-          p.name,
-          p.color,
-          COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as total_hours,
-          COUNT(te.id) as entry_count
-        FROM projects p
-        INNER JOIN time_entries te ON p.id = te.project_id
-        WHERE p.user_id = @userId
-          AND te.user_id = @userId
-          AND CONVERT(date, te.date) >= CONVERT(date, @startDate)
+        breakdownQuery += `
+        WHERE CONVERT(date, te.date) >= CONVERT(date, @startDate)
           AND CONVERT(date, te.date) <= CONVERT(date, @endDate)
         `;
         console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
-      } else {
-        // If no date filter, ensure we are only counting entries for the specific user
-        breakdownQuery += `
-        INNER JOIN time_entries te ON p.id = te.project_id
-        WHERE p.user_id = @userId AND te.user_id = @userId
-        `;
       }
 
       breakdownQuery += `
         GROUP BY p.id, p.name, p.color
+        HAVING SUM(CAST(te.hours as DECIMAL(10,2))) > 0
         ORDER BY SUM(CAST(te.hours as DECIMAL(10,2))) DESC
       `;
 
-      console.log('📊 [FMB-STORAGE] Executing breakdown query:', breakdownQuery);
+      console.log('📊 [FMB-STORAGE] Executing ALL USERS breakdown query:', breakdownQuery);
 
       const result = await request.query(breakdownQuery);
 
-      console.log('📊 [FMB-STORAGE] Raw breakdown query result:', result.recordset);
+      console.log('📊 [FMB-STORAGE] Raw ALL USERS breakdown query result:', result.recordset);
 
       if (!result.recordset || result.recordset.length === 0) {
-        console.log('📊 [FMB-STORAGE] No project breakdown data found');
+        console.log('📊 [FMB-STORAGE] No project breakdown data found across all users');
         return [];
       }
 
       // Calculate total hours for percentage calculation
       const totalHours = result.recordset.reduce((sum, item) => sum + parseFloat(item.total_hours || 0), 0);
 
-      console.log('📊 [FMB-STORAGE] Total hours across all projects:', totalHours);
+      console.log('📊 [FMB-STORAGE] Total hours across all projects (ALL USERS):', totalHours);
 
       // Transform to the expected format
       const breakdown = result.recordset.map(row => {
         const hours = parseFloat(row.total_hours || 0);
         const entryCount = parseInt(row.entry_count || 0);
+        const userCount = parseInt(row.user_count || 0);
         const percentage = totalHours > 0 ? Math.round((hours / totalHours) * 100) : 0;
 
         return {
@@ -3028,17 +3012,21 @@ export class FmbStorage implements IStorage {
           total_hours: hours, // Add snake_case for compatibility
           entryCount: entryCount,
           entry_count: entryCount, // Add snake_case for compatibility
+          userCount: userCount, // Number of users who worked on this project
+          user_count: userCount, // Add snake_case for compatibility
           percentage: percentage
         };
       });
 
-      console.log('📊 [FMB-STORAGE] Project breakdown result:', {
+      console.log('📊 [FMB-STORAGE] Project breakdown result (ALL USERS):', {
         totalRecords: breakdown.length,
         totalHours,
+        totalUsers: result.recordset.reduce((sum, item) => sum + parseInt(item.user_count || 0), 0),
         breakdown: breakdown.map(b => ({
           project: b.project.name,
           hours: b.totalHours,
           entries: b.entryCount,
+          users: b.userCount,
           percentage: b.percentage
         }))
       });
