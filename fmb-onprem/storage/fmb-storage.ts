@@ -1680,21 +1680,57 @@ export class FmbStorage implements IStorage {
       this.storageLog('GET_ALL_DEPARTMENTS', 'Fetching all departments for all users');
 
       const result = await this.execute(`
-        SELECT d.*,
-               e.first_name as manager_first_name,
-               e.last_name as manager_last_name,
-               o.name as organization_name
+        SELECT 
+          d.id,
+          d.name,
+          d.description,
+          d.organization_id,
+          d.manager_id,
+          d.user_id,
+          d.created_at,
+          d.updated_at,
+          e.id as manager_employee_id,
+          e.first_name as manager_first_name,
+          e.last_name as manager_last_name,
+          e.employee_id as manager_employee_number,
+          o.name as organization_name
         FROM departments d
         LEFT JOIN employees e ON d.manager_id = e.id
         LEFT JOIN organizations o ON d.organization_id = o.id
         ORDER BY d.created_at DESC
       `);
 
-      this.storageLog('GET_ALL_DEPARTMENTS', 'All departments fetched successfully', {
-        count: result.length
+      // Transform the result to include manager object and maintain both formats for compatibility
+      const departments = result.map(dept => ({
+        ...dept,
+        // Include individual fields for compatibility
+        manager_first_name: dept.manager_first_name,
+        manager_last_name: dept.manager_last_name,
+        // Include manager object
+        manager: dept.manager_first_name && dept.manager_last_name ? {
+          id: dept.manager_employee_id || dept.manager_id,
+          first_name: dept.manager_first_name,
+          last_name: dept.manager_last_name,
+          employee_id: dept.manager_employee_number
+        } : null
+      }));
+
+      console.log('🏢 [DEPARTMENTS] Sample department with manager data:', departments[0] ? {
+        id: departments[0].id,
+        name: departments[0].name,
+        manager_id: departments[0].manager_id,
+        manager_first_name: departments[0].manager_first_name,
+        manager_last_name: departments[0].manager_last_name,
+        manager_object: departments[0].manager
+      } : 'No departments found');
+
+      this.storageLog('GET_ALL_DEPARTMENTS', 'All departments fetched and transformed successfully', {
+        count: departments.length,
+        withManagers: departments.filter(d => d.manager).length,
+        withoutManagers: departments.filter(d => !d.manager).length
       });
 
-      return result;
+      return departments;
     } catch (error) {
       this.storageLog('GET_ALL_DEPARTMENTS', 'Failed to fetch all departments', {
         error: error.message
@@ -3117,6 +3153,51 @@ export class FmbStorage implements IStorage {
 
     console.log('✅ [FMB-STORAGE] LINK_USER_TO_EMPLOYEE: User linked successfully');
     return result.recordset[0];
+  }
+
+  async assignManagerToDepartment(departmentId: string, managerId: string | null, userId?: string): Promise<void> {
+    try {
+      console.log('🏢 [FMB-STORAGE] Assigning manager to department:', { departmentId, managerId, userId });
+
+      const request = this.pool!.request();
+      request.input('departmentId', sql.NVarChar(255), departmentId);
+      request.input('managerId', sql.NVarChar(255), managerId);
+
+      await request.query(`
+        UPDATE departments 
+        SET manager_id = @managerId, updated_at = GETDATE() 
+        WHERE id = @departmentId
+      `);
+
+      console.log('✅ [FMB-STORAGE] Manager assigned successfully to department:', departmentId);
+    } catch (error) {
+      console.error('❌ [FMB-STORAGE] Error assigning manager to department:', error);
+      throw error;
+    }
+  }
+
+  async getDepartmentsByOrganization(organizationId: string): Promise<Department[]> {
+    try {
+      const result = await this.execute(`
+        SELECT d.*, e.first_name as manager_first_name, e.last_name as manager_last_name
+        FROM departments d
+        LEFT JOIN employees e ON d.manager_id = e.id
+        WHERE d.organization_id = @param0
+        ORDER BY d.created_at DESC
+      `, [organizationId]);
+
+      return result.map(dept => ({
+        ...dept,
+        manager: dept.manager_first_name && dept.manager_last_name ? {
+          id: dept.manager_id,
+          first_name: dept.manager_first_name,
+          last_name: dept.manager_last_name
+        } : null
+      }));
+    } catch (error) {
+      console.error('🔴 [FMB-STORAGE] Error fetching departments by organization:', error);
+      throw error;
+    }
   }
 
   // Add more methods as needed for FMB functionality

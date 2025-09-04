@@ -1694,6 +1694,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all departments for all users with access to departments page
       const departments = await activeStorage.getDepartments();
       console.log(`📋 Departments API: Found ${departments.length} departments (all departments visible to all users)`);
+      
+      // Debug: Log department manager data
+      console.log(`🔍 [DEPARTMENTS-API] Manager data sample:`, departments.slice(0, 3).map(d => ({
+        id: d.id,
+        name: d.name,
+        manager_id: d.manager_id,
+        manager: d.manager,
+        manager_first_name: d.manager_first_name,
+        manager_last_name: d.manager_last_name
+      })));
+
       res.json(departments);
     } catch (error) {
       console.error("❌ Error fetching departments:", error);
@@ -1925,10 +1936,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = extractUserId(req.user);
       const activeStorage = getStorage();
 
-      await activeStorage.assignManagerToDepartment(id, managerId, userId);
+      console.log('🏢 [API] Assigning manager to department:', { departmentId: id, managerId, userId });
+
+      // Update the department's manager_id directly
+      const request = (activeStorage as any).pool.request();
+      request.input('departmentId', (activeStorage as any).sql.NVarChar(255), id);
+      request.input('managerId', (activeStorage as any).sql.NVarChar(255), managerId || null);
+
+      await request.query(`
+        UPDATE departments 
+        SET manager_id = @managerId, updated_at = GETDATE() 
+        WHERE id = @departmentId
+      `);
+
+      console.log('✅ [API] Manager assigned successfully to department:', id);
       res.json({ message: "Manager assigned successfully" });
     } catch (error) {
-      console.error("Error assigning manager:", error);
+      console.error("❌ [API] Error assigning manager:", error);
       res.status(500).json({ message: "Failed to assign manager" });
     }
   });
