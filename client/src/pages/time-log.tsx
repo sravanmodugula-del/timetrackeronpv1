@@ -205,14 +205,37 @@ export default function TimeLog() {
   };
 
   const formatDate = (dateString: string | number | Date) => {
-    // Use PST formatting to avoid timezone conversion issues
-    if (typeof dateString === 'string') {
-      return formatPSTDate(dateString);
+    try {
+      // Handle string dates
+      if (typeof dateString === 'string') {
+        // If it's already in YYYY-MM-DD format, use formatPSTDate directly
+        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          return formatPSTDate(dateString);
+        }
+        // Otherwise try to parse and convert to YYYY-MM-DD format
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+          const dateStr = date.toISOString().split('T')[0];
+          return formatPSTDate(dateStr);
+        } else {
+          console.warn('Invalid date string in time log:', dateString);
+          return 'Invalid Date';
+        }
+      }
+      
+      // Handle Date objects or numbers
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        const dateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+        return formatPSTDate(dateStr);
+      } else {
+        console.warn('Invalid date in time log:', dateString);
+        return 'Invalid Date';
+      }
+    } catch (error) {
+      console.error('Error formatting date in time log:', error, dateString);
+      return 'Invalid Date';
     }
-    // For Date objects or numbers, convert to string first
-    const date = new Date(dateString);
-    const dateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-    return formatPSTDate(dateStr);
   };
 
   const getProjectColor = (color?: string) => {
