@@ -1184,41 +1184,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Time entry not found" });
       }
 
-      // Map frontend camelCase to backend snake_case and ensure all fields are included
-      let mappedData = { ...req.body };
+      // Map frontend camelCase to backend snake_case and ensure proper formatting
+      const entryData: any = {
+        user_id: userId, // Ensure user_id is always set
+      };
+
+      // Map project and task IDs
       if (req.body.projectId) {
-        mappedData.project_id = req.body.projectId;
-        delete mappedData.projectId;
+        entryData.project_id = req.body.projectId;
       }
       if (req.body.taskId) {
-        mappedData.task_id = req.body.taskId;
-        delete mappedData.taskId;
+        entryData.task_id = req.body.taskId;
       }
+
+      // Map basic fields
+      if (req.body.description !== undefined) {
+        entryData.description = req.body.description;
+      }
+      if (req.body.date) {
+        entryData.date = req.body.date;
+      }
+
+      // Handle time fields - ensure proper format
       if (req.body.startTime) {
-        mappedData.start_time = req.body.startTime;
-        delete mappedData.startTime;
+        // Convert HH:MM to HH:MM:SS format if needed
+        const startTime = req.body.startTime;
+        entryData.start_time = startTime.includes(':') && startTime.split(':').length === 2 ? `${startTime}:00` : startTime;
+        console.log("🔧 [API] Mapped start_time:", entryData.start_time);
       }
       if (req.body.endTime) {
-        mappedData.end_time = req.body.endTime;
-        delete mappedData.endTime;
+        // Convert HH:MM to HH:MM:SS format if needed
+        const endTime = req.body.endTime;
+        entryData.end_time = endTime.includes(':') && endTime.split(':').length === 2 ? `${endTime}:00` : endTime;
+        console.log("🔧 [API] Mapped end_time:", entryData.end_time);
       }
-      // Ensure userId is set
-      mappedData.userId = mappedData.userId || userId;
 
-      console.log("🔧 [API] Mapped data for database:", mappedData);
-
-      // Create a complete update object with all necessary fields
-      const entryData = {
-        userId: mappedData.userId,
-        project_id: mappedData.project_id,
-        task_id: mappedData.task_id,
-        description: mappedData.description,
-        date: mappedData.date,
-        start_time: mappedData.start_time,
-        end_time: mappedData.end_time,
-        duration: mappedData.duration,
-        hours: mappedData.hours
-      };
+      // Handle duration and hours
+      if (req.body.duration !== undefined) {
+        entryData.duration = parseFloat(req.body.duration);
+      }
+      if (req.body.hours !== undefined) {
+        entryData.hours = parseFloat(req.body.hours);
+      }
 
       // Remove undefined fields to allow partial updates
       Object.keys(entryData).forEach(key => {
@@ -1227,7 +1234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      console.log("🔧 [API] Validated entry data:", entryData);
+      console.log("🔧 [API] Final entry data for update:", entryData);
 
       const timeEntry = await activeStorage.updateTimeEntry(id, entryData, userId);
 
