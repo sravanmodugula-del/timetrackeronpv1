@@ -722,33 +722,58 @@ export class FmbStorage implements IStorage {
     return result[0];
   }
 
-  async updateProject(id: string, projectData: Partial<InsertProject>): Promise<Project> {
-    const fields = [];
-    const params: any[] = [];
-    let paramIndex = 0;
+  async updateProject(id: string, projectData: Partial<InsertProject>, userId?: string): Promise<Project> {
+    try {
+      console.log('🔧 [FMB-STORAGE] Updating project:', { id, userId, updateFields: Object.keys(projectData) });
 
-    for (const [key, value] of Object.entries(projectData)) {
-      if (value !== undefined) {
-        // Convert camelCase to snake_case for database columns
-        const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        fields.push(`${dbField} = @param${paramIndex}`);
-        params.push(value);
-        paramIndex++;
+      // First verify the project exists and user has access
+      const existingProject = await this.getProject(id, userId);
+      if (!existingProject) {
+        console.log('❌ [FMB-STORAGE] Project not found for update:', id);
+        throw new Error(`Project not found: ${id}`);
       }
+
+      console.log('✅ [FMB-STORAGE] Project validated for update:', existingProject.name);
+
+      const fields = [];
+      const params: any[] = [];
+      let paramIndex = 0;
+
+      for (const [key, value] of Object.entries(projectData)) {
+        if (value !== undefined) {
+          // Convert camelCase to snake_case for database columns
+          const dbField = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          fields.push(`${dbField} = @param${paramIndex}`);
+          params.push(value);
+          paramIndex++;
+        }
+      }
+
+      if (fields.length > 0) {
+        fields.push('updated_at = GETDATE()');
+        params.push(id);
+
+        console.log('🔧 [FMB-STORAGE] Executing project update with fields:', fields);
+
+        await this.execute(`
+          UPDATE projects
+          SET ${fields.join(', ')}
+          WHERE id = @param${paramIndex}
+        `, params);
+      }
+
+      const updatedProject = await this.getProjectById(id);
+      console.log('✅ [FMB-STORAGE] Project updated successfully:', updatedProject?.name);
+      
+      return updatedProject as Project;
+    } catch (error) {
+      console.error('❌ [FMB-STORAGE] Failed to update project:', {
+        error: error.message,
+        projectId: id,
+        userId
+      });
+      throw error;
     }
-
-    if (fields.length > 0) {
-      fields.push('updated_at = GETDATE()');
-      params.push(id);
-
-      await this.execute(`
-        UPDATE projects
-        SET ${fields.join(', ')}
-        WHERE id = @param${paramIndex}
-      `, params);
-    }
-
-    return await this.getProjectById(id) as Project;
   }
 
   async deleteProject(id: string, userId?: string): Promise<boolean> {
