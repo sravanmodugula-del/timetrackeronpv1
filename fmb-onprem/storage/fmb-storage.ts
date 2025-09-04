@@ -845,7 +845,7 @@ export class FmbStorage implements IStorage {
         status: row.status,
         priority: row.priority,
         assigned_to: row.assigned_to,
-        created_by: row.created_by,
+        creat�ed_by: row.created_by,
         due_date: row.due_date,
         estimated_hours: row.estimated_hours,
         actual_hours: row.actual_hours || 0,
@@ -1075,7 +1075,7 @@ export class FmbStorage implements IStorage {
         console.log('🔍 [FMB-STORAGE] No time entries found for the given criteria');
         return [];
       }
-
+�
       // Transform to the expected frontend format with consistent camelCase
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
@@ -1313,7 +1313,7 @@ export class FmbStorage implements IStorage {
   async createTimeEntry(timeEntryData: InsertTimeEntry): Promise<TimeEntry> {
       const insertData = {
         id: `te-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        user_id: timeEntryData.userId || timeEntryData.user_id,
+        user_id: �timeEntryData.userId || timeEntryData.user_id,
         project_id: timeEntryData.projectId || timeEntryData.project_id,
         task_id: timeEntryData.taskId || timeEntryData.task_id,
         description: timeEntryData.description,
@@ -1482,7 +1482,7 @@ export class FmbStorage implements IStorage {
     }
   }
 
-  // Employee Methods
+  // Employee Me�thods
   async getEmployees(userId?: string): Promise<Employee[]> {
     if (userId) {
       return await this.getEmployeesByUserId(userId);
@@ -1699,7 +1699,7 @@ export class FmbStorage implements IStorage {
       INSERT INTO departments (id, name, organization_id, manager_id, description, user_id, created_at, updated_at)
       VALUES (@param0, @param1, @param2, @param3, @param4, @param5, GETDATE(), GETDATE())
     `, [
-      insertData.id, insertData.name, insertData.organization_id, insertData.manager_id,
+      insertData.id, insertData.name, insertData.organization_id, �insertData.manager_id,
       insertData.description, insertData.user_id
     ]);
 
@@ -1948,7 +1948,7 @@ export class FmbStorage implements IStorage {
 
       const result = await request.query(`
         SELECT o.*,
-               (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) as department_count,
+               (SELECT COUNT(*) FROM departments d WHERE d.organization_id = o.id) a�s department_count,
                (SELECT COUNT(*) FROM projects p WHERE p.organization_id = o.id) as project_count
         FROM organizations o
         WHERE o.id = @id
@@ -2186,11 +2186,12 @@ export class FmbStorage implements IStorage {
 
       // Get start of week (Monday)
       const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+      startOfWeek.setDate(now.getDay() === 0 ? now.getDate() - 6 : now.getDate() - (now.getDay() - 1)); // Adjust for Sunday being day 0
       const weekStartStr = startOfWeek.toISOString().split('T')[0];
 
+
       // Get start of month
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfMonth = new Date(now.getFullYear(�), now.getMonth(), 1);
       const monthStartStr = startOfMonth.toISOString().split('T')[0];
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
@@ -2226,7 +2227,9 @@ export class FmbStorage implements IStorage {
             WHERE te.user_id = @userId
               AND te.date = @todayDate
           `),
-          // WEEK's hours - last 7 days
+          // WEEK's hours - last 7 days. The startOfWeek logic needs to be robust.
+          // Let's adjust to calculate the start of the current week properly.
+          // The existing `weekStartStr` logic is correct for start of week calculation.
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
@@ -2422,7 +2425,7 @@ export class FmbStorage implements IStorage {
       id: row.id,
       name: row.name,
       description: row.description,
-      status: row.status,
+ �     status: row.status,
       organization_id: row.organization_id,
       department_id: row.department_id,
       manager_id: row.manager_id,
@@ -2651,7 +2654,7 @@ export class FmbStorage implements IStorage {
         project: {
           id: row.project_id,
           name: row.project_name || 'Unknown Project',
-          color: row.project_color || '#1976D2'
+ �         color: row.project_color || '#1976D2'
         },
         project_name: row.project_name // Add for compatibility
       }));
@@ -2884,7 +2887,7 @@ export class FmbStorage implements IStorage {
   //     `);
 
   //     const user = result.recordset[0];
-  //     console.log('👤 [FMB-STORAGE] User found:', user ? { id: user.id, role: user.role } : 'Not found');
+  //     �console.log('👤 [FMB-STORAGE] User found:', user ? { id: user.id, role: user.role } : 'Not found');
 
   //     return user || null;
   //   } catch (error) {
