@@ -70,17 +70,41 @@ export default function Departments() {
     },
   });
 
-  // Fetch departments
-  const { data: departments = [], isLoading: departmentsLoading } = useQuery<DepartmentWithManager[]>({
+  // Fetch departments with proper error handling
+  const { data: departments = [], isLoading: departmentsLoading, error: departmentsError } = useQuery<DepartmentWithManager[]>({
     queryKey: ["/api/departments"],
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch employees for manager assignment
-  const { data: employees = [] } = useQuery<Employee[]>({
+  const { data: employees = [], error: employeesError } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Debug logging
+  useEffect(() => {
+    if (departments.length > 0) {
+      console.log("🏢 [DEPARTMENTS] Departments data:", departments.map(d => ({
+        id: d.id,
+        name: d.name,
+        manager_id: d.manager_id,
+        manager: d.manager,
+        manager_first_name: d.manager_first_name,
+        manager_last_name: d.manager_last_name
+      })));
+    }
+    if (employees.length > 0) {
+      console.log("👥 [DEPARTMENTS] Employees data:", employees.map(e => ({
+        id: e.id,
+        first_name: e.first_name,
+        last_name: e.last_name,
+        employee_id: e.employee_id
+      })));
+    }
+  }, [departments, employees]);
 
   // Fetch organizations for department assignment
   const { data: organizations = [] } = useQuery<Organization[]>({
@@ -193,16 +217,21 @@ export default function Departments() {
   // Assign manager mutation
   const assignManager = useMutation({
     mutationFn: async ({ departmentId, managerId }: { departmentId: string; managerId: string | null }) => {
-      await apiRequest(`/api/departments/${departmentId}/manager`, "POST", { managerId });
+      console.log('🔄 [DEPARTMENTS] Assigning manager:', { departmentId, managerId });
+      return apiRequest(`/api/departments/${departmentId}/manager`, "POST", { managerId });
     },
     onSuccess: () => {
+      console.log('✅ [DEPARTMENTS] Manager assignment successful');
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Manager assigned successfully",
       });
+      // Invalidate and refetch departments data
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.refetchQueries({ queryKey: ["/api/departments"] });
     },
     onError: (error) => {
+      console.error('❌ [DEPARTMENTS] Manager assignment failed:', error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -370,7 +399,10 @@ export default function Departments() {
                         <FormItem>
                           <FormLabel>Department Manager</FormLabel>
                           <Select 
-                            onValueChange={(value) => field.onChange(value === "none" ? "" : value)} 
+                            onValueChange={(value) => {
+                              console.log("🔄 Manager selection changed:", value);
+                              field.onChange(value === "none" ? undefined : value);
+                            }} 
                             value={field.value || "none"}
                           >
                             <FormControl>
@@ -382,7 +414,7 @@ export default function Departments() {
                               <SelectItem value="none">No manager assigned</SelectItem>
                               {employees.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.first_name} {employee.last_name} - {employee.employee_id}
+                                  {employee.first_name || 'Unknown'} {employee.last_name || 'Employee'} - {employee.employee_id || employee.id}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -523,17 +555,20 @@ export default function Departments() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Manager:</span>
-                      {department.manager ? (
+                      {department.manager_id && (department.manager_first_name || department.manager?.first_name) ? (
                         <div className="flex items-center space-x-2">
                           <Badge variant="secondary" className="text-xs">
                             <UserCheck className="w-3 h-3 mr-1" />
-                            {department.manager.first_name} {department.manager.last_name}
+                            {department.manager?.first_name && department.manager?.last_name
+                              ? `${department.manager.first_name} ${department.manager.last_name}`
+                              : `${department.manager_first_name || 'Unknown'} ${department.manager_last_name || 'Manager'}`
+                            }
                           </Badge>
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-xs">
                           <Users className="w-3 h-3 mr-1" />
-                          No manager
+                          No manager assigned
                         </Badge>
                       )}
                     </div>
@@ -544,13 +579,15 @@ export default function Departments() {
                         disabled={true}
                       >
                         <SelectTrigger className="w-full cursor-not-allowed opacity-60">
-                          <SelectValue placeholder="Manager assignment (readonly)" />
+                          <SelectValue 
+                            placeholder="Manager assignment (readonly)"
+                          />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No manager</SelectItem>
                           {employees.map((employee) => (
                             <SelectItem key={employee.id} value={employee.id}>
-                              {employee.first_name} {employee.last_name} - {employee.employee_id}
+                              {employee.first_name || 'Unknown'} {employee.last_name || 'Employee'} - {employee.employee_id || employee.id}
                             </SelectItem>
                           ))}
                         </SelectContent>
