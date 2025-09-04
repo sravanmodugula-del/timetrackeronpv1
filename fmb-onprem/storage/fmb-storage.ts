@@ -845,7 +845,7 @@ export class FmbStorage implements IStorage {
         status: row.status,
         priority: row.priority,
         assigned_to: row.assigned_to,
-        creat�ed_by: row.created_by,
+        created_by: row.created_by,
         due_date: row.due_date,
         estimated_hours: row.estimated_hours,
         actual_hours: row.actual_hours || 0,
@@ -1075,7 +1075,7 @@ export class FmbStorage implements IStorage {
         console.log('🔍 [FMB-STORAGE] No time entries found for the given criteria');
         return [];
       }
-�
+
       // Transform to the expected frontend format with consistent camelCase
       const timeEntries = result.recordset.map((row: any) => ({
         id: row.id,
@@ -1305,7 +1305,7 @@ export class FmbStorage implements IStorage {
 
       return timeEntries;
     } catch (error) {
-      console.error('🔴 [F�MB-STORAGE] Error fetching time entries for project reports:', error);
+      console.error('🔴 [FMB-STORAGE] Error fetching time entries for project reports:', error);
       return [];
     }
   }
@@ -1465,7 +1465,7 @@ export class FmbStorage implements IStorage {
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error updating time entry:', error);
       throw error;
- �   }
+    }
   }
 
   async deleteTimeEntry(id: string, userId?: string): Promise<boolean> {
@@ -1691,7 +1691,7 @@ export class FmbStorage implements IStorage {
     return result[0] || null;
   }
 
-  async createDepartment(deptData:� InsertDepartment): Promise<Department> {
+  async createDepartment(deptData: InsertDepartment): Promise<Department> {
     const insertData = {
       id: `dept-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: deptData.name,
@@ -1934,7 +1934,7 @@ export class FmbStorage implements IStorage {
       request.input('id', sql.NVarChar(255), id);
       await request.query('DELETE FROM users WHERE id = @id');
     } catch (error) {
-�      console.error('🔴 [FMB-STORAGE] Error deleting user:', error);
+      console.error('🔴 [FMB-STORAGE] Error deleting user:', error);
       throw error;
     }
   }
@@ -2179,7 +2179,7 @@ export class FmbStorage implements IStorage {
   // Dashboard Stats
   async getDashboardStats(userId: string, startDate?: string, endDate?: string): Promise<any> {
     try {
-      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId, 'dateRange:',� { startDate, endDate });
+      console.log('📊 [FMB-STORAGE] Getting dashboard stats for user:', userId, 'dateRange:', { startDate, endDate });
 
       if (!this.pool) {
         throw new Error('Database pool not available');
@@ -2409,7 +2409,7 @@ export class FmbStorage implements IStorage {
       hours: row.hours,
       duration: row.duration,
       date: row.date,
-      st�art_time: row.start_time,
+      start_time: row.start_time,
       end_time: row.end_time,
       status: row.status,
       billable: row.billable,
@@ -2641,7 +2641,7 @@ export class FmbStorage implements IStorage {
           INNER JOIN projects p ON te.project_id = p.id
           WHERE te.user_id = @debugUserId
           ORDER BY te.date DESC, te.created_at DESC
-        �`);
+        `);
         console.log('📋 [FMB-STORAGE] Debug - All recent time entries for user:', debugResult.recordset);
 
         return [];
@@ -2871,7 +2871,7 @@ export class FmbStorage implements IStorage {
   //   try {
   //     console.log('🗄️ [FMB-STORAGE] GET_USER_BY_ID:', { userId });
 
-  //�     const request = this.pool.request();
+  //     const request = this.pool.request();
   //     request.input('userId', sql.NVarChar(255), userId);
 
   //     const result = await request.query(`
