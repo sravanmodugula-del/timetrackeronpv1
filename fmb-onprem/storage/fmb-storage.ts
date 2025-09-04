@@ -414,7 +414,7 @@ export class FmbStorage implements IStorage {
         throw new Error(`Database query test failed: ${testError.message}`);
       }
 
-      // CHECKPOINT 6: Verify table structure
+      // CHECKPOINT 6: Check table structure
       console.log(`🎯 [CHECKPOINT-6-${requestId}] Verifying organizations table structure...`);
       try {
         const tableInfo = await this.execute(`
@@ -2969,23 +2969,39 @@ export class FmbStorage implements IStorage {
   }
 
   // Project Employee Assignment
-  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId: string): Promise<void> {
+  async assignEmployeesToProject(projectId: string, employeeIds: string[], userId?: string): Promise<void> {
     try {
       console.log('🔗 [FMB-STORAGE] ASSIGN_EMPLOYEES_TO_PROJECT:', { projectId, employeeIds, userId });
 
-      // Clear existing assignments first
+      // First verify the project exists
+      const projectExists = await this.execute('SELECT id FROM projects WHERE id = @param0', [projectId]);
+      if (!projectExists || projectExists.length === 0) {
+        throw new Error(`Project with ID ${projectId} not found`);
+      }
+
+      // Clear existing assignments for this project
       const clearRequest = this.pool!.request();
       clearRequest.input('projectId', sql.NVarChar(255), projectId);
 
-      await clearRequest.query('DELETE FROM project_employees WHERE project_id = @projectId');
+      await clearRequest.query(`
+        DELETE FROM project_employees WHERE project_id = @projectId
+      `);
+
       console.log('🗑️ [FMB-STORAGE] Cleared existing project employee assignments');
 
       // Add new assignments
       for (const employeeId of employeeIds) {
+        // Verify employee exists
+        const employeeExists = await this.execute('SELECT id FROM employees WHERE id = @param0', [employeeId]);
+        if (!employeeExists || employeeExists.length === 0) {
+          console.error(`Employee with ID ${employeeId} not found, skipping`);
+          continue;
+        }
+
         await this.createProjectEmployee({
           project_id: projectId,
           employee_id: employeeId,
-          user_id: userId
+          user_id: userId || null
         });
       }
 
