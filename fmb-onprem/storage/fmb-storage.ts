@@ -1496,11 +1496,31 @@ export class FmbStorage implements IStorage {
 
   // Employee Methods
   async getEmployees(userId?: string): Promise<Employee[]> {
+    console.log('🗄️ [FMB-STORAGE] GET_EMPLOYEES: Fetching employees', { userId });
+    
     if (userId) {
       return await this.getEmployeesByUserId(userId);
     }
+    
     const result = await this.execute('SELECT * FROM employees ORDER BY created_at DESC');
-    return result;
+    
+    console.log(`✅ [FMB-STORAGE] GET_EMPLOYEES: Found ${result.length} employees`);
+    console.log(`🔍 [FMB-STORAGE] Employee user_id distribution:`, {
+      withUserId: result.filter(emp => emp.user_id).length,
+      withoutUserId: result.filter(emp => !emp.user_id).length,
+      totalEmployees: result.length
+    });
+    
+    // Map database fields to frontend expected format
+    return result.map(employee => ({
+      ...employee,
+      employeeId: employee.employee_id,
+      firstName: employee.first_name,
+      lastName: employee.last_name,
+      userId: employee.user_id,
+      createdAt: employee.created_at,
+      updatedAt: employee.updated_at
+    }));
   }
 
   async getEmployeesByUserId(userId: string): Promise<Employee[]> {
@@ -2996,6 +3016,7 @@ export class FmbStorage implements IStorage {
         role,
         organization_id,
         department,
+        profile_image_url,
         is_active,
         last_login_at,
         created_at,
@@ -3005,7 +3026,26 @@ export class FmbStorage implements IStorage {
     `);
 
     console.log(`✅ [FMB-STORAGE] GET_ALL_USERS: Found ${result.recordset.length} users`);
-    return result.recordset;
+    console.log(`🔍 [FMB-STORAGE] Sample user data:`, result.recordset[0] ? {
+      id: result.recordset[0].id,
+      email: result.recordset[0].email,
+      role: result.recordset[0].role,
+      last_login_at: result.recordset[0].last_login_at,
+      is_active: result.recordset[0].is_active
+    } : 'No users found');
+    
+    // Map database fields to frontend expected format
+    return result.recordset.map(user => ({
+      ...user,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      lastLoginAt: user.last_login_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      isActive: user.is_active,
+      profileImageUrl: user.profile_image_url,
+      organizationId: user.organization_id
+    }));
   }
 
   async getUsersWithoutEmployeeProfile(): Promise<User[]> {
@@ -3013,15 +3053,44 @@ export class FmbStorage implements IStorage {
 
     const request = this.pool!.request();
     const result = await request.query(`
-      SELECT u.id, u.email, u.first_name, u.last_name, u.role, u.profile_image_url, u.created_at, u.updated_at
+      SELECT 
+        u.id, 
+        u.email, 
+        u.first_name, 
+        u.last_name, 
+        u.role, 
+        u.profile_image_url, 
+        u.is_active,
+        u.last_login_at,
+        u.organization_id,
+        u.department,
+        u.created_at, 
+        u.updated_at
       FROM users u
       LEFT JOIN employees e ON u.id = e.user_id
       WHERE e.user_id IS NULL
       ORDER BY u.created_at DESC
     `);
 
-    console.log(`✅ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Found ${result.recordset.length} users`);
-    return result.recordset;
+    console.log(`✅ [FMB-STORAGE] GET_USERS_WITHOUT_EMPLOYEE: Found ${result.recordset.length} unlinked users`);
+    console.log(`🔍 [FMB-STORAGE] Sample unlinked user:`, result.recordset[0] ? {
+      id: result.recordset[0].id,
+      email: result.recordset[0].email,
+      role: result.recordset[0].role
+    } : 'No unlinked users found');
+    
+    // Map database fields to frontend expected format
+    return result.recordset.map(user => ({
+      ...user,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      lastLoginAt: user.last_login_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      isActive: user.is_active,
+      profileImageUrl: user.profile_image_url,
+      organizationId: user.organization_id
+    }));
   }
 
   async linkUserToEmployee(userId: string, employeeId: string): Promise<Employee> {

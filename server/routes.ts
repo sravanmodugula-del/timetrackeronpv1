@@ -1946,16 +1946,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const users = await activeStorage.getAllUsers();
       
-      // Map database field names to frontend expected names
-      const mappedUsers = users.map(user => ({
-        ...user,
-        lastLoginAt: user.last_login_at,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        createdAt: user.created_at
-      }));
-      
-      res.json(mappedUsers);
+      // Users are already mapped in the storage layer
+      res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
