@@ -702,6 +702,23 @@ export class FmbStorage implements IStorage {
     `);
 
     const result = await this.execute('SELECT * FROM projects WHERE id = @param0', [projectId]);
+
+    // Assign employees if provided
+    if (projectData.employees && projectData.employees.length > 0) {
+      for (const employeeData of projectData.employees) {
+        try {
+          await this.createProjectEmployee({
+            project_id: projectId,
+            employee_id: employeeData.id, // Assuming employeeData has an 'id' property
+            user_id: projectData.user_id // User creating the project
+          });
+        } catch (assignError) {
+          console.error(`Failed to assign employee ${employeeData.id} to project ${projectId}:`, assignError);
+          // Log the error but continue creating the project
+        }
+      }
+    }
+
     return result[0];
   }
 
@@ -1497,20 +1514,20 @@ export class FmbStorage implements IStorage {
   // Employee Methods
   async getEmployees(userId?: string): Promise<Employee[]> {
     console.log('🗄️ [FMB-STORAGE] GET_EMPLOYEES: Fetching employees', { userId });
-    
+
     if (userId) {
       return await this.getEmployeesByUserId(userId);
     }
-    
+
     const result = await this.execute('SELECT * FROM employees ORDER BY created_at DESC');
-    
+
     console.log(`✅ [FMB-STORAGE] GET_EMPLOYEES: Found ${result.length} employees`);
     console.log(`🔍 [FMB-STORAGE] Employee user_id distribution:`, {
       withUserId: result.filter(emp => emp.user_id).length,
       withoutUserId: result.filter(emp => !emp.user_id).length,
       totalEmployees: result.length
     });
-    
+
     // Map database fields to frontend expected format
     return result.map(employee => ({
       ...employee,
@@ -2474,12 +2491,12 @@ export class FmbStorage implements IStorage {
 
   // Helper method to validate and convert UUIDs
   private validateUUID(id: string): string {
-    // If it's already a valid GUID format, return as is
+    // Simple UUID validation - adjust as needed for your ID format
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       return id;
     }
 
-    // If it's an email or other identifier, use it directly as string
+    // Return the ID as-is if it doesn't match UUID format
     return id;
   }
 
@@ -3069,7 +3086,7 @@ export class FmbStorage implements IStorage {
       last_login_at: result.recordset[0].last_login_at,
       is_active: result.recordset[0].is_active
     } : 'No users found');
-    
+
     // Map database fields to frontend expected format
     return result.recordset.map(user => ({
       ...user,
@@ -3114,7 +3131,7 @@ export class FmbStorage implements IStorage {
       email: result.recordset[0].email,
       role: result.recordset[0].role
     } : 'No unlinked users found');
-    
+
     // Map database fields to frontend expected format
     return result.recordset.map(user => ({
       ...user,
