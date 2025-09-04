@@ -61,6 +61,19 @@ export default function UserManagement() {
     queryKey: ["/api/admin/users"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
+    onSuccess: (data) => {
+      console.log('📊 [USER-MGMT-STATS] All users fetched:', {
+        count: data.length,
+        sample: data[0] ? {
+          id: data[0].id,
+          email: data[0].email,
+          role: data[0].role,
+          lastLoginAt: data[0].lastLoginAt || data[0].last_login_at,
+          firstName: data[0].firstName || data[0].first_name,
+          lastName: data[0].lastName || data[0].last_name
+        } : null
+      });
+    }
   });
 
   // Fetch users without employee profile
@@ -68,6 +81,16 @@ export default function UserManagement() {
     queryKey: ["/api/admin/users/without-employee"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
+    onSuccess: (data) => {
+      console.log('📊 [USER-MGMT-STATS] Unlinked users fetched:', {
+        count: data.length,
+        sample: data[0] ? {
+          id: data[0].id,
+          email: data[0].email,
+          role: data[0].role
+        } : null
+      });
+    }
   });
 
   // Fetch employees
@@ -75,6 +98,20 @@ export default function UserManagement() {
     queryKey: ["/api/employees"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
+    onSuccess: (data) => {
+      console.log('📊 [USER-MGMT-STATS] Employees fetched:', {
+        count: data.length,
+        withUserId: data.filter(emp => emp.userId || emp.user_id).length,
+        withoutUserId: data.filter(emp => !emp.userId && !emp.user_id).length,
+        sample: data[0] ? {
+          id: data[0].id,
+          firstName: data[0].firstName || data[0].first_name,
+          lastName: data[0].lastName || data[0].last_name,
+          userId: data[0].userId || data[0].user_id,
+          department: data[0].department
+        } : null
+      });
+    }
   });
 
   // Link user to employee mutation
@@ -199,7 +236,29 @@ export default function UserManagement() {
     return <div>Access denied</div>;
   }
 
-  const employeesWithoutUser = employees.filter(emp => !emp.userId);
+  const employeesWithoutUser = employees.filter(emp => !emp.userId && !emp.user_id);
+  
+  // Debug stats calculations
+  console.log('📊 [USER-MGMT-STATS] Stats calculated:', {
+    totalUsers: allUsers.length,
+    unlinkedUsers: unlinkedUsers.length,
+    employeesWithoutUser: employeesWithoutUser.length,
+    linkedProfiles: employees.filter(emp => emp.userId || emp.user_id).length,
+    totalEmployees: employees.length,
+    breakdown: {
+      allUsersIds: allUsers.map(u => u.id).slice(0, 3),
+      unlinkedUserIds: unlinkedUsers.map(u => u.id).slice(0, 3),
+      employeesWithUserIds: employees.filter(emp => emp.userId || emp.user_id).map(emp => ({ 
+        id: emp.id, 
+        userId: emp.userId || emp.user_id 
+      })).slice(0, 3),
+      employeesWithoutUserIds: employeesWithoutUser.map(emp => ({ 
+        id: emp.id, 
+        firstName: emp.firstName || emp.first_name, 
+        lastName: emp.lastName || emp.last_name 
+      })).slice(0, 3)
+    }
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -257,7 +316,7 @@ export default function UserManagement() {
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{employees.filter(emp => emp.userId).length}</div>
+              <div className="text-2xl font-bold">{employees.filter(emp => emp.userId || emp.user_id).length}</div>
             </CardContent>
           </Card>
         </div>
@@ -344,7 +403,7 @@ export default function UserManagement() {
                             <SelectContent>
                               {employeesWithoutUser.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.firstName} {employee.lastName} ({employee.department})
+                                  {(employee.firstName || employee.first_name)} {(employee.lastName || employee.last_name)} ({employee.department})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -393,7 +452,9 @@ export default function UserManagement() {
                       {employeesWithoutUser.map((employee) => (
                         <div key={employee.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
-                            <p className="font-medium">{employee.firstName} {employee.lastName}</p>
+                            <p className="font-medium">
+                              {(employee.firstName || employee.first_name)} {(employee.lastName || employee.last_name)}
+                            </p>
                             <p className="text-sm text-gray-500">{employee.department}</p>
                           </div>
                           <Badge variant="outline">No User Account</Badge>
