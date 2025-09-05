@@ -2439,19 +2439,20 @@ export class FmbStorage implements IStorage {
         throw new Error('Database pool not available');
       }
 
-      // ALWAYS calculate today's hours regardless of the date range filter
+      // Use PST timezone for all date calculations
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-      // Get start of week (Monday)
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDay() === 0 ? now.getDate() - 6 : now.getDate() - (now.getDay() - 1)); // Adjust for Sunday being day 0
-      const weekStartStr = startOfWeek.toISOString().split('T')[0];
+      // Get start of week (Monday) in PST
+      const startOfWeek = new Date();
+      const pstStartOfWeek = new Date(now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }));
+      pstStartOfWeek.setDate(pstStartOfWeek.getDate() - (pstStartOfWeek.getDay() === 0 ? 6 : pstStartOfWeek.getDay() - 1));
+      const weekStartStr = pstStartOfWeek.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-
-      // Get start of month
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthStartStr = startOfMonth.toISOString().split('T')[0];
+      // Get start of month in PST
+      const pstStartOfMonth = new Date(now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }));
+      pstStartOfMonth.setDate(1);
+      const monthStartStr = pstStartOfMonth.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
         today: todayStr,
@@ -2479,28 +2480,26 @@ export class FmbStorage implements IStorage {
       // Execute queries with proper error handling
       try {
         const [todayResult, weekResult, monthResult, projectsResult] = await Promise.all([
-          // TODAY's hours - use date field directly without conversion
+          // TODAY's hours - use date field directly without conversion, ensuring PST comparison
           todayRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId
-              AND te.date = @todayDate
+              AND CONVERT(date, te.date) = CONVERT(date, @todayDate)
           `),
-          // WEEK's hours - last 7 days. The startOfWeek logic needs to be robust.
-          // Let's adjust to calculate the start of the current week properly.
-          // The existing `weekStartStr` logic is correct for start of week calculation.
+          // WEEK's hours - using PST date comparison
           weekRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId
-              AND te.date >= @weekStartDate
+              AND CONVERT(date, te.date) >= CONVERT(date, @weekStartDate)
           `),
-          // MONTH's hours - current month
+          // MONTH's hours - using PST date comparison
           monthRequest.query(`
             SELECT COALESCE(SUM(CAST(hours as DECIMAL(10,2))), 0) as total_hours
             FROM time_entries te
             WHERE te.user_id = @userId
-              AND te.date >= @monthStartDate
+              AND CONVERT(date, te.date) >= CONVERT(date, @monthStartDate)
           `),
           // Active projects count
           projectsRequest.query(`
