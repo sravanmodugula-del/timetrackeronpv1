@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Download, Plus } from "lucide-react";
+import { Pencil, Trash2, Download, Plus, List } from "lucide-react";
 import { Link } from "wouter";
 import type { TimeEntryWithProject, Project } from "@shared/schema";
 import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
@@ -264,10 +264,22 @@ export default function TimeLog() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Time Log</h2>
-          <p className="text-gray-600">View and edit your time entries</p>
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <List className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Time Log
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  View and manage your time entries
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}

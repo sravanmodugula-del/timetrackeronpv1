@@ -244,24 +244,30 @@ export default function Employees() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            Employee Management
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage employee information and departments
-          </p>
-        </div>
+      {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <Users className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Employee Management
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage employee information and departments
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex md:mt-0 md:ml-4">
         {canManageEmployees && (
-          <Button onClick={openCreateModal} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Employee
-          </Button>
-        )}
-      </div>
+              <Button onClick={openCreateModal} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Employee
+              </Button>
+            )}
+          </div>
+        </div>
 
       {/* Search */}
       <div className="flex items-center space-x-4">

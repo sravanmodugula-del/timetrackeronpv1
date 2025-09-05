@@ -206,9 +206,21 @@ export default function Reports() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Reports</h2>
-          <p className="text-gray-600">View and export time entries for projects</p>
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <FileText className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Reports
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  View time tracking reports and analytics
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Project Selection */}

@@ -38,10 +38,9 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center mr-3">
+              <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900">TimeTracker Pro</h1>
             </div>
           </div>
           

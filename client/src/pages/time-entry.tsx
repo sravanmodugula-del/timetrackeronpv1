@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import PageLayout from "@/components/layout/page-layout";
 import WorkingTimeEntryForm from "@/components/time/working-time-entry-form";
 import Header from "@/components/layout/header";
+import { Plus } from "lucide-react";
 
 export default function TimeEntry() {
   const { toast } = useToast();
@@ -39,10 +40,22 @@ export default function TimeEntry() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Log Time Entry</h2>
-          <p className="text-gray-600">Record time spent on projects and tasks</p>
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <Plus className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Log Time
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Track your work hours on projects and tasks
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <WorkingTimeEntryForm />

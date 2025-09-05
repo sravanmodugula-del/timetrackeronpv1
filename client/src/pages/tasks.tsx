@@ -9,7 +9,7 @@ import PageLayout from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, CheckCircle, Circle, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle, Circle, Copy, CheckSquare } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Project, Task, InsertTask } from "@shared/schema";
 import TaskModal from "@/components/tasks/task-modal";
@@ -38,6 +38,7 @@ export default function Tasks() {
     return initial;
   });
   const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); // State for the create task modal
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -60,9 +61,10 @@ export default function Tasks() {
       selectedProject,
       editingTask: editingTask ? { id: editingTask.id, name: editingTask.name } : null,
       isTaskModalOpen,
-      isCloneModalOpen
+      isCloneModalOpen,
+      isCreateModalOpen
     });
-  }, [selectedProject, editingTask, isTaskModalOpen, isCloneModalOpen]);
+  }, [selectedProject, editingTask, isTaskModalOpen, isCloneModalOpen, isCreateModalOpen]);
 
   // Fetch projects
   const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery<Project[]>({
@@ -253,8 +255,8 @@ export default function Tasks() {
     setEditingTask(null);
     console.log("🔄 Set editingTask to null");
 
-    setIsTaskModalOpen(true);
-    console.log("🔄 Set isTaskModalOpen to true");
+    setIsCreateModalOpen(true); // Open the create task modal
+    console.log("🔄 Set isCreateModalOpen to true");
 
     console.log("🎯 CREATE TASK BUTTON CLICKED - End of function");
   };
@@ -289,10 +291,34 @@ export default function Tasks() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Tasks</h2>
-          <p className="text-gray-600">Manage tasks for your projects</p>
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <CheckSquare className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Task Management
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Create and manage tasks for your projects
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex md:mt-0 md:ml-4">
+            {canCreateTasks && (
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                disabled={selectedProject === "all" || !selectedProject || selectedProject === ""}
+                title={selectedProject === "all" || !selectedProject || selectedProject === "" ? "Please select a project first" : "Create a new task"}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Task
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Project Filter and Create Button */}
@@ -301,8 +327,8 @@ export default function Tasks() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Project</label>
-                <Select 
-                  value={selectedProject} 
+                <Select
+                  value={selectedProject}
                   onValueChange={(value) => {
                     console.log("🎯 Project selection changed:", { from: selectedProject, to: value });
                     setSelectedProject(value);
@@ -313,9 +339,9 @@ export default function Tasks() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Projects</SelectItem>
-                    {Array.isArray(projects) && projects.filter(project => 
-                      project?.id && 
-                      typeof project.id === 'string' && 
+                    {Array.isArray(projects) && projects.filter(project =>
+                      project?.id &&
+                      typeof project.id === 'string' &&
                       project.id.trim() !== '' &&
                       project.name &&
                       typeof project.name === 'string' &&
@@ -330,7 +356,7 @@ export default function Tasks() {
               </div>
               <div className="flex gap-2 sm:self-end">
                 {canCreateTasks && (
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => setIsCloneModalOpen(true)}
                   >
@@ -338,29 +364,7 @@ export default function Tasks() {
                     Clone Task
                   </Button>
                 )}
-                {(() => {
-                  console.log("🔍 Create task button render check:", {
-                    canCreateTasks,
-                    selectedProject,
-                    isDisabled: selectedProject === "all" || !selectedProject || selectedProject === ""
-                  });
-
-                  return canCreateTasks && (
-                    <Button 
-                      onClick={(e) => {
-                        console.log("🖱️ Create task button clicked - event triggered");
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleCreateTask();
-                      }}
-                      disabled={selectedProject === "all" || !selectedProject || selectedProject === ""}
-                      title={selectedProject === "all" || !selectedProject || selectedProject === "" ? "Please select a project first" : "Create a new task"}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Task
-                    </Button>
-                  );
-                })()}
+                {/* Removed the duplicate "Add Task" button from here, as it's now in the header */}
               </div>
             </div>
           </CardContent>
@@ -442,56 +446,56 @@ export default function Tasks() {
               {tasks.map((task) => (
                 <Card key={task.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleToggleStatus(task.id, task.status)}
-                        className="text-gray-400 hover:text-primary transition-colors"
-                      >
-                        {task.status === "completed" ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <Circle className="w-5 h-5" />
-                        )}
-                      </button>
-                      <h3 className={`font-semibold ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
-                        {task.name || "Untitled Task"}
-                      </h3>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleToggleStatus(task.id, task.status)}
+                          className="text-gray-400 hover:text-primary transition-colors"
+                        >
+                          {task.status === "completed" ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Circle className="w-5 h-5" />
+                          )}
+                        </button>
+                        <h3 className={`font-semibold ${task.status === "completed" ? "line-through text-gray-500" : "text-gray-900"}`}>
+                          {task.name || "Untitled Task"}
+                        </h3>
+                      </div>
+                      <Badge className={getStatusColor(task.status)}>
+                        {task.status}
+                      </Badge>
                     </div>
-                    <Badge className={getStatusColor(task.status)}>
-                      {task.status}
-                    </Badge>
-                  </div>
 
-                  {task.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                      {task.description}
-                    </p>
-                  )}
+                    {task.description && (
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {task.description}
+                      </p>
+                    )}
 
-                  <div className="flex items-center space-x-2">
-                    {canEditTasks && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditTask(task)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {canEditTasks && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
+                    <div className="flex items-center space-x-2">
+                      {canEditTasks && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditTask(task)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canEditTasks && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -499,16 +503,15 @@ export default function Tasks() {
         })()}
       </main>
 
-      {/* Task Modal */}
+      {/* Task Modal for editing */}
       {(() => {
-        console.log("🔍 Modal render condition check:", {
+        console.log("🔍 Task modal render condition check:", {
           isTaskModalOpen,
-          selectedProject,
-          isSelectedProjectNotAll: selectedProject !== "all",
-          shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== ""
+          editingTask,
+          shouldRenderModal: isTaskModalOpen && editingTask
         });
 
-        return (isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== "") ? (
+        return (isTaskModalOpen && editingTask) ? (
           <TaskModal
             task={editingTask}
             projectId={selectedProject}
@@ -520,7 +523,6 @@ export default function Tasks() {
             }}
             onSuccess={() => {
               console.log("✅ Task operation successful, refreshing data");
-              // Use the refetch function and also invalidate the cache
               queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProject, "tasks"] });
               queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
               refetch();
@@ -530,6 +532,36 @@ export default function Tasks() {
           />
         ) : null;
       })()}
+
+      {/* Task Modal for creating */}
+      {(() => {
+        console.log("🔍 Create Task modal render condition check:", {
+          isCreateModalOpen,
+          selectedProject,
+          isSelectedProjectNotAllOrEmpty: selectedProject && selectedProject !== "all",
+          shouldRenderModal: isCreateModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== ""
+        });
+
+        return (isCreateModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== "") ? (
+          <TaskModal
+            task={null} // No task for creation
+            projectId={selectedProject}
+            isOpen={isCreateModalOpen}
+            onClose={() => {
+              console.log("🔒 Closing create task modal");
+              setIsCreateModalOpen(false);
+            }}
+            onSuccess={() => {
+              console.log("✅ Task creation successful, refreshing data");
+              queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProject, "tasks"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/tasks/all"] });
+              refetch();
+              setIsCreateModalOpen(false);
+            }}
+          />
+        ) : null;
+      })()}
+
 
       {/* Task Clone Modal */}
       <TaskCloneModal
