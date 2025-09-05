@@ -58,12 +58,12 @@ export interface BrandingConfig {
 // Default branding - customize this for your organization
 export const defaultBranding: BrandingConfig = {
   companyName: "Farmers & Merchants Bank",
-  appName: "FMB TimeTracker",
+  appName: "TimeTracker Pro",
   tagline: "Professional Time Management for Banking Excellence",
   
   logo: {
     url: "/fmb-logo.svg", // Custom FMB logo
-    text: "FMB TimeTracker", // Fallback text
+    text: "TimeTracker Pro", // Fallback text
   },
   
   colors: {

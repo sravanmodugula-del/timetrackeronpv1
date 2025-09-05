@@ -13,13 +13,8 @@ export default function Header() {
   const [location] = useLocation();
   const { canViewReports } = usePermissions();
 
-  // Fetch organizations to display the first one in header
-  const { data: organizations = [] } = useQuery<Organization[]>({
-    queryKey: ["/api/organizations"],
-    retry: false,
-  });
-
-  const organizationName = organizations.length > 0 ? organizations[0].name : "TimeTracker Pro";
+  // Use consistent app name across all pages
+  const appName = "TimeTracker Pro";
 
   const allNavigationItems = [
     { name: "Dashboard", href: "/", icon: BarChart3, current: location === "/" },
@@ -52,7 +47,7 @@ export default function Header() {
               <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center mr-3">
                 <Clock className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{organizationName}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{appName}</h1>
             </div>
           </div>
           

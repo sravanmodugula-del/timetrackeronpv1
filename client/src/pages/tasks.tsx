@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
+import PageLayout from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -248,13 +249,13 @@ export default function Tasks() {
 
     console.log("✅ All validations passed, opening task modal");
     console.log("📂 Selected project data:", selectedProjectData);
-    
+
     setEditingTask(null);
     console.log("🔄 Set editingTask to null");
-    
+
     setIsTaskModalOpen(true);
     console.log("🔄 Set isTaskModalOpen to true");
-    
+
     console.log("🎯 CREATE TASK BUTTON CLICKED - End of function");
   };
 
@@ -285,10 +286,8 @@ export default function Tasks() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <PageLayout>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Tasks</h2>
           <p className="text-gray-600">Manage tasks for your projects</p>
@@ -298,69 +297,76 @@ export default function Tasks() {
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Project</label>
-                <Select 
-                  value={selectedProject} 
-                  onValueChange={(value) => {
-                    console.log("🎯 Project selection changed:", { from: selectedProject, to: value });
-                    setSelectedProject(value);
+              <Select
+                value={selectedProject}
+                onValueChange={(value) => {
+                  console.log("🔄 Project selection changed:", value);
+                  setSelectedProject(value);
+                }}
+              >
+                <SelectTrigger className="w-64" data-testid="select-project">
+                  <SelectValue placeholder="Select a project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Select a project...</SelectItem>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {projects?.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {canCreateTasks && (
+                <Button
+                  onClick={() => {
+                    console.log("➕ Create task button clicked");
+                    console.log("🔍 Create task button render check:", {
+                      canCreateTasks,
+                      selectedProject,
+                      isDisabled: !selectedProject || selectedProject === "all" || selectedProject === ""
+                    });
+                    if (!selectedProject || selectedProject === "all" || selectedProject === "") {
+                      toast({
+                        title: "Select a Project",
+                        description: "Please select a specific project to create a task.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setEditingTask(null);
+                    setIsTaskModalOpen(true);
                   }}
+                  disabled={!selectedProject || selectedProject === "all" || selectedProject === ""}
+                  data-testid="button-create-task"
                 >
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Select a project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
-                    {Array.isArray(projects) && projects.filter(project => 
-                      project?.id && 
-                      typeof project.id === 'string' && 
-                      project.id.trim() !== '' &&
-                      project.name &&
-                      typeof project.name === 'string' &&
-                      project.name.trim() !== ''
-                    ).map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2 sm:self-end">
-                {canCreateTasks && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => setIsCloneModalOpen(true)}
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Clone Task
-                  </Button>
-                )}
-                {(() => {
-                  console.log("🔍 Create task button render check:", {
-                    canCreateTasks,
-                    selectedProject,
-                    isDisabled: selectedProject === "all" || !selectedProject || selectedProject === ""
-                  });
-                  
-                  return canCreateTasks && (
-                    <Button 
-                      onClick={(e) => {
-                        console.log("🖱️ Create task button clicked - event triggered");
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleCreateTask();
-                      }}
-                      disabled={selectedProject === "all" || !selectedProject || selectedProject === ""}
-                      title={selectedProject === "all" || !selectedProject || selectedProject === "" ? "Please select a project first" : "Create a new task"}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Task
-                    </Button>
-                  );
-                })()}
-              </div>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Task
+                </Button>
+              )}
+
+              {canCreateTasks && (
+                <Button
+                  onClick={() => {
+                    if (!selectedProject || selectedProject === "all" || selectedProject === "") {
+                      toast({
+                        title: "Select a Project",
+                        description: "Please select a specific project to clone tasks.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setIsCloneModalOpen(true);
+                  }}
+                  variant="outline"
+                  disabled={!selectedProject || selectedProject === "all" || selectedProject === ""}
+                  data-testid="button-clone-tasks"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Clone Tasks
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -496,7 +502,7 @@ export default function Tasks() {
             </div>
           );
         })()}
-      </main>
+      </div>
 
       {/* Task Modal */}
       {(() => {
@@ -506,7 +512,7 @@ export default function Tasks() {
           isSelectedProjectNotAll: selectedProject !== "all",
           shouldRenderModal: isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== ""
         });
-        
+
         return (isTaskModalOpen && selectedProject && selectedProject !== "all" && selectedProject !== "") ? (
           <TaskModal
             task={editingTask}
@@ -540,6 +546,6 @@ export default function Tasks() {
         }}
         targetProjectId={selectedProject === "all" ? undefined : selectedProject}
       />
-    </div>
+    </PageLayout>
   );
 }

@@ -42,7 +42,7 @@ export function Logo({ className = "", size = "md", showText = true }: LogoProps
       
       {showText && (
         <span className={`font-bold text-foreground ${textSizeClasses[size]}`}>
-          {branding.logo.text || branding.appName}
+          {branding.appName}
         </span>
       )}
     </div>

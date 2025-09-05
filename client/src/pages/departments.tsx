@@ -1,40 +1,25 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Plus, Edit, Trash2, Search, UserCheck, Users } from "lucide-react";
-import { z } from "zod";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { insertDepartmentSchema, type DepartmentWithManager, type Employee, type Organization } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
-
-// Form schema
-const departmentFormSchema = insertDepartmentSchema.omit({ userId: true });
-type DepartmentFormData = z.infer<typeof departmentFormSchema>;
+import { PageLayout } from "@/components/layout/page-layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Building, Plus, Edit2, Trash2, Users, Calendar } from "lucide-react";
+import type { Department } from "@shared/schema";
 
 export default function Departments() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const { canManageSystem, canViewDepartmentData } = usePermissions();
+  const { canCreateDepartments, canEditDepartments, canDeleteDepartments } = usePermissions();
   const queryClient = useQueryClient();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<DepartmentWithManager | null>(null);
 
-  // Redirect to home if not authenticated or insufficient permissions
+  // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -47,145 +32,18 @@ export default function Departments() {
       }, 500);
       return;
     }
+  }, [isAuthenticated, isLoading, toast]);
 
-    // Check for department access permissions (admin or manager with department data access)
-    if (!isLoading && isAuthenticated && !(canManageSystem || canViewDepartmentData)) {
-      toast({
-        title: "Access Denied",
-        description: "Department access permissions required.",
-        variant: "destructive",
-      });
-      window.location.href = "/";
-      return;
-    }
-  }, [isAuthenticated, isLoading, canManageSystem, canViewDepartmentData, toast]);
-
-  const form = useForm<DepartmentFormData>({
-    resolver: zodResolver(departmentFormSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      organizationId: "",
-      managerId: undefined,
-    },
-  });
-
-  // Fetch departments with proper error handling
-  const { data: departments = [], isLoading: departmentsLoading, error: departmentsError } = useQuery<DepartmentWithManager[]>({
+  // Fetch departments
+  const { data: departments = [], isLoading: departmentsLoading } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Fetch employees for manager assignment
-  const { data: employees = [], error: employeesError } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"],
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Debug logging
-  useEffect(() => {
-    if (departments.length > 0) {
-      console.log("🏢 [DEPARTMENTS] Departments data:", departments.map(d => ({
-        id: d.id,
-        name: d.name,
-        manager_id: d.manager_id,
-        manager: d.manager,
-        manager_first_name: d.manager?.first_name,
-        manager_last_name: d.manager?.last_name
-      })));
-    }
-    if (employees.length > 0) {
-      console.log("👥 [DEPARTMENTS] Employees data:", employees.map(e => ({
-        id: e.id,
-        first_name: e.first_name,
-        last_name: e.last_name,
-        employee_id: e.employee_id
-      })));
-    }
-  }, [departments, employees]);
-
-  // Fetch organizations for department assignment
-  const { data: organizations = [] } = useQuery<Organization[]>({
-    queryKey: ["/api/organizations"],
-    retry: false,
-  });
-
-  // Create department mutation
-  const createDepartment = useMutation({
-    mutationFn: async (data: DepartmentFormData) => {
-      return apiRequest("/api/departments", "POST", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Department created successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      setIsModalOpen(false);
-      form.reset();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to create department",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update department mutation
-  const updateDepartment = useMutation({
-    mutationFn: async (data: DepartmentFormData) => {
-      if (!editingDepartment) throw new Error("No department selected for editing");
-      return apiRequest(`/api/departments/${editingDepartment.id}`, "PUT", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Department updated successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      setIsModalOpen(false);
-      setEditingDepartment(null);
-      form.reset();
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update department",
-        variant: "destructive",
-      });
-    },
+    enabled: isAuthenticated,
   });
 
   // Delete department mutation
   const deleteDepartment = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest(`/api/departments/${id}`, "DELETE");
+    mutationFn: async (departmentId: string) => {
+      await apiRequest(`/api/departments/${departmentId}`, "DELETE");
     },
     onSuccess: () => {
       toast({
@@ -195,7 +53,7 @@ export default function Departments() {
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error)) {
+      if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
           description: "You are logged out. Logging in again...",
@@ -214,393 +72,136 @@ export default function Departments() {
     },
   });
 
-  // Assign manager mutation
-  const assignManager = useMutation({
-    mutationFn: async ({ departmentId, managerId }: { departmentId: string; managerId: string | null }) => {
-      console.log('🔄 [DEPARTMENTS] Assigning manager:', { departmentId, managerId });
-      return apiRequest(`/api/departments/${departmentId}/manager`, "POST", { managerId });
-    },
-    onSuccess: () => {
-      console.log('✅ [DEPARTMENTS] Manager assignment successful');
-      toast({
-        title: "Success", 
-        description: "Manager assigned successfully",
-      });
-      // Invalidate and refetch departments data
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      queryClient.refetchQueries({ queryKey: ["/api/departments"] });
-    },
-    onError: (error) => {
-      console.error('❌ [DEPARTMENTS] Manager assignment failed:', error);
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to assign manager",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const onSubmit = (data: DepartmentFormData) => {
-    if (editingDepartment) {
-      updateDepartment.mutate(data);
-    } else {
-      createDepartment.mutate(data);
-    }
-  };
-
-  const handleEdit = (department: DepartmentWithManager) => {
-    setEditingDepartment(department);
-    form.reset({
-      name: department.name,
-      description: department.description || "",
-      organizationId: department.organization_id,
-      managerId: department.manager_id || undefined,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
+  const handleDelete = (departmentId: string) => {
     if (confirm("Are you sure you want to delete this department?")) {
-      deleteDepartment.mutate(id);
+      deleteDepartment.mutate(departmentId);
     }
   };
 
-  const handleAssignManager = (departmentId: string, managerId: string | null) => {
-    assignManager.mutate({ departmentId, managerId });
-  };
-
-  const filteredDepartments = departments.filter(department =>
-    department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (department.description && department.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (department.manager && `${department.manager.first_name} ${department.manager.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
-  if (isLoading) return null;
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="md:flex md:items-center md:justify-between mb-8">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center">
-              <Building2 className="w-8 h-8 text-blue-600 mr-3" />
-              <div>
-                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                  Department Management
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Manage departments and assign managers
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
-            {canManageSystem && (
-              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Department
-                  </Button>
-                </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingDepartment ? "Edit Department" : "Add New Department"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingDepartment 
-                      ? "Update the department details below."
-                      : "Create a new department and assign a manager."
-                    }
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter department name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="organizationId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Organization *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an organization" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {organizations.map((org) => (
-                                <SelectItem key={org.id} value={org.id}>
-                                  {org.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description (optional)</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe the department..."
-                              className="resize-none"
-                              rows={3}
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="managerId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Department Manager</FormLabel>
-                          <Select 
-                            onValueChange={(value) => {
-                              console.log("🔄 Manager selection changed:", value);
-                              field.onChange(value === "none" ? undefined : value);
-                            }} 
-                            value={field.value || "none"}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a manager" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">No manager assigned</SelectItem>
-                              {employees.map((employee) => (
-                                <SelectItem key={employee.id} value={employee.id}>
-                                  {employee.first_name || 'Unknown'} {employee.last_name || 'Employee'} - {employee.employee_id || employee.id}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          setIsModalOpen(false);
-                          setEditingDepartment(null);
-                          form.reset();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={createDepartment.isPending || updateDepartment.isPending}
-                      >
-                        {createDepartment.isPending || updateDepartment.isPending
-                          ? "Saving..."
-                          : editingDepartment
-                          ? "Update Department"
-                          : "Create Department"
-                        }
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
-              </DialogContent>
-              </Dialog>
-            )}
-          </div>
+    <PageLayout
+      title="Departments"
+      subtitle="Manage departments and organizational units"
+      actions={
+        canCreateDepartments && (
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            New Department
+          </Button>
+        )
+      }
+    >
+      {departmentsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-gray-200 rounded"></div>
+                  <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="h-4 w-full bg-gray-200 rounded"></div>
+                  <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Search departments..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-
-        {/* Departments Grid */}
-        {departmentsLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded"></div>
-                    <div className="h-5 w-32 bg-gray-200 rounded"></div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="h-4 w-full bg-gray-200 rounded"></div>
-                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : filteredDepartments.length === 0 ? (
-          <div className="text-center py-12">
-            <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
-              {searchTerm ? "No departments found" : "No departments"}
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm 
-                ? "Try adjusting your search terms"
-                : "Get started by creating a new department."
-              }
+      ) : departments.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Building className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No departments</h3>
+            <p className="text-gray-500 mb-4">
+              Get started by creating your first department.
             </p>
-            {!searchTerm && canManageSystem && (
-              <div className="mt-6">
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Department
-                    </Button>
-                  </DialogTrigger>
-                </Dialog>
-              </div>
+            {canCreateDepartments && (
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Department
+              </Button>
             )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDepartments.map((department) => (
-              <Card key={department.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <Building2 className="w-6 h-6 text-blue-600" />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {departments.map((department) => (
+            <Card key={department.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Building className="w-6 h-6 text-primary" />
+                    <div>
                       <CardTitle className="text-lg">{department.name}</CardTitle>
                     </div>
-                    {canManageSystem && (
-                      <div className="flex space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(department)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(department.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                  </div>
+                  <div className="flex space-x-1">
+                    {canEditDepartments && (
+                      <Button variant="ghost" size="sm">
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {canDeleteDepartments && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(department.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
                   {department.description && (
-                    <CardDescription className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600 line-clamp-2">
                       {department.description}
-                    </CardDescription>
+                    </p>
                   )}
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">Manager:</span>
-                      {department.manager_id && department.manager?.first_name ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
-                            {department.manager?.first_name?.charAt(0)}
-                          </div>
-                          <div className="text-sm">
-                            <div className="font-medium">
-                              {`${department.manager.first_name} ${department.manager.last_name || ''}`}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          <Users className="w-3 h-3 mr-1" />
-                          No manager assigned
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="pt-2">
-                      <Select
-                        value={department.manager_id || "none"}
-                        disabled={true}
-                      >
-                        <SelectTrigger className="w-full cursor-not-allowed opacity-60">
-                          <SelectValue 
-                            placeholder="Manager assignment (readonly)"
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No manager</SelectItem>
-                          {employees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id}>
-                              {employee.first_name || 'Unknown'} {employee.last_name || 'Employee'} - {employee.employee_id || employee.id}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>Created {new Date(department.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+
+                  {department.code && (
+                    <div className="text-sm">
+                      <span className="text-gray-500">Code: </span>
+                      <Badge variant="outline">{department.code}</Badge>
+                    </div>
+                  )}
+
+                  {department.manager_id && (
+                    <div className="text-sm">
+                      <span className="text-gray-500">Manager: </span>
+                      <span className="font-medium">{department.manager_id}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </PageLayout>
   );
 }

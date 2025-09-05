@@ -1,35 +1,34 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import Header from "@/components/layout/header";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Download, Plus } from "lucide-react";
-import { Link } from "wouter";
-import type { TimeEntryWithProject, Project } from "@shared/schema";
-import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
 import { apiRequest } from "@/lib/queryClient";
+import Header from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
+import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Clock, Play, Pause, Square, Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { formatPSTDate } from "@shared/timezone";
+import type { TimeEntry, Project, Task } from "@shared/schema";
 
 export default function TimeLog() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const { canCreateTimeEntries, canEditTimeEntries, canDeleteTimeEntries } = usePermissions();
+  const queryClient = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedProject, setSelectedProject] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<string>("month");
-  const [editingEntry, setEditingEntry] = useState<TimeEntryWithProject | null>(null);
-
-  // Debug logging for state changes
-  console.log('🕒 [TIME-LOG] Component state:', {
-    selectedProject,
-    dateRange,
-    isAuthenticated,
-    isLoading
-  });
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -46,105 +45,45 @@ export default function TimeLog() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  // Fetch projects
-  const { data: projects } = useQuery<Project[]>({
+  // Fetch projects for filter
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: isAuthenticated,
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    select: (data) => Array.isArray(data) ? data : [],
   });
-
-  // Calculate date filters
-  const getDateFilters = () => {
-    const now = new Date();
-    const todayPST = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
-    const today = new Date(todayPST + 'T00:00:00');
-
-    switch (dateRange) {
-      case "today":
-        return {
-          startDate: todayPST,
-          endDate: todayPST,
-        };
-      case "week": {
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() - 7);
-        return {
-          startDate: startDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }),
-          endDate: todayPST,
-        };
-      }
-      case "quarter": {
-        const startDate = new Date(today);
-        startDate.setMonth(today.getMonth() - 3);
-        return {
-          startDate: startDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }),
-          endDate: todayPST,
-        };
-      }
-      default: { // month
-        const startDate = new Date(today);
-        startDate.setMonth(today.getMonth() - 1);
-        return {
-          startDate: startDate.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }),
-          endDate: todayPST,
-        };
-      }
-    }
-  };
 
   // Fetch time entries
-  const { startDate, endDate } = getDateFilters();
-  const { data: timeEntries, isLoading: entriesLoading, refetch } = useQuery<TimeEntryWithProject[]>({
-    queryKey: ["/api/time-entries", { projectId: selectedProject, startDate, endDate }],
-    queryFn: async () => {
-      console.log('🕒 [TIME-LOG] Fetching time entries with params:', {
-        projectId: selectedProject,
-        startDate,
-        endDate
-      });
-      
-      const params = new URLSearchParams({
-        projectId: selectedProject,
-        startDate,
-        endDate,
-      });
-      const response = await fetch(`/api/time-entries?${params}`);
-      
-      console.log('🕒 [TIME-LOG] API response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🕒 [TIME-LOG] API error:', errorText);
-        throw new Error(`${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log('🕒 [TIME-LOG] Received time entries:', data?.length || 0);
-      
-      return Array.isArray(data) ? data : [];
-    },
+  const { data: timeEntries = [], refetch } = useQuery<TimeEntry[]>({
+    queryKey: ["/api/time-entries", {
+      date: format(selectedDate, "yyyy-MM-dd"),
+      projectId: selectedProject === "all" ? undefined : selectedProject,
+      status: selectedStatus === "all" ? undefined : selectedStatus,
+    }],
     enabled: isAuthenticated,
-    select: (data) => {
-      console.log('🕒 [TIME-LOG] Selected time entries:', data?.length || 0);
-      return Array.isArray(data) ? data : [];
+    queryFn: async () => {
+      let url = `/api/time-entries?date=${format(selectedDate, "yyyy-MM-dd")}`;
+      if (selectedProject !== "all") {
+        url += `&projectId=${selectedProject}`;
+      }
+      if (selectedStatus !== "all") {
+        url += `&status=${selectedStatus}`;
+      }
+      return apiRequest(url, "GET");
     },
   });
 
-  const handleDeleteEntry = async (entryId: string) => {
-    if (!confirm('Are you sure you want to delete this time entry?')) {
-      return;
-    }
-
-    try {
-      await apiRequest(`/api/time-entries/${entryId}`, 'DELETE');
+  // Delete time entry mutation
+  const deleteEntry = useMutation({
+    mutationFn: async (entryId: string) => {
+      await apiRequest(`/api/time-entries/${entryId}`, "DELETE");
+    },
+    onSuccess: () => {
       toast({
         title: "Success",
         description: "Time entry deleted successfully",
       });
       refetch();
-    } catch (error) {
+    },
+    onError: (error) => {
       if (isUnauthorizedError(error as Error)) {
         toast({
           title: "Unauthorized",
@@ -156,97 +95,66 @@ export default function TimeLog() {
         }, 500);
         return;
       }
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isNotFound = errorMessage.includes('404');
-      
       toast({
         title: "Error",
-        description: isNotFound 
-          ? "Time entry not found or already deleted" 
-          : `Failed to delete time entry: ${errorMessage}`,
+        description: "Failed to delete time entry",
         variant: "destructive",
       });
-      
-      // Refresh the list even if delete failed (item might already be gone)
-      if (isNotFound) {
-        refetch();
-      }
+    },
+  });
+
+  const formatDuration = (hours: number) => {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}h ${minutes}m`;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "running":
+        return "bg-green-100 text-green-700";
+      case "paused":
+        return "bg-yellow-100 text-yellow-700";
+      case "stopped":
+        return "bg-blue-100 text-blue-700";
+      case "completed":
+        return "bg-gray-100 text-gray-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
 
-  // Helper function to format time
-  const formatTime = (time: string | Date | null | undefined) => {
-    try {
-      if (!time) return '—';
-      
-      // If it's already in HH:MM format (string), return as is
-      if (typeof time === 'string') {
-        // Check if it matches HH:MM pattern
-        if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
-          return time;
-        }
-        // Try to parse as date if it's a full datetime string
-        const date = new Date(time);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-      }
-      
-      // If it's a Date object
-      if (time instanceof Date && !isNaN(time.getTime())) {
-        return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      }
-      
-      return '—';
-    } catch {
-      return '—';
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "running":
+        return <Play className="w-3 h-3" />;
+      case "paused":
+        return <Pause className="w-3 h-3" />;
+      case "stopped":
+      case "completed":
+        return <Square className="w-3 h-3" />;
+      default:
+        return <Clock className="w-3 h-3" />;
     }
   };
 
-  const formatDate = (dateString: string | number | Date) => {
-    try {
-      // Handle string dates
-      if (typeof dateString === 'string') {
-        // If it's already in YYYY-MM-DD format, use formatPSTDate directly
-        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          return formatPSTDate(dateString);
-        }
-        // Otherwise try to parse and convert to YYYY-MM-DD format
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-          const dateStr = date.toISOString().split('T')[0];
-          return formatPSTDate(dateStr);
-        } else {
-          console.warn('Invalid date string in time log:', dateString);
-          return 'Invalid Date';
-        }
-      }
-      
-      // Handle Date objects or numbers
-      const date = new Date(dateString);
-      if (!isNaN(date.getTime())) {
-        const dateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-        return formatPSTDate(dateStr);
-      } else {
-        console.warn('Invalid date in time log:', dateString);
-        return 'Invalid Date';
-      }
-    } catch (error) {
-      console.error('Error formatting date in time log:', error, dateString);
-      return 'Invalid Date';
+  const handleEdit = (entry: TimeEntry) => {
+    setEditingEntry(entry);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (entryId: string) => {
+    if (confirm("Are you sure you want to delete this time entry?")) {
+      deleteEntry.mutate(entryId);
     }
   };
 
-  const getProjectColor = (color?: string) => {
-    const colors = {
-      '#1976D2': 'bg-primary/10 text-primary',
-      '#388E3C': 'bg-green-100 text-green-700',
-      '#F57C00': 'bg-orange-100 text-orange-700',
-      '#D32F2F': 'bg-red-100 text-red-700',
-    };
-    return colors[(color || '#1976D2') as keyof typeof colors] || 'bg-primary/10 text-primary';
+  const handleCreateNew = () => {
+    setEditingEntry(null);
+    setIsModalOpen(true);
   };
+
+  const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -260,184 +168,192 @@ export default function TimeLog() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Time Log</h2>
-          <p className="text-gray-600">View and edit your time entries</p>
-        </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Project</label>
-                  <Select value={selectedProject} onValueChange={setSelectedProject}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="All Projects" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Projects</SelectItem>
-                      {Array.isArray(projects) && projects.filter(project => 
-                        project?.id && 
-                        typeof project.id === 'string' && 
-                        project.id.trim() !== '' &&
-                        project.name &&
-                        typeof project.name === 'string' &&
-                        project.name.trim() !== ''
-                      ).map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-                  <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="today">Today</SelectItem>
-                      <SelectItem value="week">This Week</SelectItem>
-                      <SelectItem value="month">This Month</SelectItem>
-                      <SelectItem value="quarter">This Quarter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
+    <PageLayout
+      title="Time Log"
+      subtitle="View and manage your time entries"
+      actions={
+        canCreateTimeEntries && (
+          <Button onClick={handleCreateNew}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Entry
+          </Button>
+        )
+      }
+    >
+      {/* Filters */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="w-5 h-5" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Date Picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-64 justify-start text-left font-normal",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                 </Button>
-                <Link href="/time-entry">
-                  <Button size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Entry
-                  </Button>
-                </Link>
-              </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Project Filter */}
+            <Select value={selectedProject} onValueChange={setSelectedProject}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Projects" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Projects</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="running">Running</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="stopped">Stopped</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">
+                {format(selectedDate, "MMMM d, yyyy")}
+              </h3>
+              <p className="text-muted-foreground">
+                {timeEntries.length} {timeEntries.length === 1 ? "entry" : "entries"}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-right">
+              <div className="text-2xl font-bold">{formatDuration(totalHours)}</div>
+              <div className="text-muted-foreground">Total Time</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Time Entries Table */}
-        <Card>
-          <CardContent className="p-0">
-            {entriesLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading time entries...</p>
-              </div>
-            ) : !timeEntries || timeEntries.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground mb-4">No time entries found for the selected filters.</p>
-                <Link href="/time-entry">
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Entry
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project #</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {(timeEntries || []).map((entry) => (
-                      <tr key={entry.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(entry.date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge className="bg-primary/10 text-primary">
-                            {entry.project?.name || 'Unknown Project'}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {entry.project?.project_number ? (
-                            <Badge variant="outline" className="bg-gray-50 text-gray-700">
-                              {entry.project.project_number}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400 text-xs">—</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {entry.task?.name || "—"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
-                          {entry.description || "No description"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatTime(entry.start_time)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatTime(entry.end_time)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {entry.duration}h
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingEntry(entry)}
-                              className="text-primary hover:text-primary/80"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              className="text-destructive hover:text-destructive/80"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Edit Modal */}
-        {editingEntry && (
-          <EnhancedTimeEntryModal
-            entry={editingEntry}
-            onClose={() => setEditingEntry(null)}
-            onSuccess={() => {
-              setEditingEntry(null);
-              refetch();
-            }}
-          />
+      {/* Time Entries */}
+      <div className="space-y-4">
+        {timeEntries.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No time entries</h3>
+              <p className="text-gray-500 mb-4">
+                No time entries found for {format(selectedDate, "MMMM d, yyyy")}.
+              </p>
+              {canCreateTimeEntries && (
+                <Button onClick={handleCreateNew}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Your First Entry
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          timeEntries.map((entry) => (
+            <Card key={entry.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge className={getStatusColor(entry.status)}>
+                        {getStatusIcon(entry.status)}
+                        <span className="ml-1 capitalize">{entry.status}</span>
+                      </Badge>
+                      <span className="font-medium text-lg">
+                        {formatDuration(entry.duration || 0)}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-gray-900 mb-1">
+                      {entry.description || "No description"}
+                    </h3>
+                    <div className="text-sm text-gray-500 space-y-1">
+                      <div>Project: {entry.project?.name || "Unknown"}</div>
+                      <div>Task: {entry.task?.name || "No task"}</div>
+                      <div>
+                        Time: {entry.start_time && format(new Date(entry.start_time), "h:mm a")}
+                        {entry.end_time && ` - ${format(new Date(entry.end_time), "h:mm a")}`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {canEditTimeEntries && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(entry)}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {canDeleteTimeEntries && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(entry.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
-      </main>
-    </div>
+      </div>
+
+      {/* Time Entry Modal */}
+      <EnhancedTimeEntryModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingEntry(null);
+        }}
+        onSuccess={() => {
+          refetch();
+          setIsModalOpen(false);
+          setEditingEntry(null);
+        }}
+        editingEntry={editingEntry}
+        defaultDate={selectedDate}
+      />
+    </PageLayout>
   );
 }

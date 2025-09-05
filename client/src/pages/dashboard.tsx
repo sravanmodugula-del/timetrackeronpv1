@@ -8,9 +8,11 @@ import ProjectBreakdown from "@/components/dashboard/project-breakdown";
 
 import DepartmentHours from "@/components/dashboard/department-hours";
 import RecentActivity from "@/components/dashboard/recent-activity";
+import PageLayout from "@/components/layout/page-layout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, TrendingUp, Clock } from "lucide-react";
+import { DatePickerWithRange } from "@/components/ui/date-picker-with-range";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -23,7 +25,7 @@ export default function Dashboard() {
     const now = new Date();
     const todayPST = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
     const today = new Date(todayPST + 'T00:00:00');
-    
+
     switch (dateRange) {
       case "today":
         return {
@@ -100,52 +102,38 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Time Dashboard</h2>
-              <p className="text-gray-600">Overview of your time tracking activities</p>
-            </div>
-            
-            <Card className="w-full sm:w-auto">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <Select value={dateRange} onValueChange={setDateRange}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="today">Today</SelectItem>
-                      <SelectItem value="week">Last 7 days</SelectItem>
-                      <SelectItem value="month">Last 30 days</SelectItem>
-                      <SelectItem value="quarter">Last 3 months</SelectItem>
-                      <SelectItem value="year">Last 12 months</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <PageLayout
+      title="Dashboard"
+      actions={
+        <div className="flex items-center gap-3">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">Last 7 days</SelectItem>
+              <SelectItem value="month">Last 30 days</SelectItem>
+              <SelectItem value="quarter">Last 3 months</SelectItem>
+              <SelectItem value="year">Last 12 months</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      }
+    >
+      <StatsCards dateRange={getDateFilters()} />
 
-        <StatsCards dateRange={getDateFilters()} />
-        
-        {/* Enhanced Analytics */}
-        <div className={`grid gap-8 mt-8 ${permissions.canViewDepartmentData ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-          <ProjectBreakdown dateRange={getDateFilters()} />
-          {permissions.canViewDepartmentData && <DepartmentHours {...getDateFilters()} />}
-        </div>
-        
-        {/* Recent Activity */}
-        <div className="mt-8">
-          <RecentActivity dateRange={getDateFilters()} />
-        </div>
-      </main>
-    </div>
+      {/* Enhanced Analytics */}
+      <div className={`grid gap-8 mt-8 ${permissions.canViewDepartmentData ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+        <ProjectBreakdown dateRange={getDateFilters()} />
+        {permissions.canViewDepartmentData && <DepartmentHours {...getDateFilters()} />}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="mt-8">
+        <RecentActivity dateRange={getDateFilters()} />
+      </div>
+    </PageLayout>
   );
 }
