@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart } from "lucide-react";
 import type { Project } from "@shared/schema";
+import { formatPSTDate } from "@shared/timezone";
 
 interface ProjectBreakdownItem {
   project: Project;
