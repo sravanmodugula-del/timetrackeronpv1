@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.assignedEmployeeIds && Array.isArray(req.body.assignedEmployeeIds) && req.body.assignedEmployeeIds.length > 0 && !req.body.isEnterpriseWide) {
         try {
           console.log(`👥 Assigning ${req.body.assignedEmployeeIds.length} employees to project: ${project.id}`);
-          
+
           // Assign employees to the project
           for (const employeeId of req.body.assignedEmployeeIds) {
             const projEmpData = {
@@ -379,11 +379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               employee_id: employeeId,
               user_id: userId
             };
-            
+
             await activeStorage.createProjectEmployee(projEmpData);
             console.log(`✅ Assigned employee ${employeeId} to project ${project.id}`);
           }
-          
+
           console.log(`✅ All employees assigned successfully to project: ${project.id}`);
         } catch (employeeError) {
           console.error(`❌ Error assigning employees to project ${project.id}:`, employeeError);
@@ -588,7 +588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { id } = req.params;
       console.log('📋 [API] Fetching project employees for project:', id);
-      
+
       try {
         const employees = await activeStorage.getProjectEmployees(id, userId);
         console.log('📋 [API] Successfully fetched project employees:', employees.length);
@@ -1386,17 +1386,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log("📊 [DASHBOARD-STATS] Safe stats being returned:", safeStats);
-
-      res.json(safeStats);
-    } catch (error) {
-      console.error("❌ [DASHBOARD-STATS] Error:", error);
-      // Return safe defaults instead of throwing
-      res.json({
-        todayHours: Number(stats?.todayHours || 0),
-        weekHours: Number(stats?.weekHours || 0),
-        monthHours: Number(stats?.monthHours || 0),
-        activeProjects: Number(stats?.activeProjects || 0)
-      };
 
       res.json(safeStats);
     } catch (error) {
@@ -2451,7 +2440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Use entry-level task data if available
             if (entry.task && (entry.task.name || entry.task.title || entry.task_name)) {
               task = {
-                id: entry.task_id,
+                id: entry.task.id || entry.task_id,
                 name: entry.task.name || entry.task.title || entry.task_name,
                 description: entry.task.description,
                 status: entry.task.status || 'active'

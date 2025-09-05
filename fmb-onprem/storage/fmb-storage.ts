@@ -2439,22 +2439,22 @@ export class FmbStorage implements IStorage {
         throw new Error('Database pool not available');
       }
 
-      // Force PST timezone calculation to ensure consistency
-      const now = new Date();
-      
-      // Get current PST date properly - create a new date in PST timezone
-      const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
-      const todayStr = pstNow.toLocaleDateString('en-CA');
+      // Use PST timezone for all date calculations
+      const pstNow = new Date();
+      const todayStr = pstNow.toLocaleDateString('en-CA', { timeZone: "America/Los_Angeles" });
 
-      // Get start of week (Monday) in PST timezone  
-      const startOfWeek = new Date(pstNow);
-      const dayOfWeek = startOfWeek.getDay();
-      const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so subtract 6; otherwise subtract (day - 1)
+      // Calculate week start (Sunday) in PST
+      const pstDateObj = new Date(todayStr + 'T00:00:00');
+      const startOfWeek = new Date(pstDateObj);
+      const dayOfWeek = startOfWeek.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const daysToSubtract = dayOfWeek; // Days to subtract to get to Sunday
       startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
       const weekStartStr = startOfWeek.toLocaleDateString('en-CA');
 
-      // Get start of month in PST timezone
-      const startOfMonth = new Date(pstNow.getFullYear(), pstNow.getMonth(), 1);
+      // Calculate month start in PST
+      const pstYear = parseInt(todayStr.split('-')[0]);
+      const pstMonth = parseInt(todayStr.split('-')[1]) - 1; // Month is 0-indexed
+      const startOfMonth = new Date(pstYear, pstMonth, 1);
       const monthStartStr = startOfMonth.toLocaleDateString('en-CA');
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
@@ -3056,23 +3056,28 @@ export class FmbStorage implements IStorage {
       const request = this.pool.request();
       request.input('userId', sql.NVarChar(255), userId);
 
+      // Build date filter if provided - use proper PST timezone handling
       let dateFilter = '';
       if (startDate && endDate) {
-        request.input('startDate', sql.Date, startDate);
-        request.input('endDate', sql.Date, endDate);
-        dateFilter = 'AND te.date >= @startDate AND te.date <= @endDate';
+        // Convert dates to PST and ensure proper formatting
+        const startDatePST = new Date(startDate + 'T00:00:00-08:00'); // PST timezone
+        const endDatePST = new Date(endDate + 'T23:59:59-08:00'); // PST timezone
+
+        request.input('startDate', sql.NVarChar(10), startDate);
+        request.input('endDate', sql.NVarChar(10), endDate);
+        dateFilter = 'AND CONVERT(date, te.date) >= CONVERT(date, @startDate) AND CONVERT(date, te.date) <= CONVERT(date, @endDate)';
+        console.log('🏢 [FMB-STORAGE] Using PST date filter from:', startDate, 'to:', endDate);
       }
 
       const result = await request.query(`
-        SELECT
-          COALESCE(d.name, 'No Department') as departmentName,
+        SELECT 
           d.id as departmentId,
-          CAST(COALESCE(SUM(te.hours), 0) AS FLOAT) as totalHours,
-          COUNT(DISTINCT te.user_id) as employeeCount,
-          COUNT(te.id) as entryCount
+          d.name as departmentName,
+          COALESCE(SUM(CAST(te.hours as DECIMAL(10,2))), 0) as totalHours,
+          COUNT(DISTINCT u.id) as employeeCount
         FROM departments d
         LEFT JOIN users u ON u.department = d.name
-        LEFT JOIN time_entries te ON te.user_id = u.id ${dateFilter.replace('WHERE te.user_id = @userId', '')}
+        LEFT JOIN time_entries te ON te.user_id = u.id ${dateFilter}
         WHERE d.organization_id IN (
           SELECT organization_id FROM users WHERE id = @userId
         )
@@ -3081,7 +3086,15 @@ export class FmbStorage implements IStorage {
       `);
 
       console.log('🏢 [FMB-STORAGE] Department hours query result:', result.recordset);
-      return result.recordset;
+
+      // Ensure proper number formatting for hours
+      const formattedResult = result.recordset.map(dept => ({
+        ...dept,
+        totalHours: parseFloat(dept.totalHours || 0),
+        employeeCount: parseInt(dept.employeeCount || 0)
+      }));
+
+      return formattedResult;
     } catch (error) {
       console.error('🔴 [FMB-STORAGE] Error getting department hours summary:', error);
       throw error;
