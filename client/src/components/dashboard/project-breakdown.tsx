@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart } from "lucide-react";
 import type { Project } from "@shared/schema";
-import { formatPSTDate } from "@shared/timezone";
+import { formatPSTDate, toPSTDate } from "@shared/timezone";
 
 interface ProjectBreakdownItem {
   project: Project;
@@ -28,9 +28,13 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
   const { data: breakdown, isLoading } = useQuery<ProjectBreakdownItem[]>({
     queryKey: ["/api/dashboard/project-breakdown", dateRange],
     queryFn: async () => {
+      // Ensure dates are in PST format for consistent server processing
+      const pstStartDate = toPSTDate(dateRange.startDate);
+      const pstEndDate = toPSTDate(dateRange.endDate);
+      
       const params = new URLSearchParams({
-        startDate: dateRange.startDate,
-        endDate: dateRange.endDate,
+        startDate: pstStartDate,
+        endDate: pstEndDate,
       });
       const response = await fetch(`/api/dashboard/project-breakdown?${params}`);
       if (!response.ok) {
