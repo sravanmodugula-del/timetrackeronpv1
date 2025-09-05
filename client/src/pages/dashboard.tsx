@@ -9,7 +9,8 @@ import DepartmentHours from "@/components/dashboard/department-hours";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, TrendingUp, Clock } from "lucide-react";
+import { Calendar, TrendingUp, Clock, Home } from "lucide-react";
+import Header from "@/components/layout/header";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -99,33 +100,46 @@ export default function Dashboard() {
   }
 
   return (
-    <PageLayout 
-      title="Time Dashboard" 
-      subtitle="Overview of your time tracking activities"
-    >
-      <div className="mb-8">
-        <div className="flex justify-end">
-          <Card className="w-auto">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="today">Today</SelectItem>
-                    <SelectItem value="week">Last 7 days</SelectItem>
-                    <SelectItem value="month">Last 30 days</SelectItem>
-                    <SelectItem value="quarter">Last 3 months</SelectItem>
-                    <SelectItem value="year">Last 12 months</SelectItem>
-                  </SelectContent>
-                </Select>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <Home className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Dashboard
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Overview of your time tracking activities
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Card className="w-auto">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Select value={dateRange} onValueChange={setDateRange}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Today</SelectItem>
+                      <SelectItem value="week">Last 7 days</SelectItem>
+                      <SelectItem value="month">Last 30 days</SelectItem>
+                      <SelectItem value="quarter">Last 3 months</SelectItem>
+                      <SelectItem value="year">Last 12 months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
 
       <StatsCards dateRange={getDateFilters()} />
       
@@ -139,6 +153,7 @@ export default function Dashboard() {
       <div className="mt-8">
         <RecentActivity dateRange={getDateFilters()} />
       </div>
-    </PageLayout>
+      </main>
+    </div>
   );
 }

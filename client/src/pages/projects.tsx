@@ -43,6 +43,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Edit2, Trash2, FolderOpen, Users, Globe, Calendar, Settings } from "lucide-react";
 import { getProjectStatus } from "@/lib/projectUtils";
 import PageLayout from "@/components/layout/page-layout";
+import Header from "@/components/layout/header";
 
 const projectFormSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -388,11 +389,27 @@ export default function Projects() {
   }
 
   return (
-    <PageLayout 
-      title="Projects" 
-      subtitle="Manage your projects and organize your time entries"
-    >
-      <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <FolderOpen className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  Projects
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage your projects and organize your time entries
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
         <div className="flex justify-end items-center">
           {permissions.canCreateProjects && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -798,7 +815,8 @@ export default function Projects() {
             ))}
           </div>
         )}
-      </div>
-    </PageLayout>
+        </div>
+      </main>
+    </div>
   );
 }

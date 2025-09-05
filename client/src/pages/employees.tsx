@@ -243,7 +243,7 @@ export default function Employees() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="container mx-auto py-6 space-y-6">
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       {/* Header Section */}
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
@@ -483,7 +483,7 @@ export default function Employees() {
           </Form>
         </DialogContent>
       </Dialog>
-      </div>
+      </main>
     </div>
   );
 }

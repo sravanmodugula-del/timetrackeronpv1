@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Download, Plus, List } from "lucide-react";
+import { Pencil, Trash2, Download, Plus, ClipboardList } from "lucide-react";
 import { Link } from "wouter";
 import type { TimeEntryWithProject, Project } from "@shared/schema";
 import EnhancedTimeEntryModal from "@/components/time/enhanced-time-entry-modal";
@@ -269,7 +269,7 @@ export default function TimeLog() {
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
             <div className="flex items-center">
-              <List className="w-8 h-8 text-blue-600 mr-3" />
+              <ClipboardList className="w-8 h-8 text-blue-600 mr-3" />
               <div>
                 <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                   Time Log

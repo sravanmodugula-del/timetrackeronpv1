@@ -4,7 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import PageLayout from "@/components/layout/page-layout";
 import WorkingTimeEntryForm from "@/components/time/working-time-entry-form";
 import Header from "@/components/layout/header";
-import { Plus } from "lucide-react";
+import { Clock } from "lucide-react";
 
 export default function TimeEntry() {
   const { toast } = useToast();
@@ -45,7 +45,7 @@ export default function TimeEntry() {
         <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
             <div className="flex items-center">
-              <Plus className="w-8 h-8 text-blue-600 mr-3" />
+              <Clock className="w-8 h-8 text-blue-600 mr-3" />
               <div>
                 <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                   Log Time
