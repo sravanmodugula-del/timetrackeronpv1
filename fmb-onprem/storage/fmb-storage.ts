@@ -2976,16 +2976,26 @@ export class FmbStorage implements IStorage {
 
       // Add date filter if provided with PST timezone handling
       if (startDate && endDate) {
-        // Use proper PST date handling - convert string dates to proper SQL Date parameters
-        request.input('startDate', sql.Date, new Date(startDate + 'T00:00:00-08:00')); // PST start of day
-        request.input('endDate', sql.Date, new Date(endDate + 'T23:59:59-08:00')); // PST end of day
-        
-        breakdownQuery += `
-        WHERE CAST(te.date AS DATE) >= CAST(@startDate AS DATE)
-          AND CAST(te.date AS DATE) <= CAST(@endDate AS DATE)
-        `;
-        console.log('📊 [FMB-STORAGE] Using PST date filter from:', startDate, 'to:', endDate);
-        console.log('📊 [FMB-STORAGE] Converted dates - Start:', new Date(startDate + 'T00:00:00-08:00'), 'End:', new Date(endDate + 'T23:59:59-08:00'));
+        // For today's filter, use string date comparison to avoid timezone conversion issues
+        if (startDate === endDate) {
+          // Same day filter - use string comparison to ensure we catch all entries for that date
+          request.input('filterDate', sql.NVarChar(10), startDate);
+          breakdownQuery += `
+          WHERE CONVERT(VARCHAR(10), te.date, 120) = @filterDate
+          `;
+          console.log('📊 [FMB-STORAGE] Using same-day PST filter for date:', startDate);
+        } else {
+          // Date range filter - use proper date range comparison
+          request.input('startDate', sql.Date, new Date(startDate + 'T00:00:00-08:00')); // PST start of day
+          request.input('endDate', sql.Date, new Date(endDate + 'T23:59:59-08:00')); // PST end of day
+          
+          breakdownQuery += `
+          WHERE CAST(te.date AS DATE) >= CAST(@startDate AS DATE)
+            AND CAST(te.date AS DATE) <= CAST(@endDate AS DATE)
+          `;
+          console.log('📊 [FMB-STORAGE] Using PST date range filter from:', startDate, 'to:', endDate);
+          console.log('📊 [FMB-STORAGE] Converted dates - Start:', new Date(startDate + 'T00:00:00-08:00'), 'End:', new Date(endDate + 'T23:59:59-08:00'));
+        }
       }
 
       breakdownQuery += `
