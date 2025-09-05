@@ -1,4 +1,4 @@
-// Global type definitions for missing ES2021/ES2022 types
+// Global type definitions for missing ES2021/ES2022 types and React types
 
 declare global {
   interface AggregateError extends Error {
@@ -20,6 +20,21 @@ declare global {
     new(errors: Iterable<any>, message?: string): AggregateError;
     (errors: Iterable<any>, message?: string): AggregateError;
   };
+
+  // React Query types
+  namespace ReactQuery {
+    interface QueryClient {
+      invalidateQueries: (key?: string | string[]) => Promise<void>;
+      setQueryData: (key: string | string[], data: any) => void;
+      getQueryData: (key: string | string[]) => any;
+    }
+  }
+
+  // Date picker types
+  interface DateRange {
+    from?: Date;
+    to?: Date;
+  }
 }
 
 export interface User {
