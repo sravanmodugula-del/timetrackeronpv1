@@ -2439,20 +2439,28 @@ export class FmbStorage implements IStorage {
         throw new Error('Database pool not available');
       }
 
-      // Use PST timezone for all date calculations
+      // Use server's local timezone (which should be PST) for all date calculations
       const now = new Date();
-      const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      
+      // Get today's date in YYYY-MM-DD format using local timezone
+      const todayStr = now.getFullYear() + '-' + 
+                      String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                      String(now.getDate()).padStart(2, '0');
 
-      // Get start of week (Monday) in PST
-      const startOfWeek = new Date();
-      const pstStartOfWeek = new Date(now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }));
-      pstStartOfWeek.setDate(pstStartOfWeek.getDate() - (pstStartOfWeek.getDay() === 0 ? 6 : pstStartOfWeek.getDay() - 1));
-      const weekStartStr = pstStartOfWeek.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      // Get start of week (Monday) in local timezone
+      const startOfWeek = new Date(now);
+      const dayOfWeek = startOfWeek.getDay();
+      const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so subtract 6; otherwise subtract (day - 1)
+      startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+      const weekStartStr = startOfWeek.getFullYear() + '-' + 
+                          String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(startOfWeek.getDate()).padStart(2, '0');
 
-      // Get start of month in PST
-      const pstStartOfMonth = new Date(now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }));
-      pstStartOfMonth.setDate(1);
-      const monthStartStr = pstStartOfMonth.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      // Get start of month in local timezone
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStartStr = startOfMonth.getFullYear() + '-' + 
+                           String(startOfMonth.getMonth() + 1).padStart(2, '0') + '-' + 
+                           String(startOfMonth.getDate()).padStart(2, '0');
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
         today: todayStr,
