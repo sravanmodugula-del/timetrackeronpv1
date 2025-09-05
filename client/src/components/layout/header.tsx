@@ -1,20 +1,16 @@
+
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Clock, BarChart3, Plus, List, FolderOpen, CheckSquare, Users, Building, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import UserMenu from "@/components/layout/user-menu";
-import type { Organization } from "@shared/schema";
 
 export default function Header() {
   const { user } = useAuth();
-  const [location] = useLocation();
   const { canViewReports } = usePermissions();
-
-  // Use consistent app name across all pages
-  const appName = "TimeTracker Pro";
+  const [location] = useLocation();
 
   const allNavigationItems = [
     { name: "Dashboard", href: "/", icon: BarChart3, current: location === "/" },
@@ -36,8 +32,6 @@ export default function Header() {
     return true; // Show all other items
   });
 
-
-
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,7 +41,7 @@ export default function Header() {
               <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center mr-3">
                 <Clock className="w-5 h-5" />
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{appName}</h1>
+              <h1 className="text-xl font-bold text-gray-900">TimeTracker Pro</h1>
             </div>
           </div>
           

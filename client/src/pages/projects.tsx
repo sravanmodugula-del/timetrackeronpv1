@@ -42,7 +42,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Edit2, Trash2, FolderOpen, Users, Globe, Calendar, Settings } from "lucide-react";
 import { getProjectStatus } from "@/lib/projectUtils";
-import Header from "@/components/layout/header";
 import PageLayout from "@/components/layout/page-layout";
 
 const projectFormSchema = z.object({
@@ -389,413 +388,417 @@ export default function Projects() {
   }
 
   return (
-    <PageLayout
-      title="Projects"
-      actions={
-        permissions.canCreateProjects && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleNewProject} data-testid="button-new-project">
-                <Plus className="w-4 h-4 mr-2" />
-                New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProject ? "Edit Project" : "Create New Project"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingProject
-                    ? "Update the project details and employee assignments."
-                    : "Add a new project to organize your time entries."
-                  }
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="details" className="flex items-center gap-2">
-                        <Settings className="w-4 h-4" />
-                        Project Details
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value="employees"
-                        className="flex items-center gap-2"
-                        disabled={form.watch("isEnterpriseWide")}
-                        data-testid="tab-employees"
-                      >
-                        <Users className="w-4 h-4" />
-                        Assigned Employees
-                        {!form.watch("isEnterpriseWide") && (form.watch("assignedEmployeeIds")?.length || 0) > 0 && (
-                          <Badge variant="secondary" className="ml-1">
-                            {form.watch("assignedEmployeeIds")?.length || 0}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="details" className="space-y-4 mt-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Project Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter project name" {...field} data-testid="input-project-name" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="projectNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Project Number (optional)</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g., PRJ-001, 2024-001, etc."
-                                {...field}
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description (optional)</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Describe the project..."
-                                className="resize-none"
-                                rows={3}
-                                {...field}
-                                value={field.value || ""}
-                                data-testid="textarea-project-description"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="color"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Color</FormLabel>
-                            <div className="flex flex-wrap gap-2">
-                              {projectColors.map((color) => (
-                                <button
-                                  key={color.value}
-                                  type="button"
-                                  className={`w-8 h-8 rounded-full border-2 ${color.class} ${
-                                    field.value === color.value
-                                      ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2"
-                                      : "border-gray-300"
-                                  }`}
-                                  onClick={() => field.onChange(color.value)}
-                                />
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="startDate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Start Date (optional)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  {...field}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="endDate"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>End Date (optional)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  {...field}
-                                  value={field.value || ""}
-                                  min={form.watch("startDate") || undefined}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="isEnterpriseWide"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base flex items-center gap-2">
-                                <Globe className="w-4 h-4" />
-                                Enterprise-wide Project
-                              </FormLabel>
-                              <div className="text-sm text-muted-foreground">
-                                All employees can access this project. Disable to restrict access to specific employees.
-                              </div>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="employees" className="space-y-4 mt-4">
-                      {!form.watch("isEnterpriseWide") ? (
-                        <FormField
-                          control={form.control}
-                          name="assignedEmployeeIds"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="flex items-center gap-2">
-                                <Users className="w-4 h-4" />
-                                Assigned Employees
-                              </FormLabel>
-                              <FormControl>
-                                <div className="rounded-md border max-h-96 overflow-y-auto">
-                                  {employees.length === 0 ? (
-                                    <div className="p-4 text-center text-sm text-muted-foreground">
-                                      No employees found. Add employees first to assign them to projects.
-                                    </div>
-                                  ) : (
-                                    <ScrollArea className="h-full">
-                                      <div className="p-4 space-y-2">
-                                        {employees.map((employee) => (
-                                          <div key={employee.id} className="flex items-center space-x-2">
-                                            <Checkbox
-                                              id={`employee-${employee.id}`}
-                                              data-testid={`checkbox-employee-${employee.id}`}
-                                              checked={field.value?.includes(employee.id) || false}
-                                              onCheckedChange={(checked) => {
-                                                const currentValue = field.value || [];
-                                                if (checked) {
-                                                  field.onChange([...currentValue, employee.id]);
-                                                } else {
-                                                  field.onChange(currentValue.filter(id => id !== employee.id));
-                                                }
-                                              }}
-                                            />
-                                            <label
-                                              htmlFor={`employee-${employee.id}`}
-                                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <span>{employee.first_name} {employee.last_name}</span>
-                                                <span className="text-sm text-gray-500">
-                                                  {employee.department} • {employee.employee_id}
-                                                </span>
-                                              </div>
-                                            </label>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </ScrollArea>
-                                  )}
-                                </div>
-                              </FormControl>
-                              <div className="text-xs text-muted-foreground">
-                                {field.value?.length || 0} employee(s) selected
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="p-8 text-center text-muted-foreground">
-                          <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                          <h3 className="font-medium mb-2">Enterprise-wide Project</h3>
-                          <p className="text-sm">
-                            This project is available to all employees. To assign specific employees,
-                            disable the "Enterprise-wide Project" option in the Project Details tab.
-                          </p>
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleDialogClose}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={createProject.isPending || updateProject.isPending}
-                      data-testid="button-submit-project"
-                    >
-                      {editingProject ? "Update" : "Create"} Project
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        )
-      }
+    <PageLayout 
+      title="Projects" 
+      subtitle="Manage your projects and organize your time entries"
     >
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                  <div className="h-5 w-32 bg-gray-200 rounded"></div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-4 w-full bg-gray-200 rounded"></div>
-                  <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : !projects || projects.length === 0 ? (
-        <div className="text-center py-12">
-          <FolderOpen className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No projects</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Get started by creating a new project.
-          </p>
+      <div className="space-y-6">
+        <div className="flex justify-end items-center">
           {permissions.canCreateProjects && (
-            <div className="mt-6">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button onClick={handleNewProject}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Project
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleNewProject} data-testid="button-new-project">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingProject ? "Edit Project" : "Create New Project"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingProject
+                      ? "Update the project details and employee assignments."
+                      : "Add a new project to organize your time entries."
+                    }
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="details" className="flex items-center gap-2">
+                          <Settings className="w-4 h-4" />
+                          Project Details
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="employees"
+                          className="flex items-center gap-2"
+                          disabled={form.watch("isEnterpriseWide")}
+                          data-testid="tab-employees"
+                        >
+                          <Users className="w-4 h-4" />
+                          Assigned Employees
+                          {!form.watch("isEnterpriseWide") && (form.watch("assignedEmployeeIds")?.length || 0) > 0 && (
+                            <Badge variant="secondary" className="ml-1">
+                              {form.watch("assignedEmployeeIds")?.length || 0}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="details" className="space-y-4 mt-4">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Project Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter project name" {...field} data-testid="input-project-name" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="projectNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Project Number (optional)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="e.g., PRJ-001, 2024-001, etc."
+                                  {...field}
+                                  value={field.value || ""}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Description (optional)</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  placeholder="Describe the project..."
+                                  className="resize-none"
+                                  rows={3}
+                                  {...field}
+                                  value={field.value || ""}
+                                  data-testid="textarea-project-description"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Color</FormLabel>
+                              <div className="flex flex-wrap gap-2">
+                                {projectColors.map((color) => (
+                                  <button
+                                    key={color.value}
+                                    type="button"
+                                    className={`w-8 h-8 rounded-full border-2 ${color.class} ${
+                                      field.value === color.value
+                                        ? "border-gray-900 ring-2 ring-gray-900 ring-offset-2"
+                                        : "border-gray-300"
+                                    }`}
+                                    onClick={() => field.onChange(color.value)}
+                                  />
+                                ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="startDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Start Date (optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    {...field}
+                                    value={field.value || ""}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="endDate"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>End Date (optional)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="date"
+                                    {...field}
+                                    value={field.value || ""}
+                                    min={form.watch("startDate") || undefined}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="isEnterpriseWide"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5">
+                                <FormLabel className="text-base flex items-center gap-2">
+                                  <Globe className="w-4 h-4" />
+                                  Enterprise-wide Project
+                                </FormLabel>
+                                <div className="text-sm text-muted-foreground">
+                                  All employees can access this project. Disable to restrict access to specific employees.
+                                </div>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </TabsContent>
+
+                      <TabsContent value="employees" className="space-y-4 mt-4">
+                        {!form.watch("isEnterpriseWide") ? (
+                          <FormField
+                            control={form.control}
+                            name="assignedEmployeeIds"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2">
+                                  <Users className="w-4 h-4" />
+                                  Assigned Employees
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="rounded-md border max-h-96 overflow-y-auto">
+                                    {employees.length === 0 ? (
+                                      <div className="p-4 text-center text-sm text-muted-foreground">
+                                        No employees found. Add employees first to assign them to projects.
+                                      </div>
+                                    ) : (
+                                      <ScrollArea className="h-full">
+                                        <div className="p-4 space-y-2">
+                                          {employees.map((employee) => (
+                                            <div key={employee.id} className="flex items-center space-x-2">
+                                              <Checkbox
+                                                id={`employee-${employee.id}`}
+                                                data-testid={`checkbox-employee-${employee.id}`}
+                                                checked={field.value?.includes(employee.id) || false}
+                                                onCheckedChange={(checked) => {
+                                                  const currentValue = field.value || [];
+                                                  if (checked) {
+                                                    field.onChange([...currentValue, employee.id]);
+                                                  } else {
+                                                    field.onChange(currentValue.filter(id => id !== employee.id));
+                                                  }
+                                                }}
+                                              />
+                                              <label
+                                                htmlFor={`employee-${employee.id}`}
+                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                                              >
+                                                <div className="flex items-center justify-between">
+                                                  <span>{employee.first_name} {employee.last_name}</span>
+                                                  <span className="text-sm text-gray-500">
+                                                    {employee.department} • {employee.employee_id}
+                                                  </span>
+                                                </div>
+                                              </label>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </ScrollArea>
+                                    )}
+                                  </div>
+                                </FormControl>
+                                <div className="text-xs text-muted-foreground">
+                                  {field.value?.length || 0} employee(s) selected
+                                </div>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <div className="p-8 text-center text-muted-foreground">
+                            <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                            <h3 className="font-medium mb-2">Enterprise-wide Project</h3>
+                            <p className="text-sm">
+                              This project is available to all employees. To assign specific employees,
+                              disable the "Enterprise-wide Project" option in the Project Details tab.
+                            </p>
+                          </div>
+                        )}
+                      </TabsContent>
+                    </Tabs>
+
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleDialogClose}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={createProject.isPending || updateProject.isPending}
+                        data-testid="button-submit-project"
+                      >
+                        {editingProject ? "Update" : "Create"} Project
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow" data-testid={`card-project-${project.name}`}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
                   <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-4 h-4 rounded-full ${getColorClass(project.color || "#1976D2")}`}
-                    ></div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-                      {project.project_number && (
-                        <p className="text-sm text-gray-500 mt-1">#{project.project_number}</p>
-                      )}
-                    </div>
+                    <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+                    <div className="h-5 w-32 bg-gray-200 rounded"></div>
                   </div>
-                  <div className="flex space-x-1">
-                    {permissions.canEditProjects && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(project)}
-                        data-testid={`button-edit-${project.name}`}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {permissions.canDeleteProjects && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(project.id)}
-                        data-testid={`button-delete-${project.name}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {project.description && (
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {project.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex items-center space-x-4">
-                      {project.start_date && (
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>{new Date(project.start_date).toLocaleDateString()}</span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${getProjectStatus(project)}`}>
-                          {getProjectStatus(project).charAt(0).toUpperCase() + getProjectStatus(project).slice(1)}
-                        </span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : !projects || projects.length === 0 ? (
+          <div className="text-center py-12">
+            <FolderOpen className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No projects</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by creating a new project.
+            </p>
+            {permissions.canCreateProjects && (
+              <div className="mt-6">
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={handleNewProject}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Project
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <Card key={project.id} className="hover:shadow-md transition-shadow" data-testid={`card-project-${project.name}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={`w-4 h-4 rounded-full ${getColorClass(project.color || "#1976D2")}`}
+                      ></div>
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-lg truncate">{project.name}</CardTitle>
+                        {project.project_number && (
+                          <p className="text-sm text-gray-500 mt-1">#{project.project_number}</p>
+                        )}
                       </div>
-
-                      {project.is_enterprise_wide ? (
-                        <Badge variant="secondary" className="text-xs">
-                          <Globe className="w-3 h-3 mr-1" />
-                          All Employees
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          <Users className="w-3 h-3 mr-1" />
-                          Restricted
-                        </Badge>
+                    </div>
+                    <div className="flex space-x-1">
+                      {permissions.canEditProjects && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(project)}
+                          data-testid={`button-edit-${project.name}`}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {permissions.canDeleteProjects && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(project.id)}
+                          data-testid={`button-delete-${project.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       )}
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {project.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {project.description}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center space-x-4">
+                        {project.start_date && (
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            <span>{new Date(project.start_date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${getProjectStatus(project)}`}>
+                            {getProjectStatus(project).charAt(0).toUpperCase() + getProjectStatus(project).slice(1)}
+                          </span>
+                        </div>
+
+                        {project.is_enterprise_wide ? (
+                          <Badge variant="secondary" className="text-xs">
+                            <Globe className="w-3 h-3 mr-1" />
+                            All Employees
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">
+                            <Users className="w-3 h-3 mr-1" />
+                            Restricted
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </PageLayout>
   );
 }

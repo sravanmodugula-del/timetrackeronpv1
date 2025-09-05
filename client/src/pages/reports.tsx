@@ -1,37 +1,64 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/layout/header";
+import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import PageLayout from "@/components/layout/page-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  BarChart3,
-  Download,
-  Calendar as CalendarIcon,
-  TrendingUp,
-  Clock,
-  Users,
-  Building,
-  Filter
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Download, FileText, Calendar, Clock } from "lucide-react";
+import type { Project, TimeEntry, Employee } from "@shared/schema";
 import { format } from "date-fns";
+import { formatPSTDate } from "@shared/timezone";
+import Header from "@/components/layout/header";
+
+// Helper function to safely format dates
+const safeDateFormat = (dateValue: any, formatString: string): string => {
+  try {
+    if (!dateValue) return "Unknown Date";
+
+    // Handle different date formats from database
+    let dateString: string;
+    if (typeof dateValue === 'string') {
+      dateString = dateValue;
+    } else if (dateValue instanceof Date) {
+      dateString = dateValue.toISOString();
+    } else {
+      return "Invalid Date";
+    }
+
+    return formatPSTDate(dateString, formatString);
+  } catch (error) {
+    console.warn('Date formatting error:', error, 'for value:', dateValue);
+    return "Invalid Date";
+  }
+};
+
+interface TimeEntryWithEmployee extends TimeEntry {
+  employee?: Employee;
+  task?: {
+    id: string;
+    name: string;
+    description?: string;
+    status: string;
+  };
+}
 
 export default function Reports() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const permissions = usePermissions();
-  const [dateRange, setDateRange] = useState<string>("week");
-  const [reportType, setReportType] = useState<string>("time-summary");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { canViewReports } = usePermissions();
+  const [selectedProject, setSelectedProject] = useState<string>("");
 
-  // Redirect to home if not authenticated
+  // Check if user can view reports
+  const canAccessReports = canViewReports;
+
+  // Redirect to home if not authenticated or not authorized
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -44,23 +71,109 @@ export default function Reports() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
 
-  const reportTypes = [
-    { value: "time-summary", label: "Time Summary", icon: Clock },
-    { value: "project-breakdown", label: "Project Breakdown", icon: BarChart3 },
-    { value: "employee-hours", label: "Employee Hours", icon: Users },
-    { value: "department-analysis", label: "Department Analysis", icon: Building },
-  ];
+    if (!isLoading && isAuthenticated && !canAccessReports) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to view reports.",
+        variant: "destructive",
+      });
+      // Don't redirect, just show error
+    }
+  }, [isAuthenticated, isLoading, canAccessReports, toast]);
 
-  const handleExport = () => {
+  // Fetch projects
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    enabled: isAuthenticated && canAccessReports,
+  });
+
+  // Fetch time entries for selected project
+  const { data: timeEntries = [], isLoading: timeEntriesLoading, refetch } = useQuery<TimeEntryWithEmployee[]>({
+    queryKey: ["/api/reports/project-time-entries", selectedProject],
+    queryFn: async () => {
+      return await apiRequest(`/api/reports/project-time-entries/${selectedProject}`, "GET");
+    },
+    enabled: isAuthenticated && canAccessReports && !!selectedProject,
+  });
+
+  const formatDuration = (hours: number) => {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    return `${wholeHours}h ${minutes}m`;
+  };
+
+  const getTotalHours = () => {
+    return timeEntries.reduce((total, entry) => {
+      const duration = typeof entry.duration === 'number' ? entry.duration : parseFloat(entry.duration as string) || 0;
+      return total + duration;
+    }, 0);
+  };
+
+  const exportToCSV = () => {
+    if (!timeEntries.length) {
+      toast({
+        title: "No Data",
+        description: "No time entries to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedProjectName = projects.find(p => p.id === selectedProject)?.name || "Unknown Project";
+
+    // CSV headers
+    const headers = [
+      "Date",
+      "Project Number",
+      "Project Name",
+      "Employee",
+      "Task",
+      "Description", 
+      "Duration (Hours)",
+      "Created At"
+    ];
+
+    // CSV rows
+    const rows = timeEntries.map(entry => {
+      const duration = typeof entry.duration === 'number' ? entry.duration : parseFloat(entry.duration as string) || 0;
+      const selectedProjectData = projects.find(p => p.id === selectedProject);
+      return [
+        safeDateFormat(entry.date, "MM/dd/yyyy"),
+        selectedProjectData?.project_number || "",
+        selectedProjectData?.name || "Unknown Project",
+        entry.employee ? `${entry.employee.first_name} ${entry.employee.last_name}` : "Unknown Employee",
+        entry.task ? entry.task.name : "No Task",
+        entry.description || "",
+        duration.toFixed(2),
+        safeDateFormat(entry.created_at, "MM/dd/yyyy HH:mm:ss")
+      ];
+    });
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
+    ].join("\n");
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${selectedProjectName}_time_entries_${safeDateFormat(new Date().toISOString(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     toast({
-      title: "Export Started",
-      description: "Your report is being generated and will download shortly.",
+      title: "Export Successful",
+      description: "Time entries exported to CSV file.",
     });
   };
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -71,17 +184,16 @@ export default function Reports() {
     );
   }
 
-  // Added check for permissions to display the report section
-  if (!permissions.canViewReports) {
+  if (!canAccessReports) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardContent className="p-8 text-center">
-              <Filter className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-              <p className="text-gray-600">You don't have permission to view reports.</p>
+              <p className="text-gray-600">You don't have permission to view project reports.</p>
             </CardContent>
           </Card>
         </main>
@@ -90,186 +202,203 @@ export default function Reports() {
   }
 
   return (
-    <PageLayout
-      title="Reports"
-      subtitle="Generate and analyze time tracking reports"
-      actions={
-        <Button onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
-          Export Report
-        </Button>
-      }
-    >
-      {/* Report Configuration */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Report Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Report Type */}
-            <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select report type" />
-              </SelectTrigger>
-              <SelectContent>
-                {reportTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    <div className="flex items-center gap-2">
-                      <type.icon className="w-4 h-4" />
-                      {type.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-background">
+      <Header />
 
-            {/* Date Range */}
-            <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select date range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="quarter">This Quarter</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="custom">Custom Range</SelectItem>
-              </SelectContent>
-            </Select>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Reports</h2>
+          <p className="text-gray-600">View and export time entries for projects</p>
+        </div>
 
-            {/* Custom Date Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
-                  )}
-                  disabled={dateRange !== "custom"}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+        {/* Project Selection */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Select Project
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <Select value={selectedProject} onValueChange={setSelectedProject}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a project to view reports" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: "#1976D2" }}
+                          ></div>
+                          {project.name}
+                          {project.project_number && (
+                            <span className="text-xs text-gray-500">#{project.project_number}</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedProject && timeEntries.length > 0 && (
+                <Button onClick={exportToCSV} className="flex items-center gap-2">
+                  <Download className="w-4 h-4" />
+                  Export CSV
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Report Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Hours</p>
-                <p className="text-2xl font-bold">156.5</p>
-              </div>
-              <Clock className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="flex items-center mt-4 text-sm">
-              <TrendingUp className="mr-1 h-4 w-4 text-green-600" />
-              <span className="text-green-600">+12.5%</span>
-              <span className="text-muted-foreground ml-1">from last period</span>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
-                <p className="text-2xl font-bold">8</p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="flex items-center mt-4 text-sm">
-              <span className="text-blue-600">2 new</span>
-              <span className="text-muted-foreground ml-1">this period</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Report Content */}
+        {!selectedProject ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Project</h3>
+              <p className="text-gray-600">Choose a project from the dropdown above to view its time entries.</p>
+            </CardContent>
+          </Card>
+        ) : timeEntriesLoading ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading time entries...</p>
+            </CardContent>
+          </Card>
+        ) : timeEntries.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Time Entries</h3>
+              <p className="text-gray-600">No time entries found for this project.</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600">Total Entries</p>
+                      <p className="text-2xl font-bold text-gray-900">{timeEntries.length}</p>
+                    </div>
+                    <Calendar className="w-8 h-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Contributors</p>
-                <p className="text-2xl font-bold">24</p>
-              </div>
-              <Users className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="flex items-center mt-4 text-sm">
-              <span className="text-muted-foreground">Across 5 departments</span>
-            </div>
-          </CardContent>
-        </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600">Total Hours</p>
+                      <p className="text-2xl font-bold text-gray-900">{formatDuration(getTotalHours())}</p>
+                    </div>
+                    <Clock className="w-8 h-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Daily Hours</p>
-                <p className="text-2xl font-bold">7.8</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-600">Unique Employees</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {new Set(timeEntries.map(entry => entry.employee?.id).filter(Boolean)).size}
+                      </p>
+                    </div>
+                    <FileText className="w-8 h-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="flex items-center mt-4 text-sm">
-              <span className="text-green-600">+0.3</span>
-              <span className="text-muted-foreground ml-1">from target</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Report Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Report Preview</span>
-            <Badge variant="secondary">
-              {reportTypes.find(t => t.value === reportType)?.label}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <BarChart3 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Report Preview
-            </h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              Configure your report settings above and the preview will appear here.
-              You can then export the full report in various formats.
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button variant="outline">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Generate Chart
-              </Button>
-              <Button>
-                <Download className="w-4 h-4 mr-2" />
-                Export Data
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </PageLayout>
+            {/* Time Entries Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Time Entries</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Project #</TableHead>
+                        <TableHead>Employee</TableHead>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Created</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {timeEntries.map((entry) => {
+                        const selectedProjectData = projects.find(p => p.id === selectedProject);
+                        return (
+                          <TableRow key={entry.id}>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {safeDateFormat(entry.date, "MMM dd, yyyy")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {selectedProjectData?.project_number ? (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  {selectedProjectData.project_number}
+                                </Badge>
+                              ) : (
+                                <span className="text-gray-400 text-sm">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {entry.employee 
+                                ? `${entry.employee.first_name} ${entry.employee.last_name}`
+                                : "Unknown Employee"
+                              }
+                            </TableCell>
+                            <TableCell>
+                              {entry.task && entry.task.name ? (
+                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                  {entry.task.name}
+                                </Badge>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No task</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="max-w-xs">
+                              <div className="truncate" title={entry.description || ""}>
+                                {entry.description || "No description"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className="bg-blue-100 text-blue-800">
+                                {formatDuration(typeof entry.duration === 'number' ? entry.duration : parseFloat(entry.duration as string) || 0)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">
+                              {safeDateFormat(entry.created_at, "MMM dd, HH:mm")}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </main>
+    </div>
   );
 }

@@ -1,295 +1,606 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Users, Link, UserCheck, Clock, Mail } from "lucide-react";
+import PageLayout from "@/components/layout/page-layout";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useToast } from "@/hooks/use-toast";
-import { isUnauthorizedError } from "@/lib/authUtils";
-import { apiRequest } from "@/lib/queryClient";
 import Header from "@/components/layout/header";
-import PageLayout from "@/components/layout/page-layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCog, Plus, Edit2, Trash2, Shield, User, Crown } from "lucide-react";
-import type { User } from "@shared/schema";
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+interface Employee {
+  id: string;
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  department: string;
+  userId: string | null;
+}
 
 export default function UserManagement() {
+  const { user, isLoading } = useAuth();
+  const { canManageSystem } = usePermissions();
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
-  const { canManageUsers } = usePermissions();
   const queryClient = useQueryClient();
+  const [linkingDialogOpen, setLinkingDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [roleChangeDialogOpen, setRoleChangeDialogOpen] = useState(false);
+  const [selectedUserForRole, setSelectedUserForRole] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState("");
 
-  // Redirect to home if not authenticated
+  // Redirect if not admin
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, isLoading, toast]);
-
-  // Redirect if not authorized
-  useEffect(() => {
-    if (isAuthenticated && !canManageUsers) {
+    if (!isLoading && (!canManageSystem || user?.role !== 'admin')) {
       toast({
         title: "Access Denied",
-        description: "You don't have permission to access user management.",
+        description: "Only System Administrators can access user management.",
         variant: "destructive",
       });
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
-      return;
+      window.location.href = "/";
     }
-  }, [isAuthenticated, canManageUsers, toast]);
+  }, [isLoading, canManageSystem, user, toast]);
 
-  // Fetch users
-  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
-    queryKey: ["/api/users"],
-    enabled: isAuthenticated && canManageUsers,
+  // Fetch all users
+  const { data: allUsers } = useQuery<User[]>({
+    queryKey: ["/api/admin/users"],
+    enabled: canManageSystem && user?.role === 'admin',
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (allUsers) {
+      console.log('📊 [USER-MGMT-STATS] All users fetched:', {
+        count: allUsers.length,
+        sample: allUsers[0] ? {
+          id: allUsers[0].id,
+          email: allUsers[0].email,
+          role: allUsers[0].role,
+          lastLoginAt: allUsers[0].lastLoginAt,
+          firstName: allUsers[0].firstName,
+          lastName: allUsers[0].lastName
+        } : null
+      });
+    }
+  }, [allUsers]);
+
+  // Fetch users without employee profile
+  const { data: unlinkedUsers } = useQuery<User[]>({
+    queryKey: ["/api/admin/users/without-employee"],
+    enabled: canManageSystem && user?.role === 'admin',
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (unlinkedUsers) {
+      console.log('📊 [USER-MGMT-STATS] Unlinked users fetched:', {
+        count: unlinkedUsers.length,
+        sample: unlinkedUsers[0] ? {
+          id: unlinkedUsers[0].id,
+          email: unlinkedUsers[0].email,
+          role: unlinkedUsers[0].role
+        } : null
+      });
+    }
+  }, [unlinkedUsers]);
+
+  // Fetch employees
+  const { data: employees } = useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+    enabled: canManageSystem && user?.role === 'admin',
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (employees) {
+      console.log('📊 [USER-MGMT-STATS] Employees fetched:', {
+        count: employees.length,
+        withUserId: employees.filter(emp => emp.userId).length,
+        withoutUserId: employees.filter(emp => !emp.userId).length,
+        sample: employees[0] ? {
+          id: employees[0].id,
+          firstName: employees[0].firstName,
+          lastName: employees[0].lastName,
+          userId: employees[0].userId,
+          department: employees[0].department
+        } : null
+      });
+    }
+  }, [employees]);
+
+  // Link user to employee mutation
+  const linkUserMutation = useMutation({
+    mutationFn: async ({ employeeId, userId }: { employeeId: string; userId: string }) => {
+      return apiRequest(`/api/admin/employees/${employeeId}/link-user`, "POST", { userId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users/without-employee"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({
+        title: "Success",
+        description: "User successfully linked to employee profile.",
+      });
+      setLinkingDialogOpen(false);
+      setSelectedEmployee(null);
+      setSelectedUserId("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to link user to employee.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Update user role mutation
-  const updateUserRole = useMutation({
+  const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      await apiRequest(`/api/users/${userId}/role`, "PUT", { role });
+      console.log("🔄 Frontend: Updating role for user:", userId, "to role:", role);
+      try {
+        const result = await apiRequest(`/api/admin/users/${userId}/role`, "POST", { role });
+        console.log("✅ Frontend: Role update successful:", result);
+        return result;
+      } catch (error) {
+        console.error("❌ Frontend: Role update failed:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("✅ Frontend: Role mutation success callback:", data);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "User role updated successfully",
+        description: "User role updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setRoleChangeDialogOpen(false);
+      setSelectedUserForRole(null);
+      setNewRole("");
     },
-    onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+    onError: (error: any) => {
+      console.error("❌ Frontend: Role mutation error callback:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
       toast({
         title: "Error",
-        description: "Failed to update user role",
+        description: error.message || error.response?.data?.message || "Failed to update user role.",
         variant: "destructive",
       });
     },
   });
 
-  // Delete user mutation
-  const deleteUser = useMutation({
-    mutationFn: async (userId: string) => {
-      await apiRequest(`/api/users/${userId}`, "DELETE");
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "User deleted successfully",
+  const handleLinkUser = () => {
+    if (selectedEmployee && selectedUserId) {
+      linkUserMutation.mutate({
+        employeeId: selectedEmployee.id,
+        userId: selectedUserId,
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to delete user",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleRoleChange = (userId: string, newRole: string) => {
-    updateUserRole.mutate({ userId, role: newRole });
-  };
-
-  const handleDelete = (userId: string) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      deleteUser.mutate(userId);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase();
+  const handleRoleChange = () => {
+    if (selectedUserForRole && newRole) {
+      updateRoleMutation.mutate({
+        userId: selectedUserForRole.id,
+        role: newRole,
+      });
+    }
+  };
+
+  const openRoleChangeDialog = (user: User) => {
+    setSelectedUserForRole(user);
+    setNewRole(user.role);
+    setRoleChangeDialogOpen(true);
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Never";
+    return new Date(dateString).toLocaleDateString();
   };
 
   const getRoleColor = (role: string) => {
-    switch (role.toLowerCase()) {
-      case "admin":
-        return "bg-red-100 text-red-700";
-      case "manager":
-        return "bg-blue-100 text-blue-700";
-      case "employee":
-        return "bg-green-100 text-green-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+    switch (role) {
+      case 'admin': return 'bg-red-100 text-red-800';
+      case 'manager': return 'bg-blue-100 text-blue-800';
+      case 'project_manager': return 'bg-green-100 text-green-800';
+      case 'employee': return 'bg-gray-100 text-gray-800';
+      case 'viewer': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role.toLowerCase()) {
-      case "admin":
-        return <Crown className="w-3 h-3" />;
-      case "manager":
-        return <Shield className="w-3 h-3" />;
-      case "employee":
-        return <User className="w-3 h-3" />;
-      default:
-        return <User className="w-3 h-3" />;
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'admin': return 'System Administrator';
+      case 'manager': return 'Department Manager';
+      case 'project_manager': return 'Project Manager';
+      case 'employee': return 'Employee';
+      case 'viewer': return 'Viewer';
+      default: return role.replace('_', ' ').toUpperCase();
     }
   };
 
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
+  if (isLoading) return <div>Loading...</div>;
+
+  if (!canManageSystem || user?.role !== 'admin') {
+    return <div>Access denied</div>;
   }
 
-  if (!canManageUsers) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-          <p className="text-gray-500">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
+  const employeesWithoutUser = (employees || []).filter(emp => !emp.userId);
+
+  const stats = {
+    totalUsers: (allUsers || []).length,
+    unlinkedUsers: (unlinkedUsers || []).length,
+    totalEmployees: (employees || []).length,
+    linkedProfiles: (employees || []).filter(emp => emp.userId).length,
+    debug: {
+      allUsersIds: (allUsers || []).map(u => u.id).slice(0, 3),
+      unlinkedUserIds: (unlinkedUsers || []).map(u => u.id).slice(0, 3),
+      employeesWithUserIds: (employees || []).filter(emp => emp.userId).map(emp => ({
+        id: emp.id,
+        userId: emp.userId
+      })).slice(0, 3),
+      employeesWithoutUserIds: employeesWithoutUser.map(emp => ({
+        id: emp.id,
+        firstName: emp.firstName,
+        lastName: emp.lastName
+      })).slice(0, 3)
+    }
+  };
+
+  console.log('📊 [USER-MGMT-STATS] Stats calculated:', stats);
 
   return (
-    <PageLayout
-      title="User Management"
-      subtitle="Manage user accounts, roles, and permissions"
-    >
-      {usersLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                    <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="md:flex md:items-center md:justify-between mb-8">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center">
+              <Users className="w-8 h-8 text-blue-600 mr-3" />
+              <div>
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  User Management
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage system users and link them to employee profiles
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : users.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <UserCog className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-500">Users will appear here when they log in for the first time.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {users.map((user) => (
-            <Card key={user.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-4">
-                    <Avatar className="w-12 h-12">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        {getInitials(user.display_name || user.username)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {user.display_name || user.username}
-                      </h3>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Unlinked Users</CardTitle>
+              <Link className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.unlinkedUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Employees w/o User</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{employeesWithoutUser.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Linked Profiles</CardTitle>
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.linkedProfiles}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* All Users */}
+          <Card>
+            <CardHeader>
+              <CardTitle>All System Users</CardTitle>
+              <CardDescription>Users who have signed up for the application</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(allUsers || []).map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="font-medium">
+                            {user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName}`
+                              : user.email}
+                          </p>
+                          <p className="text-sm text-gray-500">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getRoleColor(user.role)}>
+                            {getRoleDisplayName(user.role)}
+                          </Badge>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Last login: {formatDate(user.lastLoginAt)}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRoleChangeDialog(user)}
+                          data-testid={`button-change-role-${user.id}`}
+                        >
+                          Change Role
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(user.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Employee Linking */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Employee Profile Linking</CardTitle>
+                  <CardDescription>Link user accounts to employee profiles</CardDescription>
+                </div>
+                {employeesWithoutUser.length > 0 && (unlinkedUsers || []).length > 0 && (
+                  <Dialog open={linkingDialogOpen} onOpenChange={setLinkingDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Link className="w-4 h-4 mr-2" />
+                        Link User
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Link User to Employee</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Select Employee</label>
+                          <Select onValueChange={(value) => {
+                            const employee = employeesWithoutUser.find(emp => emp.id === value);
+                            setSelectedEmployee(employee || null);
+                          }}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose employee" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {employeesWithoutUser.map((employee) => (
+                                <SelectItem key={employee.id} value={employee.id}>
+                                  {(employee.firstName)} {(employee.lastName)} ({employee.department})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-medium">Select User</label>
+                          <Select onValueChange={setSelectedUserId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(unlinkedUsers || []).map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.firstName && user.lastName
+                                    ? `${user.firstName} ${user.lastName} (${user.email})`
+                                    : user.email}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <Button
+                          onClick={handleLinkUser}
+                          disabled={!selectedEmployee || !selectedUserId || linkUserMutation.isPending}
+                          className="w-full"
+                        >
+                          {linkUserMutation.isPending ? "Linking..." : "Link User to Employee"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Employees without user accounts:</h4>
+                  {employeesWithoutUser.length === 0 ? (
+                    <p className="text-sm text-gray-500">All employees have linked user accounts</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {employeesWithoutUser.map((employee) => (
+                        <div key={employee.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium">
+                              {(employee.firstName)} {(employee.lastName)}
+                            </p>
+                            <p className="text-sm text-gray-500">{employee.department}</p>
+                          </div>
+                          <Badge variant="outline">No User Account</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Role:</span>
-                    <Select
-                      value={user.role || "employee"}
-                      onValueChange={(value) => handleRoleChange(user.id, value)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employee">Employee</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Users without employee profiles:</h4>
+                  {(unlinkedUsers || []).length === 0 ? (
+                    <p className="text-sm text-gray-500">All users have employee profiles</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(unlinkedUsers || []).map((user) => (
+                        <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium">
+                              {user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName}`
+                                : user.email}
+                            </p>
+                            <p className="text-sm text-gray-500">{user.email}</p>
+                          </div>
+                          <Badge variant="outline">No Employee Profile</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-500">Status:</span>
-                    <Badge className={getRoleColor(user.role || "employee")}>
-                      {getRoleIcon(user.role || "employee")}
-                      <span className="ml-1 capitalize">{user.role || "Employee"}</span>
+        {/* Role Change Dialog */}
+        <Dialog open={roleChangeDialogOpen} onOpenChange={setRoleChangeDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Change User Role</DialogTitle>
+            </DialogHeader>
+            {selectedUserForRole && (
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="font-medium">
+                        {selectedUserForRole.firstName && selectedUserForRole.lastName
+                          ? `${selectedUserForRole.firstName} ${selectedUserForRole.lastName}`
+                          : selectedUserForRole.email}
+                      </p>
+                      <p className="text-sm text-gray-500">{selectedUserForRole.email}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Badge className={getRoleColor(selectedUserForRole.role)}>
+                      Current: {getRoleDisplayName(selectedUserForRole.role)}
                     </Badge>
                   </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Last Login:</span>
-                    <span>
-                      {user.last_login
-                        ? new Date(user.last_login).toLocaleDateString()
-                        : "Never"
-                      }
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Created:</span>
-                    <span>{new Date(user.created_at).toLocaleDateString()}</span>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </PageLayout>
+
+                <div>
+                  <label className="text-sm font-medium block mb-2">Select New Role</label>
+                  <Select value={newRole} onValueChange={setNewRole}>
+                    <SelectTrigger data-testid="select-new-role">
+                      <SelectValue placeholder="Choose new role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin" data-testid="option-admin">
+                        <div className="flex items-center justify-between w-full">
+                          <span>System Administrator</span>
+                          <Badge className="ml-2 bg-red-100 text-red-800">Full Access</Badge>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="manager" data-testid="option-manager">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Department Manager</span>
+                          <Badge className="ml-2 bg-blue-100 text-blue-800">Department</Badge>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="project_manager" data-testid="option-project-manager">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Project Manager</span>
+                          <Badge className="ml-2 bg-green-100 text-green-800">Project</Badge>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="employee" data-testid="option-employee">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Employee</span>
+                          <Badge className="ml-2 bg-gray-100 text-gray-800">Basic</Badge>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="viewer" data-testid="option-viewer">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Viewer</span>
+                          <Badge className="ml-2 bg-yellow-100 text-yellow-800">Read-only</Badge>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Role Description */}
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    {newRole === 'admin' && "Full system access including user management and system administration."}
+                    {newRole === 'manager' && "Department-level management with employee and project oversight within their department."}
+                    {newRole === 'project_manager' && "Project creation and management with team assignment capabilities."}
+                    {newRole === 'employee' && "Basic project access with personal time tracking and task management."}
+                    {newRole === 'viewer' && "Read-only access to assigned projects and own time entries."}
+                  </p>
+                </div>
+
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setRoleChangeDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleRoleChange}
+                    disabled={!newRole || newRole === selectedUserForRole.role || updateRoleMutation.isPending}
+                    className="flex-1"
+                    data-testid="button-confirm-role-change"
+                  >
+                    {updateRoleMutation.isPending ? "Updating..." : "Update Role"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </main>
+    </div>
   );
 }

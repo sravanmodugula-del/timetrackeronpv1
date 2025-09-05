@@ -1,27 +1,33 @@
-
-import { ReactNode } from "react";
+import React from 'react';
+import Header from './header';
+import { cn } from '@/lib/utils';
 
 interface PageLayoutProps {
-  title: string;
-  subtitle?: string;
-  actions?: ReactNode;
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-export default function PageLayout({ title, subtitle, actions, children, className = "" }: PageLayoutProps) {
+export default function PageLayout({ children, className, title, subtitle }: PageLayoutProps) {
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{title}</h2>
-          {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
-        </div>
-        {actions && <div className="flex items-center space-x-2">{actions}</div>}
-      </div>
-      <div className={`space-y-4 ${className}`}>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header />
+      <main className={cn("flex-1 max-w-7xl mx-auto w-full py-6 px-4 sm:px-6 lg:px-8", className)}>
+        {title && (
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate mb-2">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+            )}
+          </div>
+        )}
         {children}
-      </div>
+      </main>
     </div>
   );
 }
+
+export { PageLayout };
