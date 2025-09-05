@@ -2976,14 +2976,14 @@ export class FmbStorage implements IStorage {
 
       // Add date filter if provided with PST timezone handling
       if (startDate && endDate) {
-        // For today's filter, use string date comparison to avoid timezone conversion issues
+        // For today's filter, use date casting for consistency with time entries filtering
         if (startDate === endDate) {
-          // Same day filter - use string comparison to ensure we catch all entries for that date
-          request.input('filterDate', sql.NVarChar(10), startDate);
+          // Same day filter - use date casting to ensure consistent behavior with time entries queries
+          request.input('filterDate', sql.Date, new Date(startDate + 'T00:00:00'));
           breakdownQuery += `
-          WHERE CONVERT(VARCHAR(10), te.date, 120) = @filterDate
+          WHERE CAST(te.date AS DATE) = CAST(@filterDate AS DATE)
           `;
-          console.log('📊 [FMB-STORAGE] Using same-day PST filter for date:', startDate);
+          console.log('📊 [FMB-STORAGE] Using same-day date casting filter for date:', startDate);
         } else {
           // Date range filter - use proper date range comparison
           request.input('startDate', sql.Date, new Date(startDate + 'T00:00:00-08:00')); // PST start of day
