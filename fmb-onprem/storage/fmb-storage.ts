@@ -1196,17 +1196,27 @@ export class FmbStorage implements IStorage {
         console.log('🔍 [FMB-STORAGE] Filtering by project:', filters.projectId);
       }
 
-      if (filters?.startDate) {
-        query += ` AND CONVERT(date, te.date) >= CONVERT(date, @startDate)`;
-        request.input('startDate', sql.Date, new Date(filters.startDate));
-        console.log('🔍 [FMB-STORAGE] Filtering start date:', filters.startDate);
+      if (filters?.startDate || filters?.endDate) {
+        if (filters.startDate && filters.endDate) {
+          query += ` AND CAST(te.date AS DATE) >= CAST(@startDate AS DATE) AND CAST(te.date AS DATE) <= CAST(@endDate AS DATE)`;
+          request.input('startDate', sql.Date, new Date(filters.startDate + 'T00:00:00'));
+          request.input('endDate', sql.Date, new Date(filters.endDate + 'T23:59:59'));
+          console.log('🔍 [FMB-STORAGE] Filtering date range:', filters.startDate, 'to:', filters.endDate);
+        } else {
+          if (filters?.startDate) {
+            query += ` AND CAST(te.date AS DATE) >= CAST(@startDate AS DATE)`;
+            request.input('startDate', sql.Date, new Date(filters.startDate + 'T00:00:00'));
+            console.log('🔍 [FMB-STORAGE] Filtering start date:', filters.startDate);
+          }
+
+          if (filters?.endDate) {
+            query += ` AND CAST(te.date AS DATE) <= CAST(@endDate AS DATE)`;
+            request.input('endDate', sql.Date, new Date(filters.endDate + 'T23:59:59'));
+            console.log('🔍 [FMB-STORAGE] Filtering end date:', filters.endDate);
+          }
+        }
       }
 
-      if (filters?.endDate) {
-        query += ` AND CONVERT(date, te.date) <= CONVERT(date, @endDate)`;
-        request.input('endDate', sql.Date, new Date(filters.endDate));
-        console.log('🔍 [FMB-STORAGE] Filtering end date:', filters.endDate);
-      }
 
       query += ` ORDER BY te.date DESC, te.created_at DESC`;
 
@@ -2966,14 +2976,16 @@ export class FmbStorage implements IStorage {
 
       // Add date filter if provided with PST timezone handling
       if (startDate && endDate) {
-        // Ensure proper PST date conversion for SQL Server
-        request.input('startDate', sql.NVarChar(10), startDate);
-        request.input('endDate', sql.NVarChar(10), endDate);
+        // Use proper PST date handling - convert string dates to proper SQL Date parameters
+        request.input('startDate', sql.Date, new Date(startDate + 'T00:00:00-08:00')); // PST start of day
+        request.input('endDate', sql.Date, new Date(endDate + 'T23:59:59-08:00')); // PST end of day
+        
         breakdownQuery += `
-        WHERE CONVERT(date, te.date) >= CONVERT(date, @startDate)
-          AND CONVERT(date, te.date) <= CONVERT(date, @endDate)
+        WHERE CAST(te.date AS DATE) >= CAST(@startDate AS DATE)
+          AND CAST(te.date AS DATE) <= CAST(@endDate AS DATE)
         `;
         console.log('📊 [FMB-STORAGE] Using PST date filter from:', startDate, 'to:', endDate);
+        console.log('📊 [FMB-STORAGE] Converted dates - Start:', new Date(startDate + 'T00:00:00-08:00'), 'End:', new Date(endDate + 'T23:59:59-08:00'));
       }
 
       breakdownQuery += `
