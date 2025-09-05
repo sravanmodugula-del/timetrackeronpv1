@@ -2442,20 +2442,20 @@ export class FmbStorage implements IStorage {
       // Force PST timezone calculation to ensure consistency
       const now = new Date();
       
-      // Get today's date in PST timezone in YYYY-MM-DD format
-      const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
-
-      // Get start of week (Monday) in PST timezone
+      // Get current PST date properly - create a new date in PST timezone
       const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+      const todayStr = pstNow.toLocaleDateString('en-CA');
+
+      // Get start of week (Monday) in PST timezone  
       const startOfWeek = new Date(pstNow);
       const dayOfWeek = startOfWeek.getDay();
       const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so subtract 6; otherwise subtract (day - 1)
       startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-      const weekStartStr = startOfWeek.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      const weekStartStr = startOfWeek.toLocaleDateString('en-CA');
 
       // Get start of month in PST timezone
       const startOfMonth = new Date(pstNow.getFullYear(), pstNow.getMonth(), 1);
-      const monthStartStr = startOfMonth.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+      const monthStartStr = startOfMonth.toLocaleDateString('en-CA');
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
         today: todayStr,
