@@ -2439,28 +2439,23 @@ export class FmbStorage implements IStorage {
         throw new Error('Database pool not available');
       }
 
-      // Use server's local timezone (which should be PST) for all date calculations
+      // Force PST timezone calculation to ensure consistency
       const now = new Date();
       
-      // Get today's date in YYYY-MM-DD format using local timezone
-      const todayStr = now.getFullYear() + '-' + 
-                      String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                      String(now.getDate()).padStart(2, '0');
+      // Get today's date in PST timezone in YYYY-MM-DD format
+      const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-      // Get start of week (Monday) in local timezone
-      const startOfWeek = new Date(now);
+      // Get start of week (Monday) in PST timezone
+      const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+      const startOfWeek = new Date(pstNow);
       const dayOfWeek = startOfWeek.getDay();
       const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, so subtract 6; otherwise subtract (day - 1)
       startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-      const weekStartStr = startOfWeek.getFullYear() + '-' + 
-                          String(startOfWeek.getMonth() + 1).padStart(2, '0') + '-' + 
-                          String(startOfWeek.getDate()).padStart(2, '0');
+      const weekStartStr = startOfWeek.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
-      // Get start of month in local timezone
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const monthStartStr = startOfMonth.getFullYear() + '-' + 
-                           String(startOfMonth.getMonth() + 1).padStart(2, '0') + '-' + 
-                           String(startOfMonth.getDate()).padStart(2, '0');
+      // Get start of month in PST timezone
+      const startOfMonth = new Date(pstNow.getFullYear(), pstNow.getMonth(), 1);
+      const monthStartStr = startOfMonth.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
 
       console.log('📊 [FMB-STORAGE] Date ranges:', {
         today: todayStr,
