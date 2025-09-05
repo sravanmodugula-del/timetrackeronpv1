@@ -27,11 +27,11 @@ export default function DepartmentHours({ startDate, endDate }: DepartmentHoursP
     retry: false,
   });
 
-  // Convert string hours to numbers for proper calculations
+  // Convert string hours to numbers for proper calculations and ensure proper formatting
   const departmentHours: DepartmentHours[] = departmentHoursRaw.map(dept => ({
     ...dept,
-    totalHours: typeof dept.totalHours === 'string' ? parseFloat(dept.totalHours) : dept.totalHours,
-    employeeCount: typeof dept.employeeCount === 'string' ? parseInt(dept.employeeCount) : dept.employeeCount,
+    totalHours: typeof dept.totalHours === 'string' ? parseFloat(dept.totalHours) || 0 : (dept.totalHours || 0),
+    employeeCount: typeof dept.employeeCount === 'string' ? parseInt(dept.employeeCount) || 0 : (dept.employeeCount || 0),
   }));
 
   const formatHours = (hours: number) => {

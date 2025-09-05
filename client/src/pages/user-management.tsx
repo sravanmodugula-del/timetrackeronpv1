@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Users, Link, UserCheck, Clock, Mail } from "lucide-react";
 import Header from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { useEffect } from "react";
 
 interface User {
   id: string;
@@ -57,62 +56,71 @@ export default function UserManagement() {
   }, [isLoading, canManageSystem, user, toast]);
 
   // Fetch all users
-  const { data: allUsers = [] } = useQuery<User[]>({
+  const { data: allUsers } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
-    onSuccess: (data) => {
+  });
+
+  useEffect(() => {
+    if (allUsers) {
       console.log('📊 [USER-MGMT-STATS] All users fetched:', {
-        count: data.length,
-        sample: data[0] ? {
-          id: data[0].id,
-          email: data[0].email,
-          role: data[0].role,
-          lastLoginAt: data[0].lastLoginAt || data[0].last_login_at,
-          firstName: data[0].firstName || data[0].first_name,
-          lastName: data[0].lastName || data[0].last_name
+        count: allUsers.length,
+        sample: allUsers[0] ? {
+          id: allUsers[0].id,
+          email: allUsers[0].email,
+          role: allUsers[0].role,
+          lastLoginAt: allUsers[0].lastLoginAt,
+          firstName: allUsers[0].firstName,
+          lastName: allUsers[0].lastName
         } : null
       });
     }
-  });
+  }, [allUsers]);
 
   // Fetch users without employee profile
-  const { data: unlinkedUsers = [] } = useQuery<User[]>({
+  const { data: unlinkedUsers } = useQuery<User[]>({
     queryKey: ["/api/admin/users/without-employee"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
-    onSuccess: (data) => {
+  });
+
+  useEffect(() => {
+    if (unlinkedUsers) {
       console.log('📊 [USER-MGMT-STATS] Unlinked users fetched:', {
-        count: data.length,
-        sample: data[0] ? {
-          id: data[0].id,
-          email: data[0].email,
-          role: data[0].role
+        count: unlinkedUsers.length,
+        sample: unlinkedUsers[0] ? {
+          id: unlinkedUsers[0].id,
+          email: unlinkedUsers[0].email,
+          role: unlinkedUsers[0].role
         } : null
       });
     }
-  });
+  }, [unlinkedUsers]);
 
   // Fetch employees
-  const { data: employees = [] } = useQuery<Employee[]>({
+  const { data: employees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
     enabled: canManageSystem && user?.role === 'admin',
     retry: false,
-    onSuccess: (data) => {
+  });
+
+  useEffect(() => {
+    if (employees) {
       console.log('📊 [USER-MGMT-STATS] Employees fetched:', {
-        count: data.length,
-        withUserId: data.filter(emp => emp.userId || emp.user_id).length,
-        withoutUserId: data.filter(emp => !emp.userId && !emp.user_id).length,
-        sample: data[0] ? {
-          id: data[0].id,
-          firstName: data[0].firstName || data[0].first_name,
-          lastName: data[0].lastName || data[0].last_name,
-          userId: data[0].userId || data[0].user_id,
-          department: data[0].department
+        count: employees.length,
+        withUserId: employees.filter(emp => emp.userId).length,
+        withoutUserId: employees.filter(emp => !emp.userId).length,
+        sample: employees[0] ? {
+          id: employees[0].id,
+          firstName: employees[0].firstName,
+          lastName: employees[0].lastName,
+          userId: employees[0].userId,
+          department: employees[0].department
         } : null
       });
     }
-  });
+  }, [employees]);
 
   // Link user to employee mutation
   const linkUserMutation = useMutation({
@@ -236,29 +244,29 @@ export default function UserManagement() {
     return <div>Access denied</div>;
   }
 
-  const employeesWithoutUser = employees.filter(emp => !emp.userId && !emp.user_id);
-  
-  // Debug stats calculations
-  console.log('📊 [USER-MGMT-STATS] Stats calculated:', {
-    totalUsers: allUsers.length,
-    unlinkedUsers: unlinkedUsers.length,
-    employeesWithoutUser: employeesWithoutUser.length,
-    linkedProfiles: employees.filter(emp => emp.userId || emp.user_id).length,
-    totalEmployees: employees.length,
-    breakdown: {
-      allUsersIds: allUsers.map(u => u.id).slice(0, 3),
-      unlinkedUserIds: unlinkedUsers.map(u => u.id).slice(0, 3),
-      employeesWithUserIds: employees.filter(emp => emp.userId || emp.user_id).map(emp => ({ 
-        id: emp.id, 
-        userId: emp.userId || emp.user_id 
+  const employeesWithoutUser = (employees || []).filter(emp => !emp.userId);
+
+  const stats = {
+    totalUsers: (allUsers || []).length,
+    unlinkedUsers: (unlinkedUsers || []).length,
+    totalEmployees: (employees || []).length,
+    linkedProfiles: (employees || []).filter(emp => emp.userId).length,
+    debug: {
+      allUsersIds: (allUsers || []).map(u => u.id).slice(0, 3),
+      unlinkedUserIds: (unlinkedUsers || []).map(u => u.id).slice(0, 3),
+      employeesWithUserIds: (employees || []).filter(emp => emp.userId).map(emp => ({
+        id: emp.id,
+        userId: emp.userId
       })).slice(0, 3),
-      employeesWithoutUserIds: employeesWithoutUser.map(emp => ({ 
-        id: emp.id, 
-        firstName: emp.firstName || emp.first_name, 
-        lastName: emp.lastName || emp.last_name 
+      employeesWithoutUserIds: employeesWithoutUser.map(emp => ({
+        id: emp.id,
+        firstName: emp.firstName,
+        lastName: emp.lastName
       })).slice(0, 3)
     }
-  });
+  };
+
+  console.log('📊 [USER-MGMT-STATS] Stats calculated:', stats);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -289,7 +297,7 @@ export default function UserManagement() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{allUsers.length}</div>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
             </CardContent>
           </Card>
           <Card>
@@ -298,7 +306,7 @@ export default function UserManagement() {
               <Link className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{unlinkedUsers.length}</div>
+              <div className="text-2xl font-bold">{stats.unlinkedUsers}</div>
             </CardContent>
           </Card>
           <Card>
@@ -316,7 +324,7 @@ export default function UserManagement() {
               <UserCheck className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{employees.filter(emp => emp.userId || emp.user_id).length}</div>
+              <div className="text-2xl font-bold">{stats.linkedProfiles}</div>
             </CardContent>
           </Card>
         </div>
@@ -330,15 +338,15 @@ export default function UserManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {allUsers.map((user) => (
+                {(allUsers || []).map((user) => (
                   <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
                         <Mail className="w-4 h-4 text-gray-400" />
                         <div>
                           <p className="font-medium">
-                            {user.firstName && user.lastName 
-                              ? `${user.firstName} ${user.lastName}` 
+                            {user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName}`
                               : user.email}
                           </p>
                           <p className="text-sm text-gray-500">{user.email}</p>
@@ -378,7 +386,7 @@ export default function UserManagement() {
                   <CardTitle>Employee Profile Linking</CardTitle>
                   <CardDescription>Link user accounts to employee profiles</CardDescription>
                 </div>
-                {employeesWithoutUser.length > 0 && unlinkedUsers.length > 0 && (
+                {employeesWithoutUser.length > 0 && (unlinkedUsers || []).length > 0 && (
                   <Dialog open={linkingDialogOpen} onOpenChange={setLinkingDialogOpen}>
                     <DialogTrigger asChild>
                       <Button>
@@ -403,13 +411,13 @@ export default function UserManagement() {
                             <SelectContent>
                               {employeesWithoutUser.map((employee) => (
                                 <SelectItem key={employee.id} value={employee.id}>
-                                  {(employee.firstName || employee.first_name)} {(employee.lastName || employee.last_name)} ({employee.department})
+                                  {(employee.firstName)} {(employee.lastName)} ({employee.department})
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div>
                           <label className="text-sm font-medium">Select User</label>
                           <Select onValueChange={setSelectedUserId}>
@@ -417,18 +425,18 @@ export default function UserManagement() {
                               <SelectValue placeholder="Choose user" />
                             </SelectTrigger>
                             <SelectContent>
-                              {unlinkedUsers.map((user) => (
+                              {(unlinkedUsers || []).map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.firstName && user.lastName 
-                                    ? `${user.firstName} ${user.lastName} (${user.email})` 
+                                  {user.firstName && user.lastName
+                                    ? `${user.firstName} ${user.lastName} (${user.email})`
                                     : user.email}
                                 </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        
-                        <Button 
+
+                        <Button
                           onClick={handleLinkUser}
                           disabled={!selectedEmployee || !selectedUserId || linkUserMutation.isPending}
                           className="w-full"
@@ -453,7 +461,7 @@ export default function UserManagement() {
                         <div key={employee.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
                             <p className="font-medium">
-                              {(employee.firstName || employee.first_name)} {(employee.lastName || employee.last_name)}
+                              {(employee.firstName)} {(employee.lastName)}
                             </p>
                             <p className="text-sm text-gray-500">{employee.department}</p>
                           </div>
@@ -463,19 +471,19 @@ export default function UserManagement() {
                     </div>
                   )}
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium text-sm text-gray-700 mb-2">Users without employee profiles:</h4>
-                  {unlinkedUsers.length === 0 ? (
+                  {(unlinkedUsers || []).length === 0 ? (
                     <p className="text-sm text-gray-500">All users have employee profiles</p>
                   ) : (
                     <div className="space-y-2">
-                      {unlinkedUsers.map((user) => (
+                      {(unlinkedUsers || []).map((user) => (
                         <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div>
                             <p className="font-medium">
-                              {user.firstName && user.lastName 
-                                ? `${user.firstName} ${user.lastName}` 
+                              {user.firstName && user.lastName
+                                ? `${user.firstName} ${user.lastName}`
                                 : user.email}
                             </p>
                             <p className="text-sm text-gray-500">{user.email}</p>
@@ -504,8 +512,8 @@ export default function UserManagement() {
                     <Mail className="w-4 h-4 text-gray-400" />
                     <div>
                       <p className="font-medium">
-                        {selectedUserForRole.firstName && selectedUserForRole.lastName 
-                          ? `${selectedUserForRole.firstName} ${selectedUserForRole.lastName}` 
+                        {selectedUserForRole.firstName && selectedUserForRole.lastName
+                          ? `${selectedUserForRole.firstName} ${selectedUserForRole.lastName}`
                           : selectedUserForRole.email}
                       </p>
                       <p className="text-sm text-gray-500">{selectedUserForRole.email}</p>
@@ -571,14 +579,14 @@ export default function UserManagement() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setRoleChangeDialogOpen(false)}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleRoleChange}
                     disabled={!newRole || newRole === selectedUserForRole.role || updateRoleMutation.isPending}
                     className="flex-1"

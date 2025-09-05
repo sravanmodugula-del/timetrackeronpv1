@@ -92,8 +92,8 @@ export default function Departments() {
         name: d.name,
         manager_id: d.manager_id,
         manager: d.manager,
-        manager_first_name: d.manager_first_name,
-        manager_last_name: d.manager_last_name
+        manager_first_name: d.manager?.first_name,
+        manager_last_name: d.manager?.last_name
       })));
     }
     if (employees.length > 0) {
@@ -555,15 +555,16 @@ export default function Departments() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Manager:</span>
-                      {department.manager_id && (department.manager_first_name || department.manager?.first_name) ? (
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            {department.manager?.first_name && department.manager?.last_name
-                              ? `${department.manager.first_name} ${department.manager.last_name}`
-                              : `${department.manager_first_name || 'Unknown'} ${department.manager_last_name || 'Manager'}`
-                            }
-                          </Badge>
+                      {department.manager_id && department.manager?.first_name ? (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-600">
+                            {department.manager?.first_name?.charAt(0)}
+                          </div>
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {`${department.manager.first_name} ${department.manager.last_name || ''}`}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-xs">
