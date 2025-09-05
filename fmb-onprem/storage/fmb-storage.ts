@@ -2964,15 +2964,19 @@ export class FmbStorage implements IStorage {
         INNER JOIN time_entries te ON p.id = te.project_id
       `;
 
-      // Add date filter if provided
+      // Add date filter if provided with PST timezone handling
       if (startDate && endDate) {
-        request.input('startDate', sql.Date, new Date(startDate));
-        request.input('endDate', sql.Date, new Date(endDate));
+        // Convert to PST dates for proper filtering
+        const startDatePST = new Date(startDate + 'T00:00:00-08:00');
+        const endDatePST = new Date(endDate + 'T23:59:59-08:00');
+        
+        request.input('startDate', sql.NVarChar(10), startDate);
+        request.input('endDate', sql.NVarChar(10), endDate);
         breakdownQuery += `
         WHERE CONVERT(date, te.date) >= CONVERT(date, @startDate)
           AND CONVERT(date, te.date) <= CONVERT(date, @endDate)
         `;
-        console.log('📊 [FMB-STORAGE] Using date filter from:', startDate, 'to:', endDate);
+        console.log('📊 [FMB-STORAGE] Using PST date filter from:', startDate, 'to:', endDate);
       }
 
       breakdownQuery += `
