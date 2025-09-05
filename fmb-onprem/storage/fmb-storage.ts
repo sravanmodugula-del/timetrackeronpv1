@@ -2966,10 +2966,7 @@ export class FmbStorage implements IStorage {
 
       // Add date filter if provided with PST timezone handling
       if (startDate && endDate) {
-        // Convert to PST dates for proper filtering
-        const startDatePST = new Date(startDate + 'T00:00:00-08:00');
-        const endDatePST = new Date(endDate + 'T23:59:59-08:00');
-        
+        // Ensure proper PST date conversion for SQL Server
         request.input('startDate', sql.NVarChar(10), startDate);
         request.input('endDate', sql.NVarChar(10), endDate);
         breakdownQuery += `
