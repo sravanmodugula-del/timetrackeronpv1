@@ -1375,9 +1375,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       console.log("📊 [DASHBOARD-STATS] Response:", stats);
+      console.log("📊 [DASHBOARD-STATS] Today's hours specifically:", stats.todayHours);
 
       // Ensure we return valid numbers for all stats
       const safeStats = {
+        todayHours: parseFloat(stats.todayHours || 0),
+        weekHours: parseFloat(stats.weekHours || 0),
+        monthHours: parseFloat(stats.monthHours || 0),
+        activeProjects: parseInt(stats.activeProjects || 0)
+      };
+
+      console.log("📊 [DASHBOARD-STATS] Safe stats being returned:", safeStats);
+
+      res.json(safeStats);
+    } catch (error) {
+      console.error("❌ [DASHBOARD-STATS] Error:", error);
+      // Return safe defaults instead of throwing
+      res.json({
         todayHours: Number(stats?.todayHours || 0),
         weekHours: Number(stats?.weekHours || 0),
         monthHours: Number(stats?.monthHours || 0),
