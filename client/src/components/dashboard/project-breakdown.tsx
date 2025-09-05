@@ -32,6 +32,12 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       const pstStartDate = toPSTDate(dateRange.startDate);
       const pstEndDate = toPSTDate(dateRange.endDate);
       
+      console.log('🔍 [PROJECT-BREAKDOWN] Date range conversion:', {
+        original: dateRange,
+        converted: { pstStartDate, pstEndDate },
+        isToday: pstStartDate === pstEndDate
+      });
+      
       const params = new URLSearchParams({
         startDate: pstStartDate,
         endDate: pstEndDate,
@@ -40,7 +46,15 @@ export default function ProjectBreakdown({ dateRange }: ProjectBreakdownProps) {
       if (!response.ok) {
         throw new Error(`${response.status}: ${response.statusText}`);
       }
-      return response.json();
+      const result = await response.json();
+      
+      console.log('🔍 [PROJECT-BREAKDOWN] API Response:', {
+        dateRange: { pstStartDate, pstEndDate },
+        projectCount: result?.length || 0,
+        projects: result?.map(p => ({ name: p.project?.name, hours: p.totalHours })) || []
+      });
+      
+      return result;
     },
   });
 
